@@ -16,149 +16,145 @@ const Op = Sequelize.Op;
 const fs = require('fs');
 
 router.post('/login', function (req, res) {
-	if (req.body.email && req.body.password) {
-		var email = req.body.email.toLowerCase();
-		var password = req.body.password;
-		var hashPassword = functions.generateHashPassword(password);
-		models.User.find({
-			where: {
-				password: hashPassword,
-				email: email
-			}
-		}).then(function (userdb) {
-			if (userdb) {
-				if (userdb.email == email && userdb.password == hashPassword) {
-					var user = {};
-
-					if (userdb.is_otp_verified == true || userdb.is_email_verified == true) {
-						models.Applied_For_Details.find({
-							where :{
-								user_id : userdb.id
-							}
-						}).then(function(appliedDetails){
-							user.user_id = userdb.id;
-							user.user_name = userdb.name;
-							user.user_email = userdb.email;
-							user.user_mobile = userdb.mobile;
-							user.user_student_category = userdb.student_category;
-							user.user_address = (userdb.address1) ? userdb.address1 : null;
-							user.user_phone_number = userdb.mobile;
-							user.profileCompleteness = userdb.profile_completeness;
-							user.theme = userdb.theme;
-							user.country_birth = userdb.country_birth;
-							user.applying_for = (appliedDetails) ? appliedDetails.applying_for : null ;
-							user.user_type = userdb.user_type;
-							user.login_count = userdb.login_count
-							// if (userdb.trudesk_key == null) {
-							// request.post(
-							// 	constant.trudesk_BASE_URL+'api/v1/public/account/createAPI',
-							// 	{json:{"aPass":req.body.password,"aFullname":userdb.name,"aEmail": req.body.email},
-							// 	headers:{'Content-Type':'application/json; charset=utf-8','accesstoken':constant.trudesk_key}},
-							// 	function (error, response, body) {
-							// 		if(error){
-							// 		} 
-							// 		if(userdb.trudesk_key == null){
-							// 			var data;
-							// 			request.get(
-							// 			constant.trudesk_BASE_URL+'api/v1/users/'+userdb.email,
-							// 			{headers:{'Content-Type':'application/json; charset=utf-8','accesstoken':constant.trudesk_key}},
-							// 			function (error, response, body) {
-							// 				if(error){
-							// 				} 
-							// 				data = JSON.parse(body);
-							// 				request.post(
-							// 				constant.trudesk_BASE_URL+'api/v1/users/'+data.user._id+"/generateapikey",
-							// 				{headers:{'Content-Type':'application/json; charset=utf-8','accesstoken':constant.trudesk_key}},
-							// 				function (error, response, body) {
-							// 					var data = JSON.parse(body);
-							// 					if(data){
-							// 						userdb.update({
-							// 							trudesk_key : data.token
-							// 						});
-							// 					}
-							// 				});
-							// 			})
-							// 		}
-							// 	});
-							// }
-							// models.Application.findAll({
-							// 	where :{
-							// 		user_id : userdb.id 
-							// 	}
-							// }).then(function(apps){
-							// 	if(apps.length > 0){
-							// 		var app_id = apps[0].id;
-							// 		if(apps.length > 1){
-							// 			for(var i = 1; i< apps.length; i++){
-							// 				app_id += "," + apps[i].id
-							// 			}
-							// 		}
-							// 		// models.userMarkList.setAppIds(userdb.id,app_id);
-							// 		// models.UserMarklist_Upload.setAppIds(userdb.id,app_id);
-							// 		// models.User_Transcript.setAppIds(userdb.id,app_id);
-							// 		// models.User_Curriculum.setAppIds(userdb.id,app_id);
-							// 		// models.InstructionalDetails.setAppIds(userdb.id,app_id);
-							// 		//next();
-							// 	}
-							// })
-							return res.json({
-								status: 200,
-								data: {
-									message: 'Successfully logged in!',
-									token: tokens.createAccessToken(user),
-								}
-							});
-						})
-					} else {
-						user.user_id = userdb.id;
-						user.user_name = userdb.name;
-						user.user_email = userdb.email;
-						user.user_student_category = userdb.student_category;
-						user.user_address = (userdb.address1) ? userdb.address1 : null;
-						user.user_phone_number = userdb.mobile;
-						user.profileCompleteness = userdb.profile_completeness;
-						user.theme = userdb.theme;
-						user.country_birth = userdb.country_birth;
-						user.mobile_country_code = userdb.mobile_country_code;
-						user.applying_for = userdb.applying_for;
-
-						return res.json({
-							status: 402,
-							data: {
-								errors: 'verify',
-								user: user
-							}
-						});
-					}
-
-				} else {
-
-					return res.json({
-						status: 401,
-						data: {
-							errors: 'Login/password combination is not correct'
-						}
-					});
-				}
-			} else {
-
-				return res.json({
-					status: 401,
-					data: {
-						errors: 'Login/password combination is not correct'
-					}
-				});
-			}
-		});
-
-	} else {
-		return res.json({
-			status: 401,
-			data: {
-				errors: 'Email and password both are required !'
-			}
-		});
-	}
+    if (req.body.email && req.body.password) {
+        var email = req.body.email.toLowerCase();
+        var password = req.body.password;
+        var hashPassword = functions.generateHashPassword(password);
+        models.User.find({
+            where: {
+                password: hashPassword,
+                email: email
+            }
+        }).then(function (userdb) {
+            if (userdb) {
+                if (userdb.email == email && userdb.password == hashPassword) {
+                    var user = {};
+                    if (userdb.is_otp_verified == true || userdb.is_email_verified == true) {
+                        models.Applied_For_Details.find({
+                            where :{
+                                user_id : userdb.id
+                            }
+                        }).then(function(appliedDetails){
+                            user.user_id = userdb.id;
+                            user.user_name = userdb.name;
+                            user.user_email = userdb.email;
+                            user.user_mobile = userdb.mobile;
+                            user.user_student_category = userdb.student_category;
+                            user.user_address = (userdb.address1) ? userdb.address1 : null;
+                            user.user_phone_number = userdb.mobile;
+                            user.profileCompleteness = userdb.profile_completeness;
+                            user.theme = userdb.theme;
+                            user.country_birth = userdb.country_birth;
+                            user.applying_for = (appliedDetails) ? appliedDetails.applying_for : null ;
+                            user.user_type = userdb.user_type;
+                            user.login_count = userdb.login_count
+                            // if (userdb.trudesk_key == null) {
+                            // request.post(
+                            //  constant.trudesk_BASE_URL+'api/v1/public/account/createAPI',
+                            //  {json:{"aPass":req.body.password,"aFullname":userdb.name,"aEmail": req.body.email},
+                            //  headers:{'Content-Type':'application/json; charset=utf-8','accesstoken':constant.trudesk_key}},
+                            //  function (error, response, body) {
+                            //      if(error){
+                            //      }
+                            //      if(userdb.trudesk_key == null){
+                            //          var data;
+                            //          request.get(
+                            //          constant.trudesk_BASE_URL+'api/v1/users/'+userdb.email,
+                            //          {headers:{'Content-Type':'application/json; charset=utf-8','accesstoken':constant.trudesk_key}},
+                            //          function (error, response, body) {
+                            //              if(error){
+                            //              }
+                            //              data = JSON.parse(body);
+                            //              request.post(
+                            //              constant.trudesk_BASE_URL+'api/v1/users/'+data.user._id+"/generateapikey",
+                            //              {headers:{'Content-Type':'application/json; charset=utf-8','accesstoken':constant.trudesk_key}},
+                            //              function (error, response, body) {
+                            //                  var data = JSON.parse(body);
+                            //                  if(data){
+                            //                      userdb.update({
+                            //                          trudesk_key : data.token
+                            //                      });
+                            //                  }
+                            //              });
+                            //          })
+                            //      }
+                            //  });
+                            // }
+                            // models.Application.findAll({
+                            //  where :{
+                            //      user_id : userdb.id
+                            //  }
+                            // }).then(function(apps){
+                            //  if(apps.length > 0){
+                            //      var app_id = apps[0].id;
+                            //      if(apps.length > 1){
+                            //          for(var i = 1; i< apps.length; i++){
+                            //              app_id += "," + apps[i].id
+                            //          }
+                            //      }
+                            //      // models.userMarkList.setAppIds(userdb.id,app_id);
+                            //      // models.UserMarklist_Upload.setAppIds(userdb.id,app_id);
+                            //      // models.User_Transcript.setAppIds(userdb.id,app_id);
+                            //      // models.User_Curriculum.setAppIds(userdb.id,app_id);
+                            //      // models.InstructionalDetails.setAppIds(userdb.id,app_id);
+                            //      //next();
+                            //  }
+                            // })
+							console.log('ssssssssssssssssssss' ,user)
+                            return res.json({
+                                status: 200,
+                                data: {
+                                    message: 'Successfully logged in!',
+                                    token: tokens.createAccessToken(user),
+									user : user
+                                }
+                            });
+                        })
+                    } else {
+                        user.user_id = userdb.id;
+                        user.user_name = userdb.name;
+                        user.user_email = userdb.email;
+                        user.user_student_category = userdb.student_category;
+                        user.user_address = (userdb.address1) ? userdb.address1 : null;
+                        user.user_phone_number = userdb.mobile;
+                        user.profileCompleteness = userdb.profile_completeness;
+                        user.theme = userdb.theme;
+                        user.country_birth = userdb.country_birth;
+                        user.mobile_country_code = userdb.mobile_country_code;
+                        user.applying_for = userdb.applying_for;
+                        return res.json({
+                            status: 402,
+                            data: {
+                                errors: 'verify',
+                                user: user
+                            }
+                        });
+                    }
+                } else {
+                    return res.json({
+                        status: 401,
+                        data: {
+                            errors: 'Login/password combination is not correct'
+                        }
+                    });
+                }
+            } else {
+                return res.json({
+                    status: 401,
+                    data: {
+                        errors: 'Login/password combination is not correct'
+                    }
+                });
+            }
+        });
+    } else {
+        return res.json({
+            status: 401,
+            data: {
+                errors: 'Email and password both are required !'
+            }
+        });
+    }
 });
 
 router.post('/getclickDetails',function(req, res){
