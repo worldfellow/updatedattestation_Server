@@ -238,8 +238,8 @@ router.get('/api/getUserData',middlewares.getUserInfo, function (req, res) {
     });
 });
 
-router.get('/api/getCollegeList',middlewares.getUserInfo, function (req, res) {
-
+router.get('/api/getCollegeList', function (req, res) {
+console.log("getcollegelist")
 	models.College.findAll({
 
     }).then(function(collegeList){
@@ -276,6 +276,7 @@ router.post('/api/addNewCollegebyStudent',function(req,res){
 })
 
 router.get('/api/getFacultyList', function (req, res) {
+	console.log("getFacultyList")
 	models.facultymaster.findAll({
 		where :{
 			degree : req.query.degree
@@ -1546,6 +1547,18 @@ router.get('/api/testApp',function(req,res){
 		})
     }
 
+})
+ 
+router.get('/api/getFacultyLists',async function(req,res){
+	console.log("getFacultyLists")
+	const collegeCourse=await models.facultymaster.findAll({
+	})
+	if(collegeCourse){
+		res.json({
+            status: 200,
+            data : collegeCourse   
+        });
+	}
 })
 
 router.post('/api/replyFromCollege',function(req,res){

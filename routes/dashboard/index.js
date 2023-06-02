@@ -36837,18 +36837,20 @@ router.get('/checkStepper', middlewares.getUserInfo, middlewares.getTranscriptDe
 
 })
 
-router.get('/getuploadedCurriculum', middlewares.getUserInfo, function (req, res) {
+router.get('/getuploadedCurriculum',function (req, res) {
+	console.log("getuploadedCurriculum")
+	var userId=req.query.user_id
 	var curriculumInfos = [];
 	var counts = 0
 	models.User_Curriculum.findAll({
 		where: {
-			user_id: req.User.id,
+			user_id:userId,
 		}
 	}).then(curriculums => {
 
 		if (curriculums.length > 0) {
 			curriculums.forEach(curriculum => {
-				filenamee = constant.BASE_URL + "/upload/curriculum/" + req.User.id + "/" + curriculum.file_name
+				filenamee = constant.BASE_URL + "/upload/curriculum/" + userId + "/" + curriculum.file_name
 				TranscriptId = curriculum.id,
 					transcriptNamee = curriculum.name
 				models.College.find({

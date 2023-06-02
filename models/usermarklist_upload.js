@@ -5,6 +5,9 @@ module.exports = function(sequelize, DataTypes) {
     name: DataTypes.TEXT,
     file_name: DataTypes.TEXT,
     education_type:DataTypes.STRING(30),
+    collegeId:DataTypes.INTEGER,
+    pattern:DataTypes.STRING(30),
+    faculty:DataTypes.STRING(30),
     lock_transcript: {
       type: DataTypes.BOOLEAN(),
       allowNull: false,

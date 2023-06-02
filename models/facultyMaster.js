@@ -4,7 +4,8 @@ module.exports = function(sequelize, DataTypes) {
   var facultymaster = sequelize.define("facultymaster", {
     year : DataTypes.STRING(3),
     faculty: DataTypes.STRING(30),
-    degree : DataTypes.STRING(255)
+    degree : DataTypes.STRING(255),
+    name:DataTypes.STRING(255)
   });
 
   facultymaster.getfaculty = function(){

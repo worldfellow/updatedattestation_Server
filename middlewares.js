@@ -10,12 +10,14 @@ var Sequelize = require("sequelize");
 const Op = Sequelize.Op;
 
 module.exports = {
-	getUserInfo: function(req, res, next){
+	getUserInfo: function(req, res, next){ 
+        console.log("token",req.headers); 
+        console.log("id",req.user_id);
         if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
             var token =req.headers.authorization.split(' ')[1];
             decoded = jwtorig.verify(token, cfg.jwtSecret);
             req.user_id = decoded.id;
-            models.User.find({
+            models.User.findOne({
                 where:{
                     id : req.user_id
                 }

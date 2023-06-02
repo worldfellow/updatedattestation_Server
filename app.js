@@ -37,7 +37,7 @@ models.sequelize.sync().then(function (test) {
 });
 
 
-app.use((err, req, res, next) => {
+app.use((err, req, res, next) => { 
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Origin, X-HTTP-Method-Override,X-Requested-With,Content-Type,Accept,content-type,application/json,Authorization');
   res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, HEAD, OPTIONS');
@@ -142,6 +142,7 @@ var unprotected = [
   '/\/upload*/',
   '/socket.io/',
   '/api/attestation/uploadMarkList',
+  '/api/attestation/uploadUserMarkList',
   '/api/payment/success-redirect-url',
   '/api/payment/proceedRefund',
   '/api/payment/cancel-redirect-url',
@@ -190,7 +191,18 @@ var unprotected = [
   '/api/attestation/geterror_msg',
   '/api/auth/getUserDataByEmail',
   '/api/admin/generateHrdLetter',
-  '/api/cron/improvementFeedback'
+  '/api/cron/improvementFeedback',
+  '/api/attestation/saveLetterNameChangeData',
+  '/api/attestation/deleteInfo',
+  '/api/getCollegeList',
+  '/api/attestation/curriculumUploadUrl',
+  '/api/dashboard/getuploadedCurriculum',
+  '/api/attestation/deleteDocument',
+  '/api/attestation/upload_transcript',
+  '/api/attestation/upload_letterforNameChange',
+  '/api/getFacultyLists', 
+  '/api/attestation/saveUserMarkList',
+  '/api/attestation/test'
 ];
 app.use(checkjwt({
   secret: cfg.jwtSecret

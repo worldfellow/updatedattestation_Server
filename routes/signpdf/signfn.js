@@ -1007,7 +1007,7 @@ module.exports.merge = async function (app_id,user_id, mergefilesString){
             //       var req = unirest('POST', constant.urlFileUpload + '/' + wesid)
             //       .headers({
             //         'Content-Type': 'multipart/form-data',
-            //         'Authorization': 'Bearer '+parsed.token
+            //         'Authorization': ''+parsed.token
             //       })//give the location of the file to upload
             //       .attach('file', constant.signedFileUrl + user_id + '/' + app_id + '_Merge.pdf')
             //       .end(function (res) {

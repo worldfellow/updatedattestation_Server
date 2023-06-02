@@ -23,6 +23,7 @@ var pdfreader = require('pdfreader');
 var router  = express.Router();
 
 router.get('/getUserTickets',middlewares.getUserInfo, function(req, res) {
+    console.log("support");
     var l = req.query.limit ? req.query.limit : 25
     var limit = parseInt(l)
     if(req.User.user_type == "student"){
