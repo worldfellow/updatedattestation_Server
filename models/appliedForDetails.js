@@ -2,7 +2,6 @@
 
 module.exports = function(sequelize, DataTypes) {
   var appliedForDetails = sequelize.define("Applied_For_Details", {
-    applying_for: DataTypes.TEXT,
     instructionalField : DataTypes.BOOLEAN(),
     curriculum : DataTypes.BOOLEAN(),
     educationalDetails : DataTypes.BOOLEAN(),
@@ -12,7 +11,6 @@ module.exports = function(sequelize, DataTypes) {
     affiliation : DataTypes.BOOLEAN(),
     CompetencyLetter : DataTypes.BOOLEAN(),
     LetterforNameChange : DataTypes.BOOLEAN()
-
   });
 
 

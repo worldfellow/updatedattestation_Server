@@ -46,6 +46,7 @@ module.exports = function(sequelize, DataTypes) {
 
   userMarkList.updatePrevData = function(user_id,value){
     var query = "Update userMarkList set previous_data = " + value + " where user_id =" + user_id;// WHERE created_at between '" + condition + "'";
+    console.log("query---->",query)
     return sequelize.query(query, { type: sequelize.QueryTypes.UPDATE});
   }
 

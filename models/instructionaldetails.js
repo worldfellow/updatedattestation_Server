@@ -16,7 +16,8 @@ var instructionaldetails = sequelize.define("InstructionalDetails", {
     instruction_medium : DataTypes.STRING(30),
     academicYear : DataTypes.STRING(20),
     reference_no : DataTypes.INTEGER(11),
-    education : DataTypes.STRING(255)
+    education : DataTypes.STRING(255),
+    education_type: DataTypes.STRING(255),
  });
 
  instructionaldetails.updateEmailStatus = function(id,status){

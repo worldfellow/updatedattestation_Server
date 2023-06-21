@@ -8,7 +8,8 @@ module.exports = function(sequelize, DataTypes) {
 		activity: DataTypes.STRING(500),
 		data: DataTypes.STRING(500),
 		application_id: DataTypes.STRING(10),
-		created_at: DataTypes.DATE
+		created_at: DataTypes.DATE,
+		location: DataTypes.STRING(500),
 	});
 
 	Activitytracker.getactivitySearchResults= function(filters,limit,offset){  

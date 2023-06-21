@@ -8,20 +8,16 @@ const auth = require('./auth/auth.js')();
 const checkjwt = require('express-jwt');
 const app = express();
 var routes = require('./routes/index');
-var dashboard = require('./routes/dashboard');
-var authRoutes = require('./routes/auth');
-var adminDashboard = require('./routes/admin');
 var cfg = require('./auth/config.js');
 var models = require("./models");
 var cons = require('consolidate');
 var constant = require(root_path+'/config/constant');
-var attestation = require('./routes/attestation');
-var payment = require('./routes/payment/payment');
-var signpdf=require('./routes/signpdf/index');
-var wes=require('./routes/wes/index');
 const logger = require('./logger')(__filename);
-var support = require('./routes/support');
-var cron = require('./routes/cron');
+var student = require('./routes/student');
+var admin = require('./routes/admin');
+var functions = require('./routes/functions');
+var index = require('./routes/index');
+
 
 app.use(cors());
 
@@ -123,7 +119,6 @@ app.use(bodyParser.urlencoded({
 }))
 app.use(auth.initialize());
 var unprotected = [
-  '/api/auth/login',
   '/api/auth/getclickDetails',
   '/api/auth/reset-pass',
   '/api/auth/register',
@@ -191,18 +186,7 @@ var unprotected = [
   '/api/attestation/geterror_msg',
   '/api/auth/getUserDataByEmail',
   '/api/admin/generateHrdLetter',
-  '/api/cron/improvementFeedback',
-  '/api/attestation/saveLetterNameChangeData',
-  '/api/attestation/deleteInfo',
-  '/api/getCollegeList',
-  '/api/attestation/curriculumUploadUrl',
-  '/api/dashboard/getuploadedCurriculum',
-  '/api/attestation/deleteDocument',
-  '/api/attestation/upload_transcript',
-  '/api/attestation/upload_letterforNameChange',
-  '/api/getFacultyLists', 
-  '/api/attestation/saveUserMarkList',
-  '/api/attestation/test'
+  '/api/cron/improvementFeedback'
 ];
 app.use(checkjwt({
   secret: cfg.jwtSecret
@@ -211,16 +195,10 @@ app.use(checkjwt({
 }));
 
 app.use('/', routes);
-app.use('/api/auth',authRoutes);
-app.use('/api/dashboard',dashboard);
-app.use('/api/admin', adminDashboard);
-app.use('/api/attestation',attestation);
-app.use('/api/payment', payment);
-app.use('/api/signpdf',signpdf);
-app.use('/api/wes',wes);
+app.use('/api/student', student);
+app.use('/api/admin', admin);
+app.use('/api/index', index);
 
-app.use('/api/support',support);
-app.use('/api/cron',cron);
 
 var server = app.listen(constant.PORT, function () {
   logger.debug('Debugging info');
