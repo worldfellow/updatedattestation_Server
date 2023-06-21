@@ -7,7 +7,7 @@ const bodyParser = require('body-parser');
 const auth = require('./auth/auth.js')();
 const checkjwt = require('express-jwt');
 const app = express();
-// var routes = require('./routes/index');
+var routes = require('./routes/index');
 var cfg = require('./auth/config.js');
 var models = require("./models");
 var cons = require('consolidate');
@@ -16,7 +16,7 @@ const logger = require('./logger')(__filename);
 var student = require('./routes/student');
 var admin = require('./routes/admin');
 var functions = require('./routes/functions');
-// var index = require('./routes/index');
+var index = require('./routes/index');
 
 
 app.use(cors());
@@ -186,7 +186,34 @@ var unprotected = [
   '/api/attestation/geterror_msg',
   '/api/auth/getUserDataByEmail',
   '/api/admin/generateHrdLetter',
-  '/api/cron/improvementFeedback'
+  '/api/cron/improvementFeedback',
+
+  //new students
+  '/api/student/login',
+  '/api/student/educationalDetails',
+  '/api/student/getPurposeList',
+  '/api/student/createAllInstitute',
+  '/api/student/updateAllInstitute',
+  '/api/student/getEducationDetailsCount',
+  '/api/student/suggestInstituteallDATA',
+  '/api/student/suggestInstitute',
+  '/api/student/getInstituteData',
+  '/api/student/deleteInstituteHrd',
+  '/api/student/getAppliedDetails',
+  '/api/student/getHrdInfo',
+  '/api/student/updateAllHrd',
+  '/api/student/getHrdData',
+  '/api/student/preViewApplication',
+
+  //new admin
+  '/api/admin/updateOtp',
+  '/api/admin/updateCollegeFaculty',
+  '/api/admin/getCollegeList',
+  '/api/admin/getFacultyList',
+  '/api/admin/deleteCollegeFaculty',
+  '/api/admin/activeinactiveCollege',
+  '/api/admin/getActivityTrackerList',
+  
 ];
 app.use(checkjwt({
   secret: cfg.jwtSecret
@@ -194,9 +221,11 @@ app.use(checkjwt({
   path: unprotected
 }));
 
-// app.use('/', routes);
+app.use('/', routes);
 app.use('/api/student', student);
 app.use('/api/admin', admin);
+app.use('/api/index', index);
+
 
 var server = app.listen(constant.PORT, function () {
   logger.debug('Debugging info');
