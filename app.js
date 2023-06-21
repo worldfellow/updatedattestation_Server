@@ -7,7 +7,7 @@ const bodyParser = require('body-parser');
 const auth = require('./auth/auth.js')();
 const checkjwt = require('express-jwt');
 const app = express();
-var routes = require('./routes/index');
+// var routes = require('./routes/index');
 var cfg = require('./auth/config.js');
 var models = require("./models");
 var cons = require('consolidate');
@@ -16,7 +16,7 @@ const logger = require('./logger')(__filename);
 var student = require('./routes/student');
 var admin = require('./routes/admin');
 var functions = require('./routes/functions');
-var index = require('./routes/index');
+// var index = require('./routes/index');
 
 
 app.use(cors());
@@ -194,11 +194,9 @@ app.use(checkjwt({
   path: unprotected
 }));
 
-app.use('/', routes);
+// app.use('/', routes);
 app.use('/api/student', student);
 app.use('/api/admin', admin);
-app.use('/api/index', index);
-
 
 var server = app.listen(constant.PORT, function () {
   logger.debug('Debugging info');
