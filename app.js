@@ -3,6 +3,7 @@ var path = require('path');
 var root_path = path.dirname(require.main.filename);
 const express = require('express');
 var cors = require('cors')
+const morgan = require('morgan');
 const bodyParser = require('body-parser');
 const auth = require('./auth/auth.js')();
 const checkjwt = require('express-jwt');
@@ -24,7 +25,13 @@ app.engine('html', cons.swig)
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'html');
 
-
+//swagger imports
+const swaggerUi = require('swagger-ui-express');
+const YAML = require('yamljs');
+//swagger setup
+const swaggerDocument = YAML.load('./swagger.yaml');
+app.use(morgan('dev'));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 models.sequelize.sync().then(function (test) {
 
