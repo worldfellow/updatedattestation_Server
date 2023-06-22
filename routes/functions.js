@@ -416,4 +416,11 @@ module.exports = {
     getActivityTrackerList: async () => {
         return models.Activitytracker.findAll({})
     },
+    
+    generateRandomString: function(length, charset) {
+		return randomstring.generate({
+			length: length,
+			charset: charset
+		});
+	},
 };

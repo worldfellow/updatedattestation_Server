@@ -2,7 +2,7 @@ var path = require('path');
 var root_path = path.dirname(require.main.filename);
 var models = require(root_path + '/models');
 const express = require('express');
-var router = express.Router();
+const router = express.Router();
 var fs = require('fs');
 const multer = require('multer');
 var pdfreader = require('pdfreader');
@@ -17,6 +17,7 @@ const Op = sequelize.Op;
 var functions = require('./functions');
 const e = require('express');
 const { pattern } = require('pdfkit');
+const upload = multer({ dest: 'public/upload/marklist' });
 
 /* Editor : Prathmesh Pawar
 Route : educationalDetails - check email and password and return token and access to proceed ahead to student.
@@ -876,6 +877,1908 @@ router.get('/preViewApplication', async (req, res) => {
             status: 400,
         });
     }
+})
+
+/** Get Routes */
+
+/**
+ * Fetched the Document of curriculum Uploaded by user by its UserId.
+ * @query {Integer} userId - The userId of the Uploaded curriculum Document to fetch the Data of user.
+ */
+router.get('/getuploadedCurriculum',async (req,res) =>{
+	console.log("/getuploadedCurriculum");
+	const userId = req.query.user_id;
+	const curriculumInfos = [];
+	let counts = 0
+	const curriculums = await models.User_Curriculum.findAll({
+		where:{
+			user_id : userId,
+		}
+	})
+	if(curriculums){
+		if (curriculums.length > 0){
+			for(const curriculum of curriculums){
+				filename = constant.BASE_URL + "/upload/curriculum/" + userId + "/" + curriculum.file_name
+				TranscriptId = curriculum.id,
+					transcriptNamee = curriculum.name
+					const college= await models.College.findOne({
+						where: {
+							id: curriculum.collegeId
+						}	
+					})
+					if(college){
+						curriculumInfos.push({
+							user_id: curriculum.user_id,
+							collegeId: curriculum.collegeId,
+							collegeName: college.name,
+							fileName: filename ? filename : '',
+							curriculumId: curriculum.id,
+							curriculum_name: curriculum.file_name ? curriculum.file_name : '',
+							lock_transcript: curriculum.lock_transcript
+						})
+						counts++
+						if (curriculumInfos.length === counts) {
+							res.send({
+								status: 200,
+								data: curriculumInfos
+							})
+						}
+					}
+			}
+		}else {
+			res.json({
+				status: 400,
+				data: curriculumInfos
+			})
+		}
+	}
+})
+
+/**
+ * Fetched the Data of ExtraDocuments uploaded by User by its userId.
+ * @query {Integer} userId - The userId of the Uploaded ExtraDocument to fetch the Data of user.
+ */
+router.get('/getExtraDocuments', async (req, res) => {
+	try {
+		console.log("/getExtraDocuments");
+		const data = [];
+		const userId = req.query.user_id;
+		const userExtraDoc = await models.User_Transcript.findAll({
+			where: {
+				user_id: userId,
+				type: "extraDocument"
+			},
+			order: [
+				['name', 'ASC']
+			]
+		})
+		if (userExtraDoc) {
+			if (userExtraDoc.length > 0) {
+				userExtraDoc.forEach(userDoc => {
+					data.push({
+						doc_id: (userDoc) ? (userDoc.id) : null,
+						name: (userDoc) ? (userDoc.name) : null,
+						type: (userDoc) ? (userDoc.file_name).split('.').pop() : null,
+						filename: (userDoc) ? (constant.BASE_URL + "/upload/transcript/" + userId + "/" + userDoc.file_name) : null,
+						filePath: (userDoc) ? constant.FILE_LOCATION + "public/upload/transcript/" + userId + "/" + userDoc.file_name : null,
+						lock_transcript: (userDoc) ? (userDoc.lock_transcript) : false,
+						upload_step: (userDoc) ? (userDoc.upload_step) : 'default',
+						app_id: (userDoc) ? (userDoc.app_id) : null,
+					})
+				})
+				return res.json({
+					status: 200,
+					data: data
+				})
+			} else {
+				return res.json({
+					status: 200,
+					data: null
+				})
+			}
+		}
+	} catch (error) {
+		console.error("Error in /getExtraDocuments", error);
+		return res.status(500).json({
+			status: 500,
+			message: "Internal Server Error"
+		});
+	}
+})
+
+/**
+ * Fetched the College List for user to display in Dropdown.
+ */
+router.get('/getCollegeList',async (req,res) =>{
+
+    const collegeList = await models.College.findAll({})
+    if(collegeList){
+        res.json({
+            status: 200,
+            data : collegeList   
+        });  
+    } 
+})
+
+/**
+ * Fetched the Course List for user to display in Dropdown.
+ */
+router.get('/getFacultyLists',async (req, res) => {
+
+    const collegeCourse = await models.facultymaster.findAll({})
+    if(collegeCourse){
+        res.json({
+            status: 200,
+            data : collegeCourse   
+        }); 
+    }
+	 
+})
+
+/**
+ * Fetched the NameChange Data of user by its UserId.
+ * @query {Integer} userId - The userId of the NameChangeData Document to fetch the Data of user.
+ */
+router.get('/getNameChangeData', async (req, res) => {
+	console.log('/getNameChangeData', req.query.user_id);
+	const userId = req.query.user_id
+	let filename = [];
+	const user = await models.Letterfor_NameChange.findOne({
+		where: {
+			user_id: userId
+		}
+	})
+	if(user) {
+		filename.push({
+			filePath: (user.file_name) ? constant.FILE_LOCATION + "public/upload/NameChangeLetter/" + userId + "/" + user.file_name : null,
+			filename: (user.file_name) ? constant.BASE_URL + "/" + "upload/NameChangeLetter/" + userId + "/" + user.file_name : null,
+		})
+		res.json({
+			status: 200,
+			data: user,
+			filename: filename
+		})
+	}
+})
+
+/** */
+router.get('/getInstructionalDetails',async (req, res) => {
+	console.log("getInstructionalDetails");
+	const userId = req.query.user_id;
+	const appId = req.query.app_id;
+	const education = req.query.education;
+	const degreeValue = "Masters,Bachelors"
+	var degreeVal = degreeValue.split(",");
+	console.log("degreeVal",degreeVal);
+	const educationDetails = {
+		bachelors: [],
+		masters: [],
+		phd: []
+	};
+// if(editflag == true) {
+
+// }else{
+	console.log("editlag false");
+	const user = await models.UserMarklist_Upload.findAll({
+		where:{
+			user_id : userId,
+		}
+	})
+	if(user){ 
+		console.log("length",degreeVal.length);
+		for (let i = 0; i < degreeVal.length; i++) {
+			const instructionalDetails = await models.InstructionalDetails.findAll({
+				where : {
+					userId : userId,
+					education_type : user[i].education_type
+				}
+			})
+		if(instructionalDetails){
+			if (degreeValue == 'Masters,Bachelors' || degreeValue == 'Bachelors' || degreeValue == 'Masters') {
+				if (instructionalDetails[0].education_type == "Masters") {
+					educationDetails.masters.push({
+						instructionalDetails: instructionalDetails
+					})
+				}
+				if (instructionalDetails[0].education_type == "Bachelors") {
+					educationDetails.bachelors.push({
+						instructionalDetails: instructionalDetails
+					})
+
+				}
+			}
+			 console.log("daatata", educationDetails);
+		}
+		} 
+		res.json({
+			status: 200,
+			data: educationDetails
+		})
+}
+})
+
+
+/** Post Routes */
+
+/**
+ * Uploads the Grade to Percentage Letter document for a user using multer and parameters passed in the URL.
+ * @param {Integer} doc_id - ID of the user document
+ * @param {Integer} userId - User ID of the user
+ * @param {Integer} app_id - App ID of the user document
+ * @param {String} degree_name - Degree name of the user document
+ * @param {String} transcript_doc - Type of the document
+ * @param {Integer} collegeId - College ID of the document
+ */
+router.post('/upload_gradeToPercentLetter', async (req, res) => {
+	try {
+		console.log("/upload_gradeToPercentLetter");
+
+		const userId = req.query.user_id;
+		let image;
+		const degree_name = req.query.degree_name;
+		const transcript_doc = req.query.hiddentype;
+		const doc_id = req.query.doc_id;
+		const app_id = req.query.app_id;
+		const collegeId = req.query.clgId;
+		const dir = constant.FILE_LOCATION + "public/upload/gradeToPercentLetter/" + userId;
+
+		if (!fs.existsSync(dir)) {
+			fs.mkdirSync(dir);
+		}
+
+		const storage = multer.diskStorage({
+			destination: function (req, file, callback) {
+				callback(null, constant.FILE_LOCATION + 'public/upload/gradeToPercentLetter/' + userId);
+			},
+			filename: function (req, file, callback) {
+				const extension = path.extname(file.originalname)
+				const randomString = functions.generateRandomString(10, 'alphabetic')
+				const newFileName = randomString.concat(extension);
+				image = newFileName;
+				callback(null, newFileName);
+			}
+		});
+
+		const upload = multer({
+			storage: storage,
+			fileFilter: function (req, file, callback) {
+				ext = path.extname(file.originalname)
+				if (ext !== '.png' && ext !== '.jpg' && ext !== '.jpeg' && ext !== '.pdf' && ext !== '.PNG' && ext !== '.JPG' && ext !== '.JPEG' && ext !== '.PDF') {
+					return callback(res.end('Please upload your document in .pdf, .jpeg, .jpg or .png formats only'), null)
+				}
+				callback(null, true)
+			}
+		}).single('file');
+
+		upload(req, res, function (err, data) {
+			imageLocationToCallClient = image;
+			if (ext == '.pdf') {
+				fs.readFile(constant.FILE_LOCATION + 'public/upload/gradeToPercentLetter/' + userId + '/' + image, (err, pdfBuffer) => {
+					new pdfreader.PdfReader().parseBuffer(pdfBuffer, function (err, item) {
+						if (err) {
+							uploadValue = false;
+							ValueUpdateData(uploadValue);
+						} else if (!item) {
+							uploadValue = true;
+							ValueUpdateData(uploadValue);
+						} else if (item.text) { }
+					});
+				});
+			} else {
+				uploadValue = true;
+				ValueUpdateData(uploadValue);
+			}
+
+			async function ValueUpdateData(uploadValue) {
+				if (uploadValue == true) {
+					let fileStatus = false;
+					const data = await models.GradeToPercentageLetter.findAll({
+						where: {
+							user_id: userId
+						}
+					})
+					if (data) {
+						if (data.length > 0) {
+							data.forEach(function (marklistData) {
+								if (marklistData) {
+									if (marklistData.file_name == imageLocationToCallClient) {
+										fileStatus = true;
+									}
+								}
+							})
+						}
+						if (fileStatus == true) {
+							return res.json({
+								status: 200,
+								message: `File already exist. please upload another file!!!..`
+							})
+						} else {
+							if (doc_id != null && doc_id != undefined && doc_id != '') {
+								const gradeToPercentageLetter = await models.GradeToPercentageLetter.findOne({
+									where: {
+										id: doc_id,
+									}
+								})
+								if (gradeToPercentageLetter) {
+									const updatedLetter = await gradeToPercentageLetter.update({
+										file_name: imageLocationToCallClient,
+										lock_transcript: false,
+										upload_step: 'changed'
+									})
+									if (updatedLetter) {
+										return res.json({
+											status: 200,
+											message: `Upload Completed.`,
+											data: updatedLetter
+										})
+									} else {
+										return res.json({
+											status: 400,
+											message: `Error occured in uploading document.`
+										});
+									}
+								}
+							} else {
+								if (app_id == null) {
+									const gradeToPercentageLetter = await models.GradeToPercentageLetter.create({
+										name: degree_name,
+										user_id: userId,
+										type: transcript_doc,
+										file_name: imageLocationToCallClient,
+										lock_transcript: false,
+										collegeId: collegeId
+									})
+									if (gradeToPercentageLetter) {
+										return res.json({
+											status: 200,
+											message: `Upload Completed.`,
+											data: transcript_doc
+										})
+									} else {
+										return res.json({
+											status: 400,
+											message: `Error occured in uploading document.`
+										});
+									}
+								} else {
+									const gradeToPercentageLetter = await models.GradeToPercentageLetter.create({
+										name: transcript_name,
+										user_id: userId,
+										type: degree_name,
+										file_name: imageLocationToCallClient,
+										lock_transcript: false,
+										collegeId: collegeId,
+										upload_step: "changed",
+										app_id: app_id
+									})
+									if (gradeToPercentageLetter) {
+										return res.json({
+											status: 200,
+											message: `Upload Completed.`,
+											data: transcript_doc
+										})
+									} else {
+										return res.json({
+											status: 400,
+											message: `Error occured in uploading document.`
+										});
+									}
+								}
+							}
+						}
+					}
+				} else if (uploadValue == false) {
+					fs.unlink(constant.FILE_LOCATION + 'public/upload/gradeToPercentLetter/' + userId + '/' + image, function (err) {
+						if (err) {
+							return res.json({
+								status: 400,
+								message: `Error occured in uploading document.`
+							});
+						} else {
+							return res.json({
+								status: 401,
+								message: 'You have uploaded the Password Protected Document. Please Upload correct document.'
+							});
+						}
+					});
+				}
+			}
+		})
+	} catch (error) {
+		console.error("Error in /upload_gradeToPercentLetter", error);
+		return res.status(500).json({
+			status: 500,
+			message: "Internal Server Error"
+		});
+	}
+})
+
+/**
+ * @
+ */
+router.post('/saveUserMarkList', upload.single('file'), async (req, res) => {
+	console.log("saveUserMarkList");
+	try {
+		let image;
+		const file = req.file
+		const userId = req.body.user_id
+		const extension = path.extname(file.originalname)
+		const randomString = functions.generateRandomString(10, 'alphabetic')
+		const newFileName = randomString.concat(extension);
+		image = newFileName;
+		const doc_id = req.query.doc_id;
+		const app_id = (req.query.app_id) ? req.query.app_id : null;
+		const collegeId = req.body.college;
+		const degree = req.body.degree;
+		const semYear = req.body.semYearValue;
+		const semYearValue = req.body.semYear
+		const courseName = req.body.faculty;
+		const name = degree + "_" + courseName + "_" + semYearValue;
+
+		uploadValue = true;
+		ValueUpdateData(uploadValue)
+		async function ValueUpdateData(uploadValue) {
+			if (uploadValue == true) {
+				var fileStatus = false;
+				const marklistUpload = await models.UserMarklist_Upload.findAll({
+					where: {
+						user_id: userId
+					}
+				})
+				if (marklistUpload) {
+					if (marklistUpload.length > 0) {
+						marklistUpload.forEach(function (marklistData) {
+							if (marklistData) {
+								if (marklistData.file_name == image) {
+									fileStatus = true;
+								}
+							}
+						})
+					}
+					if (fileStatus == true) {
+						res.json({
+							status: 200,
+							message: `File already exist. please upload another file!!!..`,
+						})
+					} else {
+						if (doc_id != undefined && doc_id != null && doc_id != '') {
+							const marksheet_data = await models.UserMarklist_Upload.findOne({
+								where: {
+									user_id: userId,
+									id: doc_id
+								}
+							})
+							if (marksheet_data) {
+								const userdata = await marksheet_data.update({
+									file_name: image,
+									lock_transcript: false,
+									upload_step: "changed"
+								})
+								if (userdata) {
+									return res.json({
+										status: 200,
+										message: `Upload Completed.`,
+										data: userdata
+									});
+								} else {
+									return res.json({
+										status: 400,
+										message: `Error occured in uploading document.`
+									});
+								}
+
+							}
+						} else {
+							if (app_id == null) {
+								const userMarklist = await models.UserMarklist_Upload.create({
+									name: degree + "_" + courseName + "_" + semYear,
+									user_id: userId,
+									file_name: image,
+									lock_transcript: false,
+									collegeId: collegeId,
+									education_type: degree,
+									pattern: semYear,
+									faculty: courseName,
+									upload_step: "default"
+								})
+								if (userMarklist) {
+									return res.json({
+										status: 200,
+										message: `Upload Completed.`,
+										data: userMarklist
+									});
+								} else {
+									return res.json({
+										status: 400,
+										message: `Error occured in uploading document.`
+									});
+								}
+							} else {
+								const userMarklist = await models.UserMarklist_Upload.create({
+									name: degree + "_" + courseName + "_" + semYear,
+									user_id: userId,
+									file_name: image,
+									lock_transcript: false,
+									collegeId: collegeId,
+									education_type: degree,
+									pattern: semYear,
+									faculty: courseName,
+									upload_step: "default"
+								})
+								if (userMarklist) {
+									return res.json({
+										status: 200,
+										message: `Upload Completed.`,
+										data: userMarklist
+									});
+								} else {
+									return res.json({
+										status: 400,
+										message: `Error occured in uploading document.`
+									});
+								}
+							}
+						}
+					}
+				}
+			} else if (uploadValue == false) {
+				fs.unlink(constant.FILE_LOCATION + 'public/upload/marklist/' + userId + '/' + image, function (err) {
+					if (err) {
+						return res.json({
+							status: 400,
+							message: `Error occured in uploading document.`
+						});
+					} else {
+						return res.json({
+							status: 401,
+							message: 'You have uploaded the Password Protected Document. Please Upload correct document.'
+						});
+					}
+				});
+			}
+		}
+
+	} catch (err) {
+		console.error(err);
+		return res.status(500).json({
+			status: 500,
+			message: `Internal server error.`,
+			error: err.message
+		});
+	}
+})
+
+/**
+ * Uploads the Transcript  document of user using multer and parameters passed in the URL.
+ * @param {Integer} doc_id - ID of the user document
+ * @param {Integer} userId - User ID of the user
+ * @param {Integer} app_id - App ID of the user document
+ * @param {String} transcript_name - Degree name of the user document
+ * @param {String} transcript_doc - Type of the document
+ * @param {Integer} collegeId - College ID of the document
+ */
+router.post('/upload_transcript', async (req, res) => {
+	console.log("upload_transcript");
+	try {
+		const userId = req.query.user_id;
+		let image;
+		const transcript_name = req.query.transcript_name;
+		const transcript_doc = req.query.hiddentype;
+		const dir = constant.FILE_LOCATION + "public/upload/transcript/" + userId;
+		const doc_id = req.query.doc_id;
+		const app_id = req.query.app_id;
+		const collegeId = req.query.clgId;
+
+		if (!fs.existsSync(dir)) {
+			fs.mkdirSync(dir);
+		}
+
+		const storage = multer.diskStorage({
+			destination: function (req, file, callback) {
+				callback(null, constant.FILE_LOCATION + 'public/upload/transcript/' + userId);
+			},
+			filename: function (req, file, callback) {
+				const extension = path.extname(file.originalname)
+				const randomString = functions.generateRandomString(10, 'alphabetic')
+				const newFileName = randomString.concat(extension);
+				image = newFileName;
+				callback(null, newFileName);
+
+			}
+		});
+
+		const upload = multer({
+			storage: storage,
+			fileFilter: function (req, file, callback) {
+				ext = path.extname(file.originalname)
+				if (ext !== '.png' && ext !== '.jpg' && ext !== '.jpeg' && ext !== '.pdf' && ext !== '.PNG' && ext !== '.JPG' && ext !== '.JPEG' && ext !== '.PDF') {
+					return callback(res.end('Please upload your document in .pdf, .jpeg, .jpg or .png formats only'), null)
+				}
+				callback(null, true)
+			}
+		}).single('file');
+
+		upload(req, res, function (err, data) {
+			imageLocationToCallClient = image;
+			if (ext == '.pdf') {
+				fs.readFile(constant.FILE_LOCATION + 'public/upload/transcript/' + userId + '/' + image, (err, pdfBuffer) => {
+					new pdfreader.PdfReader().parseBuffer(pdfBuffer, function (err, item) {
+						if (err) {
+							uploadValue = false;
+							ValueUpdateData(uploadValue);
+						} else if (!item) {
+							uploadValue = true;
+							ValueUpdateData(uploadValue);
+						} else if (item.text) { }
+					});
+				});
+			} else {
+				uploadValue = true;
+				ValueUpdateData(uploadValue);
+			}
+
+			async function ValueUpdateData(uploadValue) {
+				if (uploadValue == true) {
+					let fileStatus = false;
+					const data = await models.User_Transcript.findAll({
+						where: {
+							user_id: userId,
+						}
+					})
+					if (data) {
+						if (data.length > 0) {
+							data.forEach(function (marklistData) {
+								if (marklistData) {
+									if (marklistData.file_name == imageLocationToCallClient) {
+										fileStatus = true;
+									}
+								}
+							})
+						}
+						if (fileStatus == true) {
+							return res.json({
+								status: 200,
+								message: `File already exist. please upload another file!!!..`,
+							})
+						} else {
+							if (doc_id != undefined && doc_id != null && doc_id != '') {
+								const transcriptUpload = await models.User_Transcript.findOne({
+									where: {
+										id: doc_id
+									}
+								})
+								if (transcriptUpload) {
+									const updatedtranscriptUpload = await transcriptUpload.update({
+										file_name: imageLocationToCallClient,
+										lock_transcript: false,
+										upload_step: 'changed'
+									})
+									if (updatedtranscriptUpload) {
+										return res.json({
+											status: 200,
+											message: `Upload Completed.`,
+											data: updatedtranscriptUpload
+										});
+									} else {
+										return res.json({
+											status: 400,
+											message: `Error occured in uploading document.`
+										});
+									}
+								}
+							} else {
+								if (app_id == null || app_id == '' || app_id == undefined) {
+									const userTranscript = await models.User_Transcript.create({
+										name: transcript_name,
+										user_id: userId,
+										type: transcript_doc,
+										file_name: imageLocationToCallClient,
+										lock_transcript: false,
+										collegeId: collegeId
+									})
+									if (userTranscript) {
+										return res.json({
+											status: 200,
+											message: `Upload Completed.`,
+											data: transcript_doc
+										});
+									} else {
+										return res.json({
+											status: 400,
+											message: `Error occured in uploading document.`
+										});
+									}
+								} else {
+									const userTranscript = await models.User_Transcript.create({
+										name: transcript_name,
+										user_id: userId,
+										type: transcript_doc,
+										file_name: imageLocationToCallClient,
+										lock_transcript: false,
+										collegeId: collegeId,
+										upload_step: "changed",
+										app_id: app_id
+									})
+									if (userTranscript) {
+										return res.json({
+											status: 200,
+											message: `Upload Completed.`,
+											data: transcript_doc
+										});
+									} else {
+										return res.json({
+											status: 400,
+											message: `Error occured in uploading document.`
+										});
+									}
+								}
+							}
+						}
+					}
+				} else if (uploadValue == false) {
+					fs.unlink(constant.FILE_LOCATION + 'public/upload/transcript/' + userId + '/' + image, function (err) {
+						if (err) {
+							return res.json({
+								status: 400,
+								message: `Error occured in uploading document.`
+							});
+						} else {
+							return res.json({
+								status: 401,
+								message: 'You have uploaded the Password Protected Document. Please Upload correct document.'
+							});
+						}
+					});
+				}
+			}
+		});
+	} catch (err) {
+
+	}
+})
+
+/**
+ * Uploads the curriculum document of user using multer and parameters passed in the URL.
+  * @param {Integer} doc_id - ID of the user document
+ * @param {Integer} userId - User ID of the user
+ * @param {Integer} app_id - App ID of the user document
+ * @param {String} transcript_name - Degree name of the user document
+ * @param {String} transcript_doc - Type of the document
+ * @param {Integer} collegeId - College ID of the document
+ * 
+ */
+router.post('/upload_curriculum', async (req, res) =>{
+	console.log("/upload_curriculum")
+	const userId = req.query.user_id;
+	let image;
+	const transcript_name = req.query.transcript_name;
+	const transcript_doc = req.query.hiddentype;
+	const doc_id = req.query.doc_id;
+	let dir = constant.FILE_LOCATION + "public/upload/curriculum/" + userId;
+	const app_id = req.query.app_id;
+	if (!fs.existsSync(dir)) {
+		fs.mkdirSync(dir);
+	}
+
+	let storage = multer.diskStorage({
+		destination: function (req, file, callback) { 
+			callback(null, constant.FILE_LOCATION + 'public/upload/curriculum/' + userId);
+		},
+		filename: function (req, file, callback) { 
+			let extension = path.extname(file.originalname)
+			let randomString = functions.generateRandomString(10, 'alphabetic')
+			let newFileName = randomString.concat(extension);
+			image = newFileName;
+			callback(null, newFileName);
+		}
+	});
+
+	let upload = multer({
+		storage: storage,
+		fileFilter: function (req, file, callback) {
+			ext = path.extname(file.originalname)
+			if (ext !== '.png' && ext !== '.jpg' && ext !== '.jpeg' && ext !== '.pdf' && ext !== '.PNG' && ext !== '.JPG' && ext !== '.JPEG' && ext !== '.PDF') {
+				return callback(res.end('Please upload your document in .pdf, .jpeg, .jpg or .png formats only'), null)
+			}
+			callback(null, true)
+		}
+	}).single('file');
+
+	upload(req, res, function (err, data) {
+		imageLocationToCallClient = image;
+		if (ext == '.pdf') {
+			fs.readFile(constant.FILE_LOCATION + 'public/upload/curriculum/' + userId + '/' + image, (err, pdfBuffer) => {
+				new pdfreader.PdfReader().parseBuffer(pdfBuffer, function (err, item) {
+					if (err) {
+						uploadValue = false;
+						ValueUpdateData(uploadValue);
+					} else if (!item) {
+						uploadValue = true;
+						ValueUpdateData(uploadValue);
+					} else if (item.text) { }
+				});
+			});
+		} else {
+			uploadValue = true;
+			ValueUpdateData(uploadValue);
+		}
+		async function ValueUpdateData(uploadValue) {
+			if (uploadValue == true) {
+				var fileStatus = false;
+				const curriculum = await models.User_Curriculum.findAll({
+					where: {
+						user_id: userId
+					}
+				})
+				if (curriculum) {
+					if (curriculum.length > 0) {
+						curriculum.forEach(function (marklistData) {
+							if (marklistData) {
+								if (marklistData.file_name == imageLocationToCallClient) {
+									fileStatus = true;
+								}
+							}
+						})
+					}
+					if (fileStatus == true) {
+						res.json({
+							status: 200,
+							message: `File already exist. please upload another file!!!..`,
+						})
+					} else {
+						if (doc_id != undefined && doc_id != null && doc_id != '') {
+							const curriculum_data = await models.User_Curriculum.findOne({
+								where: {
+									user_id: userId,
+									id: doc_id
+								}
+							})
+							if (curriculum_data) {
+								const userdata = await curriculum_data.update({
+									file_name: imageLocationToCallClient,
+									lock_transcript: false,
+									collegeId: req.query.collegeId,
+									upload_step: "changed"
+								})
+								if (userdata) {
+									return res.json({
+										status: 200,
+										message: `Upload Completed.`,
+										data: transcript_doc
+									});
+								} else {
+									return res.json({
+										status: 400,
+										message: `Error occured in uploading document.`
+									});
+								}
+
+							}
+						} else {
+							if (app_id == null) {
+								const userCurriculum = await models.User_Curriculum.create({
+									name: transcript_name,
+									user_id: userId,
+									file_name: imageLocationToCallClient,
+									lock_transcript: false,
+									collegeId: req.query.collegeId,
+									upload_step: "default"
+								})
+								if (userCurriculum) {
+									return res.json({
+										status: 200,
+										message: `Upload Completed.`,
+										data: transcript_doc
+									});
+								} else {
+									return res.json({
+										status: 400,
+										message: `Error occured in uploading document.`
+									});
+								}
+							} else {
+								const curriculumData = await models.User_Curriculum.create({
+									name: transcript_name,
+									user_id: userId,
+									file_name: imageLocationToCallClient,
+									lock_transcript: false,
+									collegeId: req.query.collegeId,
+									upload_step: "changed",
+									app_id: app_id
+								})
+								if (curriculumData) {
+									return res.json({
+										status: 200,
+										message: `Upload Completed.`,
+										data: transcript_doc
+									});
+								} else {
+									return res.json({
+										status: 400,
+										message: `Error occured in uploading document.`
+									});
+								}
+							}
+						}
+					}
+				}
+
+			} else if (uploadValue == false) {
+				fs.unlink(constant.FILE_LOCATION + 'public/upload/curriculum/' + userId + '/' + image, function (err) {
+					if (err) {
+						return res.json({
+							status: 400,
+							message: `Error occured in uploading document.`
+						});
+					} else {
+						return res.json({
+							status: 401,
+							message: 'You have uploaded the Password Protected Document. Please Upload correct document.'
+						});
+					}
+				});
+			}
+		}
+
+	})
+
+})
+
+/**
+ * Uploads the Competency Letter document of user using multer and parameters passed in the URL.
+ * @param {Integer} doc_id - ID of the user document
+ * @param {Integer} userId - User ID of the user
+ * @param {Integer} app_id - App ID of the user document
+ * @param {String} competency_name - Degree name of the user document
+ * @param {String} competency_doc - Type of the document
+ * @param {Integer} collegeId - College ID of the document
+ */
+router.post('/upload_CompetencyLetter', async (req, res) =>{
+	console.log("upload_CompetencyLetter");
+	console.log("req.query", req.query);
+	const userId = req.query.user_id;
+	let image;
+	const competency_name = req.query.degree_name;
+	const competency_doc = req.query.hiddentype;
+	const dir = constant.FILE_LOCATION + "public/upload/CompetencyLetter/" + userId;
+	const doc_id = req.query.doc_id;
+	const app_id = req.query.app_id;
+	const collegeId = req.query.clgId
+
+	if (!fs.existsSync(dir)) {
+		fs.mkdirSync(dir);
+	}
+
+	const storage = multer.diskStorage({
+		destination: function (req, file, callback) {
+			callback(null, constant.FILE_LOCATION + 'public/upload/CompetencyLetter/' + userId);
+		},
+		filename: function (req, file, callback) {
+			var extension = path.extname(file.originalname)
+			var randomString = functions.generateRandomString(10, 'alphabetic')
+			var newFileName = randomString.concat(extension);
+			image = newFileName;
+			callback(null, newFileName);
+		}
+	});
+
+	const upload = multer({
+		storage: storage,
+		fileFilter: function (req, file, callback) {
+			ext = path.extname(file.originalname)
+			if (ext !== '.png' && ext !== '.jpg' && ext !== '.jpeg' && ext !== '.pdf' && ext !== '.PNG' && ext !== '.JPG' && ext !== '.JPEG' && ext !== '.PDF') {
+				return callback(res.end('Please upload your document in .pdf, .jpeg, .jpg or .png formats only'), null)
+			}
+			callback(null, true)
+		}
+	}).single('file');
+
+	upload(req, res, function (err, data) {
+		imageLocationToCallClient = image;
+		if (ext == '.pdf') {
+			fs.readFile(constant.FILE_LOCATION + 'public/upload/CompetencyLetter/' + userId + '/' + image, (err, pdfBuffer) => {
+				new pdfreader.PdfReader().parseBuffer(pdfBuffer, function (err, item) {
+					if (err) {
+						uploadValue = false;
+						ValueUpdateData(uploadValue);
+					} else if (!item) {
+						uploadValue = true;
+						ValueUpdateData(uploadValue);
+					} else if (item.text) { }
+				});
+			});
+		} else {
+			uploadValue = true;
+			ValueUpdateData(uploadValue);
+		}
+
+		async function ValueUpdateData(uploadValue) {
+			if (uploadValue == true) {
+				let fileStatus = false;
+				const data = await models.competency_letter.findAll({
+					where: {
+						user_id: userId
+					}
+				})
+				if (data) {
+					if (data.length > 0) {
+						data.forEach(function (marklistData) {
+							if (marklistData) {
+								if (marklistData.file_name == imageLocationToCallClient) {
+									fileStatus = true;
+								}
+							}
+						})
+					}
+					if (fileStatus == true) {
+						return res.json({
+							status: 200,
+							message: `File already exist. please upload another file!!!..`
+						})
+					} else {
+						if (doc_id != undefined && doc_id != null && doc_id != '') {
+							const competencyUpload = await models.competency_letter.findOne({
+								where: {
+									id: doc_id
+								}
+							})
+							if (competencyUpload) {
+								const updatedCompetencyUpload = await competencyUpload.update({
+									file_name: imageLocationToCallClient,
+									lock_transcript: false,
+									upload_step: 'changed'
+								})
+								if (updatedCompetencyUpload) {
+									return res.json({
+										status: 200,
+										message: `Upload Completed.`,
+										data: updatedCompetencyUpload
+									});
+								} else {
+									return res.json({
+										status: 400,
+										message: `Error occured in uploading document.`
+									});
+								}
+							}
+						} else {
+							if (app_id == null || app_id == '' || app_id == undefined) {
+								const userCompetency = await models.competency_letter.create({
+									name: competency_name,
+									user_id: userId,
+									type: competency_doc,
+									file_name: imageLocationToCallClient,
+									lock_transcript: false,
+									collegeId: collegeId
+								})
+								if (userCompetency) {
+									return res.json({
+										status: 200,
+										message: `Upload Completed.`,
+										data: competency_doc
+									});
+								} else {
+									return res.json({
+										status: 400,
+										message: `Error occured in uploading document.`
+									});
+								}
+							} else {
+								const userCompetency = await models.competency_letter.create({
+									name: competency_name,
+									user_id: userId,
+									type: competency_doc,
+									file_name: imageLocationToCallClient,
+									lock_transcript: false,
+									collegeId: collegeId,
+									upload_step: "changed",
+									app_id: app_id
+								})
+								if (userCompetency) {
+									return res.json({
+										status: 200,
+										message: `Upload Completed.`,
+										data: competency_doc
+									});
+								} else {
+									return res.json({
+										status: 400,
+										message: `Error occured in uploading document.`
+									});
+								}
+
+							}
+						}
+					}
+				}
+			} else if (uploadValue == false) {
+				fs.unlink(constant.FILE_LOCATION + 'public/upload/CompetencyLetter/' + userId + '/' + image, function (err) {
+					if (err) {
+						return res.json({
+							status: 400,
+							message: `Error occured in uploading document.`
+						});
+					} else {
+						return res.json({
+							status: 401,
+							message: 'You have uploaded the Password Protected Document. Please Upload correct document.'
+						});
+					}
+				});
+			}
+		}
+	})
+})
+
+/**
+ * Uploads a document of letter for Name change using multer and parameters passed in URL
+ * @param {Integer} doc_id - ID of the user document
+ * @param {Integer} userId - User ID of the user
+ * @param {Integer} app_id - App ID of the user document
+ * @param {String} transcript_doc - Type of the document
+ */
+ router.post('/upload_letterforNameChange', async (req, res) =>{
+	console.log("upload_letterforNameChange");
+	console.log("vdghfsdgffjdusdhdsfd", req.query)
+	const userId = req.query.user_id;
+	console.log("id", userId);
+	let image;
+	const transcript_name = req.query.transcript_name;
+	const transcript_doc = req.query.hiddentype;
+	const dir = constant.FILE_LOCATION + "public/upload/NameChangeLetter/" + userId;
+	const doc_id = req.query.doc_id;
+	const app_id = req.query.app_id_namechange;
+
+	if (!fs.existsSync(dir)) {
+		fs.mkdirSync(dir);
+	}
+	let storage = multer.diskStorage({
+		destination: function (req, file, callback) {
+			callback(null, constant.FILE_LOCATION + 'public/upload/NameChangeLetter/' + userId);
+		},
+		filename: function (req, file, callback) {
+			let extension = path.extname(file.originalname)
+			let randomString = functions.generateRandomString(10, 'alphabetic')
+			let newFileName = randomString.concat(extension);
+			image = newFileName;
+			callback(null, newFileName);
+		}
+	});
+
+	let upload = multer({
+		storage: storage,
+		fileFilter: function (req, file, callback) {
+			ext = path.extname(file.originalname)
+			if (ext !== '.png' && ext !== '.jpg' && ext !== '.jpeg' && ext !== '.pdf' && ext !== '.PNG' && ext !== '.JPG' && ext !== '.JPEG' && ext !== '.PDF') {
+				return callback(res.end('Please upload your document in .pdf, .jpeg, .jpg or .png formats only'), null)
+			}
+			callback(null, true)
+		}
+	}).single('file');
+
+	upload(req, res, function (err, data) {
+		imageLocationToCallClient = image;
+		if (ext == '.pdf') {
+			fs.readFile(constant.FILE_LOCATION + 'public/upload/NameChangeLetter/' + userId + '/' + image, (err, pdfBuffer) => {
+				new pdfreader.PdfReader().parseBuffer(pdfBuffer, function (err, item) {
+					if (err) {
+						uploadValue = false;
+						ValueUpdateData(uploadValue);
+					} else if (!item) {
+						uploadValue = true;
+						ValueUpdateData(uploadValue);
+					} else if (item.text) { }
+				});
+			});
+		} else {
+			uploadValue = true;
+			ValueUpdateData(uploadValue);
+		}
+		async function ValueUpdateData(uploadValue) {
+			if (uploadValue == true) {
+				let fileStatus = false;
+				const data = await models.Letterfor_NameChange.findOne({
+					where: {
+						user_id: userId
+					}
+				})
+				if (data) {
+					if (data.length > 0) {
+						data.forEach(function (marklistData) {
+							if (marklistData) {
+								if (marklistData.file_name == imageLocationToCallClient) {
+									fileStatus = true;
+								}
+							}
+						})
+					}
+					if (fileStatus == true) {
+						res.json({
+							status: 200,
+							message: `File already exist. please upload another file!!!..`
+						})
+					} else {
+						const fileData = await models.Letterfor_NameChange.findOne({
+							where: {
+								user_id: userId
+							}
+						})
+						if (fileData) {
+							fileData.update({
+								file_name: imageLocationToCallClient,
+								name: 'Passport'
+							})
+							return res.json({
+								status: 200,
+								message: `Upload Completed.`,
+								data: transcript_doc
+							})
+						} else {
+							return res.json({
+								status: 400,
+								message: `Error occured in uploading document.`
+							})
+						}
+
+					}
+				}
+			} else if (uploadValue == false) {
+				fs.unlink(constant.FILE_LOCATION + 'public/upload/NameChangeLetter/' + userId + '/' + image, function (err) {
+					if (err) {
+						return res.json({
+							status: 400,
+							message: `Error occured in uploading document.`
+						});
+					} else {
+						return res.json({
+							status: 401,
+							message: 'You have uploaded the Password Protected Document. Please Upload correct document.'
+						});
+					}
+				});
+			}
+		}
+	})
+})
+
+
+/**
+ * Uploads a document of letter for Name change using multer and parameters passed in URL
+ * @param {Integer} doc_id - ID of the user document
+ * @param {Integer} userId - User ID of the user
+ * @param {Integer} app_id - App ID of the user document
+ * @param {String} transcript_doc - Type of the document
+ * @param {String} transcript_name - DocumentType name of the user document
+ */
+ router.post('/upload_letterforNameChange', async (req, res) =>{
+	console.log("upload_letterforNameChange");
+	console.log("vdghfsdgffjdusdhdsfd", req.query)
+	const userId = req.query.user_id;
+	console.log("id", userId);
+	let image;
+	const transcript_name = req.query.transcript_name;
+	const transcript_doc = req.query.hiddentype;
+	const dir = constant.FILE_LOCATION + "public/upload/NameChangeLetter/" + userId;
+	const doc_id = req.query.doc_id;
+	const app_id = req.query.app_id_namechange;
+
+	if (!fs.existsSync(dir)) {
+		fs.mkdirSync(dir);
+	}
+	let storage = multer.diskStorage({
+		destination: function (req, file, callback) {
+			callback(null, constant.FILE_LOCATION + 'public/upload/NameChangeLetter/' + userId);
+		},
+		filename: function (req, file, callback) {
+			let extension = path.extname(file.originalname)
+			let randomString = functions.generateRandomString(10, 'alphabetic')
+			let newFileName = randomString.concat(extension);
+			image = newFileName;
+			callback(null, newFileName);
+		}
+	});
+
+	let upload = multer({
+		storage: storage,
+		fileFilter: function (req, file, callback) {
+			ext = path.extname(file.originalname)
+			if (ext !== '.png' && ext !== '.jpg' && ext !== '.jpeg' && ext !== '.pdf' && ext !== '.PNG' && ext !== '.JPG' && ext !== '.JPEG' && ext !== '.PDF') {
+				return callback(res.end('Please upload your document in .pdf, .jpeg, .jpg or .png formats only'), null)
+			}
+			callback(null, true)
+		}
+	}).single('file');
+
+	upload(req, res, function (err, data) {
+		imageLocationToCallClient = image;
+		if (ext == '.pdf') {
+			fs.readFile(constant.FILE_LOCATION + 'public/upload/NameChangeLetter/' + userId + '/' + image, (err, pdfBuffer) => {
+				new pdfreader.PdfReader().parseBuffer(pdfBuffer, function (err, item) {
+					if (err) {
+						uploadValue = false;
+						ValueUpdateData(uploadValue);
+					} else if (!item) {
+						uploadValue = true;
+						ValueUpdateData(uploadValue);
+					} else if (item.text) { }
+				});
+			});
+		} else {
+			uploadValue = true;
+			ValueUpdateData(uploadValue);
+		}
+		async function ValueUpdateData(uploadValue) {
+			if (uploadValue == true) {
+				let fileStatus = false;
+				const data = await models.Letterfor_NameChange.findOne({
+					where: {
+						user_id: userId
+					}
+				})
+				if (data) {
+					if (data.length > 0) {
+						data.forEach(function (marklistData) {
+							if (marklistData) {
+								if (marklistData.file_name == imageLocationToCallClient) {
+									fileStatus = true;
+								}
+							}
+						})
+					}
+					if (fileStatus == true) {
+						res.json({
+							status: 200,
+							message: `File already exist. please upload another file!!!..`
+						})
+					} else {
+						const fileData = await models.Letterfor_NameChange.findOne({
+							where: {
+								user_id: userId
+							}
+						})
+						if (fileData) {
+							fileData.update({
+								file_name: imageLocationToCallClient,
+								name: 'Passport'
+							})
+							return res.json({
+								status: 200,
+								message: `Upload Completed.`,
+								data: transcript_doc
+							})
+						} else {
+							return res.json({
+								status: 400,
+								message: `Error occured in uploading document.`
+							})
+						}
+
+					}
+				}
+			} else if (uploadValue == false) {
+				fs.unlink(constant.FILE_LOCATION + 'public/upload/NameChangeLetter/' + userId + '/' + image, function (err) {
+					if (err) {
+						return res.json({
+							status: 400,
+							message: `Error occured in uploading document.`
+						});
+					} else {
+						return res.json({
+							status: 401,
+							message: 'You have uploaded the Password Protected Document. Please Upload correct document.'
+						});
+					}
+				});
+			}
+		}
+	})
+})
+
+
+/**
+ * Save and Update the Data of user for Letter for name change letter by its userId.
+ * @param {String} formData - By using form-data
+ */
+router.post('/saveLetterNameChangeData', async (req, res) => {
+	console.log("/saveLetterNameChangeData");
+	try {
+		const userId = req.body.user_id;
+
+		const user = await models.Letterfor_NameChange.findOne({
+			where: {
+				user_id: userId
+			}
+		});
+
+		if (user) {
+			await user.update({
+				firstnameaspermarksheet: req.body.data.firstNameMarksheetCtrl,
+				fathersnameaspermarksheet: req.body.data.fatherNameMarksheetCtrl,
+				mothersnameaspermarksheet: req.body.data.motherNameMarksheetCtrl,
+				lastnameaspermarksheet: req.body.data.lastNameMarksheetCtrl,
+				firstnameasperpassport: req.body.data.firstNamePassportCtrl,
+				fathersnameasperpassport: req.body.data.fatherNamePassportCtrl,
+				lastnameasperpassport: req.body.data.lastNamePassportCtrl,
+				type: 'Passport'
+			});
+
+			res.json({
+				status: 200,
+				message: 'Data saved successfully!!!'
+			});
+
+		} else {
+			const userCreated = await models.Letterfor_NameChange.create({
+				user_id: userId,
+				firstnameaspermarksheet: req.body.data.firstNameMarksheetCtrl,
+				fathersnameaspermarksheet: req.body.data.fatherNameMarksheetCtrl,
+				mothersnameaspermarksheet: req.body.data.motherNameMarksheetCtrl,
+				lastnameaspermarksheet: req.body.data.lastNameMarksheetCtrl,
+				firstnameasperpassport: req.body.data.firstNamePassportCtrl,
+				fathersnameasperpassport: req.body.data.fatherNamePassportCtrl,
+				lastnameasperpassport: req.body.data.lastNamePassportCtrl,
+				type: 'Passport'
+			});
+
+			if (userCreated) {
+				res.json({
+					status: 200,
+					message: 'Data saved successfully!!!'
+				});
+			} else {
+				res.status(400);
+			}
+		}
+	} catch (error) {
+		console.error("Error:", error);
+		res.status(500).json({
+			error: 'Internal server error'
+		});
+	}
+});
+
+/**
+ * Saved and Update the Instructional letter Data of user.
+ * @param {String} formData - By using form-data and params are doc_id,name,college,specialization,division,duration,yearOfpassing,education,user_id
+ */
+
+router.post('/saveInstructionalData',upload.none(), async (req, res)=>{
+	console.log("/saveInstructionalData",req.body);
+	try{ 
+	   const doc_id = req.body.idCtrl;
+	   const name =req.body.name;
+	   const college =req.body.college;
+	   const course =req.body.course;
+	   const specialization =req.body.specialization;
+	   const division =req.body.division;
+	   const duration =req.body.duration;
+	   const yearOfpassing =req.body.yearOfpassing;
+	   const education = req.body.education
+	   const user_id =req.body.user_id;
+	   const user = await models.InstructionalDetails.findOne({
+		where: {
+			id : doc_id
+		}
+	   })
+	   if(user){
+		await user.update({
+			userId: user_id,
+			studentName: name,
+			courseName: course,
+			collegeName: college,
+			specialization: specialization,
+			duration: duration,
+			yearofpassing: yearOfpassing,
+			division: division ,
+			academicYear: req.body.acadYearCtrl,
+			education: education	
+		})
+		res.json({
+			status: 200,
+			message: 'Data Updated successfully!!!'
+		});
+	   }else{
+		await models.InstructionalDetails.create({
+			userId: user_id,
+			studentName: name,
+			courseName: course,
+			collegeName: college,
+			specialization: specialization,
+			duration: duration,
+			yearofpassing: yearOfpassing,
+			division: division,
+			education: education,
+			academicYear: req.body.acadYearCtrl 
+		})
+		res.json({
+			status: 200,
+			message: 'Data saved successfully!!!'
+		});
+	   }
+	}catch(error){
+		console.error("Error:", error);
+		res.status(500).json({
+			error: 'Internal server error'
+		});
+	}
+})
+
+ /**
+ * Saved and update the Affiliation letter Data of user.
+ * @param {String} formData - By using form-data and params are doc_id,name,college,specialization,division,duration,yearOfpassing,education,user_id
+ */
+
+router.post('/saveAffiliationData',upload.none(), async (req, res)=>{
+	console.log("/saveAffiliationData",req.body);
+	try{ 
+	   const doc_id = req.body.idCtrl;
+	   const name =req.body.name;
+	   const college =req.body.college;
+	   const course =req.body.course;
+	   const specialization =req.body.specialization;
+	   const division =req.body.division;
+	   const duration =req.body.duration;
+	   const yearOfpassing =req.body.yearOfpassing;
+	   const education = req.body.education
+	   const user_id =req.body.user_id;
+	   const user = await models.Affiliation_Letter.findOne({
+		where: {
+			id : doc_id
+		}
+	   })
+	   if(user){
+		await user.update({
+			userId: user_id,
+			studentName: name,
+			courseName: course,
+			collegeName: college,
+			specialization: specialization,
+			duration: duration,
+			yearofpassing: yearOfpassing,
+			division: division ,
+			academicYear: req.body.acadYearCtrl,
+			education: education	
+		})
+		res.json({
+			status: 200,
+			message: 'Data Updated successfully!!!'
+		});
+	   }else{
+		await models.Affiliation_Letter.create({
+			userId: user_id,
+			studentName: name,
+			courseName: course,
+			collegeName: college,
+			specialization: specialization,
+			duration: duration,
+			yearofpassing: yearOfpassing,
+			division: division,
+			education: education,
+			academicYear: req.body.acadYearCtrl 
+		})
+		res.json({
+			status: 200,
+			message: 'Data saved successfully!!!'
+		});
+	   }
+	}catch(error){
+		console.error("Error:", error);
+		res.status(500).json({
+			error: 'Internal server error'
+		});
+	}
+})
+
+/** Delete Routes */
+
+/**
+ * Delete the Document of user based on parameters passed in the API request
+ * @param {String} doc_type - Type of the document
+ * @param {Integer} doc_id - Id of the document
+ */
+router.delete('/deleteDocument', async (req, res) =>{
+	try {
+		const doc_id = req.query.id;
+		const doc_type = req.query.type;
+		if (doc_type == 'gradToPer') {
+			try {
+				const letter = await models.GradeToPercentageLetter.findOne({
+					where: {
+						id: doc_id
+					}
+				})
+				if (letter) {
+					const letterDelete = await letter.destroy()
+					if (letterDelete) {
+						return res.json({
+							status: 200,
+							data: letterDelete
+						})
+					}
+				} else {
+					return res.json({
+						status: 400,
+						message: 'File Not Deleted!!..'
+					});
+				}
+			} catch (error) {
+				return res.json({
+					status: 500,
+					message: 'An error occurred while updating GradeToPercentageLetter.'
+				});
+			}
+		} else if (doc_type == 'extraDocument') {
+			try {
+				const file = await models.User_Transcript.findOne({
+					where: {
+						id: doc_id
+					}
+				})
+				if (file) {
+					const fileDelete = await file.destroy()
+					if (fileDelete) {
+						return res.json({
+							status: 200,
+							data: fileDelete
+						})
+					}
+				} else {
+					return res.json({
+						status: 400,
+						message: 'File Not Deleted!!..'
+					});
+				}
+			} catch (error) {
+				return res.json({
+					status: 500,
+					message: 'An error occurred while updating GradeToPercentageLetter.'
+				});
+			}
+		} else if (doc_type == 'marklist') {
+			try {
+				const file = await models.UserMarklist_Upload.findOne({
+					where: {
+						id: doc_id
+					}
+				})
+				if (file) {
+					const fileDelete = await file.destroy()
+					if (fileDelete) {
+						return res.json({
+							status: 200,
+							data: fileDelete
+						})
+					}
+				} else {
+					return res.json({
+						status: 400,
+						message: 'File Not Deleted!!..'
+					});
+				}
+			} catch (error) {
+				return res.json({
+					status: 500,
+					message: 'An error occurred while updating UserMarklist_Upload.'
+				});
+			}
+		} else if (doc_type == 'transcript') {
+			try {
+				const file = await models.User_Transcript.findOne({
+					where: {
+						id: doc_id
+					}
+				})
+				if (file) {
+					const fileDelete = await file.destroy()
+					if (fileDelete) {
+						return res.json({
+							status: 200,
+							data: fileDelete
+						})
+					}
+				} else {
+					return res.json({
+						status: 400,
+						message: 'File Not Deleted!!..'
+					});
+				}
+			} catch (error) {
+				return res.json({
+					status: 500,
+					message: 'An error occurred while updating User_Transcript.'
+				});
+			}
+		} else if (doc_type == 'curriculum') {
+			try {
+				const file = await models.User_Curriculum.findOne({
+					where: {
+						id: doc_id
+					}
+				})
+				if (file) {
+					const fileDelete = await file.destroy()
+					if (fileDelete) {
+						return res.json({
+							status: 200,
+							data: fileDelete
+						})
+					}
+				} else {
+					return res.json({
+						status: 400,
+						message: 'File Not Deleted!!..'
+					});
+				}
+			} catch (error) {
+				return res.json({
+					status: 500,
+					message: 'An error occurred while updating User_Curriculum.'
+				});
+			}
+		} else if (doc_type == 'compentencyLetter') {
+			try {
+				const file = await models.competency_letter.findOne({
+					where: {
+						id: doc_id
+					}
+				})
+				if (file) {
+					const fileDelete = await file.destroy()
+					if (fileDelete) {
+						return res.json({
+							status: 200,
+							data: fileDelete
+						})
+					}
+				} else {
+					return res.json({
+						status: 400,
+						message: 'File Not Deleted!!..'
+					});
+				}
+			} catch (error) {
+				return res.json({
+					status: 500,
+					message: 'An error occurred while updating competency_letter.'
+				});
+			}
+		} else if (doc_type == 'NameChangeDocument') {
+			try {
+				const user = await models.Letterfor_NameChange.findOne({
+					where: {
+						id: req.query.id
+					}
+				});
+				if (user) {
+					const del = await user.update({
+						file_name: null,
+						name: null
+					});
+					if (del) {
+						return res.json({
+							status: 200,
+						});
+					}
+				}
+			} catch (error) {
+				return res.json({
+					status: 500,
+					message: 'An error occurred while updating Letterfor_NameChange.'
+				});
+			}
+		} else if (doc_type == 'PaymentIssue') {
+			try {
+				const user = await models.paymenterror_details.findOne({
+					where: {
+						user_id: req.User.id
+					}
+				})
+				if (user) {
+					const data = await user.destroy()
+					if (data) {
+						res.json({
+							status: 200,
+						})
+					}
+				}
+			} catch (error) {
+				return res.json({
+					status: 500,
+					message: 'An error occurred while updating paymenterror_details.'
+				});
+			}
+		}
+	} catch (error) {
+		console.error("Error in /deleteDocument", error);
+		return res.json({
+			status: 500,
+			message: "Internal Server Error"
+		});
+	}
+})
+
+/**
+ * Delete the form of user based on parameters passed in the API request
+ * @param {String} info_type - Type of the Form document
+ * @param {Integer} userId - userId of the Form document
+ */
+router.delete('/deleteInfo', async (req, res) =>{
+	try {
+		const userId = req.query.id;
+		const info_type = req.query.type;
+		if (info_type == 'Instructional') {
+			try {
+				const instructional = await models.InstructionalDetails.findOne({
+					where: {
+						userId: userId
+					}
+				})
+				if (instructional) {
+					const data = await instructional.destroy();
+
+					if (data) {
+						return res.json({
+							status: 200
+						})
+					}
+				}
+			} catch (error) {
+				return res.json({
+					status: 500,
+					message: 'An error occurred while updating GradeToPercentageLetter.'
+				});
+			}
+		} else if (info_type == 'Affiliation') {
+			try {
+				const affiliation = await models.Affiliation_Letter.findOne({
+					where: {
+						user_id: userId
+					}
+				})
+				if (affiliation) {
+					const data = await affiliation.destroy();
+					if (data) {
+						return res.json({
+							status: 200
+						})
+					}
+				}
+			} catch (error) {
+				return res.json({
+					status: 500,
+					message: 'An error occurred while updating Affiliation_Letter.'
+				})
+			}
+		} else if (info_type == 'NameChangeletter') {
+			try {
+				const letter = await models.Letterfor_NameChange.findOne({
+					where: {
+						user_id: userId
+					}
+				})
+				if (letter) {
+					const data = await letter.destroy();
+					if (data) {
+						return res.json({
+							status: 200
+						})
+					}
+				}
+			} catch (error) {
+				return res.json({
+					status: 500,
+					message: 'An error occurred while updating GradeToPercentageLetter.'
+				})
+			}
+
+		}
+	} catch (error) {
+		console.error("Error in /deleteInfo", error);
+		return res.json({
+			status: 500,
+			message: "Internal Server Error"
+		})
+	}
 })
 
 module.exports = router;

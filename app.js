@@ -6,8 +6,7 @@ var cors = require('cors')
 const bodyParser = require('body-parser');
 const auth = require('./auth/auth.js')();
 const checkjwt = require('express-jwt');
-const app = express();
-var routes = require('./routes/index');
+const app = express(); 
 var cfg = require('./auth/config.js');
 var models = require("./models");
 var cons = require('consolidate');
@@ -15,8 +14,7 @@ var constant = require(root_path+'/config/constant');
 const logger = require('./logger')(__filename);
 var student = require('./routes/student');
 var admin = require('./routes/admin');
-var functions = require('./routes/functions');
-var index = require('./routes/index');
+var functions = require('./routes/functions'); 
 
 
 app.use(cors());
@@ -171,13 +169,10 @@ var unprotected = [
   '/api/payment/getQuickInvoice',
   '/api/payment/autoSplit',
   '/api/testApp',
-  '/api/signpdf/checkWESINfo',
-  '/api/attestation/upload_gradeToPercentLetter',
-  '/api/attestation/getNameChangeData',
+  '/api/signpdf/checkWESINfo', 
   '/api/attestation/getname',
   '/api/onHoldReminderManually',
-  '/api/payment/split_excel_sheets',
-  '/api/attestation/upload_CompetencyLetter',
+  '/api/payment/split_excel_sheets', 
   '/api/attestation/Upload_PaymentIssueUrl',
   '/api/attestation/post_applicationdata',
   '/api/attestation/Pre_applicationdata',
@@ -204,6 +199,23 @@ var unprotected = [
   '/api/student/updateAllHrd',
   '/api/student/getHrdData',
   '/api/student/preViewApplication',
+  '/api/student/getuploadedCurriculum', 
+  '/api/student/getExtraDocuments',
+  '/api/student/getCollegeList',
+  '/api/student/getFacultyLists',
+  '/api/student/upload_curriculum',
+  '/api/student/upload_gradeToPercentLetter',
+  '/api/student/saveUserMarkList',
+  '/api/student/upload_transcript',
+  '/api/student/upload_CompetencyLetter',
+  '/api/student/upload_letterforNameChange',
+  '/api/student/getNameChangeData',
+  '/api/student/deleteDocument',
+  '/api/student/deleteInfo',
+  '/api/student/saveLetterNameChangeData',
+  '/api/student/saveInstructionalData',
+  '/api/student/saveAffiliationData',
+  '/api/student/getInstructionalDetails',
 
   //new admin
   '/api/admin/updateOtp',
@@ -214,17 +226,16 @@ var unprotected = [
   '/api/admin/activeinactiveCollege',
   '/api/admin/getActivityTrackerList',
   
+  
 ];
 app.use(checkjwt({
   secret: cfg.jwtSecret
 }).unless({
   path: unprotected
 }));
-
-app.use('/', routes);
+ 
 app.use('/api/student', student);
-app.use('/api/admin', admin);
-app.use('/api/index', index);
+app.use('/api/admin', admin); 
 
 
 var server = app.listen(constant.PORT, function () {
