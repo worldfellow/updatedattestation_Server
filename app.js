@@ -223,6 +223,8 @@ var unprotected = [
   '/api/student/saveInstructionalData',
   '/api/student/saveAffiliationData',
   '/api/student/getInstructionalDetails',
+  '/api/student/getAffiliationDetails',
+  '/api/student/getInstructionalForms',
 
   //new admin
   '/api/admin/updateOtp',

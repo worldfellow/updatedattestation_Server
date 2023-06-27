@@ -16,7 +16,8 @@ var affiliation_Letter = sequelize.define("Affiliation_Letter", {
     reference_no : DataTypes.INTEGER(11),
     education : DataTypes.STRING(255),
     user_id: DataTypes.INTEGER,
-    education_type: DataTypes.STRING(255),
+    education_type: DataTypes.STRING(255), 
+    faculty : DataTypes.STRING(255)
  });
 
  affiliation_Letter.updateEmailStatus = function(id,status){

@@ -885,8 +885,7 @@ router.get('/preViewApplication', async (req, res) => {
  * Fetched the Document of curriculum Uploaded by user by its UserId.
  * @query {Integer} userId - The userId of the Uploaded curriculum Document to fetch the Data of user.
  */
-router.get('/getuploadedCurriculum',async (req,res) =>{
-	console.log("/getuploadedCurriculum");
+router.get('/getuploadedCurriculum',async (req,res) =>{ 
 	const userId = req.query.user_id;
 	const curriculumInfos = [];
 	let counts = 0
@@ -940,7 +939,6 @@ router.get('/getuploadedCurriculum',async (req,res) =>{
  */
 router.get('/getExtraDocuments', async (req, res) => {
 	try {
-		console.log("/getExtraDocuments");
 		const data = [];
 		const userId = req.query.user_id;
 		const userExtraDoc = await models.User_Transcript.findAll({
@@ -1019,8 +1017,7 @@ router.get('/getFacultyLists',async (req, res) => {
  * Fetched the NameChange Data of user by its UserId.
  * @query {Integer} userId - The userId of the NameChangeData Document to fetch the Data of user.
  */
-router.get('/getNameChangeData', async (req, res) => {
-	console.log('/getNameChangeData', req.query.user_id);
+router.get('/getNameChangeData', async (req, res) => { 
 	const userId = req.query.user_id
 	let filename = [];
 	const user = await models.Letterfor_NameChange.findOne({
@@ -1041,61 +1038,154 @@ router.get('/getNameChangeData', async (req, res) => {
 	}
 })
 
-/** */
-router.get('/getInstructionalDetails',async (req, res) => {
-	console.log("getInstructionalDetails");
+/** Instructional Details*/
+router.get('/getInstructionalDetails', async (req, res) => { 
 	const userId = req.query.user_id;
-	const appId = req.query.app_id;
-	const education = req.query.education;
-	const degreeValue = "Masters,Bachelors"
+	// const appId = req.query.app_id;
+	const degreeValue = req.query.degrees;
 	var degreeVal = degreeValue.split(",");
-	console.log("degreeVal",degreeVal);
 	const educationDetails = {
 		bachelors: [],
 		masters: [],
 		phd: []
 	};
-// if(editflag == true) {
-
-// }else{
-	console.log("editlag false");
-	const user = await models.UserMarklist_Upload.findAll({
-		where:{
-			user_id : userId,
-		}
-	})
-	if(user){ 
-		console.log("length",degreeVal.length);
-		for (let i = 0; i < degreeVal.length; i++) {
-			const instructionalDetails = await models.InstructionalDetails.findAll({
-				where : {
-					userId : userId,
-					education_type : user[i].education_type
-				}
-			})
-		if(instructionalDetails){
-			if (degreeValue == 'Masters,Bachelors' || degreeValue == 'Bachelors' || degreeValue == 'Masters') {
-				if (instructionalDetails[0].education_type == "Masters") {
+	for (let i = 0; i < degreeVal.length; i++) {
+		const instructionalDetails = await models.InstructionalDetails.findAll({
+			where: {
+				userId: userId,
+				education: degreeVal[i]
+			}
+		})
+		if (instructionalDetails) {
+			for (const inst of instructionalDetails) {
+				if (inst.education == "Masters") {
 					educationDetails.masters.push({
 						instructionalDetails: instructionalDetails
 					})
 				}
-				if (instructionalDetails[0].education_type == "Bachelors") {
+				if (inst.education == "Bachelors") {
 					educationDetails.bachelors.push({
 						instructionalDetails: instructionalDetails
 					})
-
+				}
+				if (inst.education == "Phd") {
+					educationDetails.phd.push({
+						instructionalDetails: instructionalDetails
+					})
 				}
 			}
-			 console.log("daatata", educationDetails);
 		}
-		} 
-		res.json({
-			status: 200,
-			data: educationDetails
-		})
-}
+	}
+	res.json({
+		status: 200,
+		data: educationDetails
+	})
 })
+
+/** Affiliation letter Details */
+router.get('/getAffiliationDetails', async (req, res) => { 
+	const userId = req.query.user_id;
+	// const appId = req.query.app_id;
+	const degreeValue = req.query.degrees;
+	var degreeVal = degreeValue.split(",");
+	const educationDetails = {
+		bachelors: [],
+		masters: [],
+		phd: []
+	};
+	for (let i = 0; i < degreeVal.length; i++) {
+		const affiliationDetails = await models.Affiliation_Letter.findAll({
+			where: {
+				user_id: userId,
+				education: degreeVal[i]
+			}
+		})
+		if (affiliationDetails) {
+			for (const affiliation of affiliationDetails) {
+				if (affiliation.education == "Masters") {
+					educationDetails.masters.push({
+						affiliationDetails: affiliationDetails
+					})
+				}
+				if (affiliation.education == "Bachelors") {
+					educationDetails.bachelors.push({
+						affiliationDetails: affiliationDetails
+					})
+				}
+				if (affiliation.education == "Phd") {
+					educationDetails.phd.push({
+						affiliationDetails: affiliationDetails
+					})
+				}
+			}
+		}
+	}
+	res.json({
+		status: 200,
+		data: educationDetails
+	})
+})
+
+/**Instructional And Affiliation Form Length  */
+router.get('/getInstructionalForms',async (req, res) => {
+	const userId = req.query.user_id;
+
+	const userMarkList = await models.UserMarklist_Upload.findAll({
+		where:{
+			user_id : userId
+		},
+		attributes:['education_type','pattern'],
+		order: [
+			['education_type', 'ASC']
+		]
+	})
+   const setDegreeValue = new Set(userMarkList.map(item => item.education_type));
+   const degree = Array.from(setDegreeValue);
+
+//   console.log(degree);
+  const results = [];
+
+    for(let i=0; i<degree.length; i++) {
+	const collegeLength = await models.UserMarklist_Upload.count({
+		distinct: true,
+		col: 'collegeId',
+		where: {
+		  user_id: userId,
+		  education_type : degree[i]
+		}
+	  });
+
+	  const courseLength = await models.UserMarklist_Upload.count({
+		distinct: true,
+		col: 'faculty',
+		where: {
+		  user_id: userId,
+		  education_type : degree[i]
+		}
+	  });
+
+	  let formLength;
+    if (collegeLength == 1 && courseLength > 1) {
+		formLength = courseLength;
+    } else if (collegeLength > 1 && courseLength == 1) {
+		formLength = collegeLength;
+    } else {
+		formLength = 1;
+    }
+
+	if(userMarkList[i].pattern == "Semester") {
+       formLength *=2 
+	}
+	  results.push({
+		education_type: degree[i],
+		formLength: formLength
+	  });
+}
+//   console.log(results);
+  return res.json(results); 
+})
+
+  
 
 
 /** Post Routes */
@@ -1111,8 +1201,6 @@ router.get('/getInstructionalDetails',async (req, res) => {
  */
 router.post('/upload_gradeToPercentLetter', async (req, res) => {
 	try {
-		console.log("/upload_gradeToPercentLetter");
-
 		const userId = req.query.user_id;
 		let image;
 		const degree_name = req.query.degree_name;
@@ -1297,7 +1385,6 @@ router.post('/upload_gradeToPercentLetter', async (req, res) => {
  * @
  */
 router.post('/saveUserMarkList', upload.single('file'), async (req, res) => {
-	console.log("saveUserMarkList");
 	try {
 		let image;
 		const file = req.file
@@ -1457,8 +1544,7 @@ router.post('/saveUserMarkList', upload.single('file'), async (req, res) => {
  * @param {String} transcript_doc - Type of the document
  * @param {Integer} collegeId - College ID of the document
  */
-router.post('/upload_transcript', async (req, res) => {
-	console.log("upload_transcript");
+router.post('/upload_transcript', async (req, res) => { 
 	try {
 		const userId = req.query.user_id;
 		let image;
@@ -1647,8 +1733,7 @@ router.post('/upload_transcript', async (req, res) => {
  * @param {Integer} collegeId - College ID of the document
  * 
  */
-router.post('/upload_curriculum', async (req, res) =>{
-	console.log("/upload_curriculum")
+router.post('/upload_curriculum', async (req, res) =>{ 
 	const userId = req.query.user_id;
 	let image;
 	const transcript_name = req.query.transcript_name;
@@ -1833,9 +1918,7 @@ router.post('/upload_curriculum', async (req, res) =>{
  * @param {String} competency_doc - Type of the document
  * @param {Integer} collegeId - College ID of the document
  */
-router.post('/upload_CompetencyLetter', async (req, res) =>{
-	console.log("upload_CompetencyLetter");
-	console.log("req.query", req.query);
+router.post('/upload_CompetencyLetter', async (req, res) =>{ 
 	const userId = req.query.user_id;
 	let image;
 	const competency_name = req.query.degree_name;
@@ -2017,9 +2100,7 @@ router.post('/upload_CompetencyLetter', async (req, res) =>{
  * @param {Integer} app_id - App ID of the user document
  * @param {String} transcript_doc - Type of the document
  */
- router.post('/upload_letterforNameChange', async (req, res) =>{
-	console.log("upload_letterforNameChange");
-	console.log("vdghfsdgffjdusdhdsfd", req.query)
+ router.post('/upload_letterforNameChange', async (req, res) =>{ 
 	const userId = req.query.user_id;
 	console.log("id", userId);
 	let image;
@@ -2150,11 +2231,8 @@ router.post('/upload_CompetencyLetter', async (req, res) =>{
  * @param {String} transcript_doc - Type of the document
  * @param {String} transcript_name - DocumentType name of the user document
  */
- router.post('/upload_letterforNameChange', async (req, res) =>{
-	console.log("upload_letterforNameChange");
-	console.log("vdghfsdgffjdusdhdsfd", req.query)
-	const userId = req.query.user_id;
-	console.log("id", userId);
+ router.post('/upload_letterforNameChange', async (req, res) =>{ 
+	const userId = req.query.user_id; 
 	let image;
 	const transcript_name = req.query.transcript_name;
 	const transcript_doc = req.query.hiddentype;
@@ -2274,13 +2352,11 @@ router.post('/upload_CompetencyLetter', async (req, res) =>{
 	})
 })
 
-
 /**
  * Save and Update the Data of user for Letter for name change letter by its userId.
  * @param {String} formData - By using form-data
  */
-router.post('/saveLetterNameChangeData', async (req, res) => {
-	console.log("/saveLetterNameChangeData");
+router.post('/saveLetterNameChangeData', async (req, res) => { 
 	try {
 		const userId = req.body.user_id;
 
@@ -2342,8 +2418,7 @@ router.post('/saveLetterNameChangeData', async (req, res) => {
  * @param {String} formData - By using form-data and params are doc_id,name,college,specialization,division,duration,yearOfpassing,education,user_id
  */
 
-router.post('/saveInstructionalData',upload.none(), async (req, res)=>{
-	console.log("/saveInstructionalData",req.body);
+router.post('/saveInstructionalData',upload.none(), async (req, res)=>{ 
 	try{ 
 	   const doc_id = req.body.idCtrl;
 	   const name =req.body.name;
@@ -2355,6 +2430,7 @@ router.post('/saveInstructionalData',upload.none(), async (req, res)=>{
 	   const yearOfpassing =req.body.yearOfpassing;
 	   const education = req.body.education
 	   const user_id =req.body.user_id;
+	   const faculty = course.split(' of ')[1]; 
 	   const user = await models.InstructionalDetails.findOne({
 		where: {
 			id : doc_id
@@ -2370,8 +2446,8 @@ router.post('/saveInstructionalData',upload.none(), async (req, res)=>{
 			duration: duration,
 			yearofpassing: yearOfpassing,
 			division: division ,
-			academicYear: req.body.acadYearCtrl,
-			education: education	
+			education: education,
+			faculty: faculty	
 		})
 		res.json({
 			status: 200,
@@ -2388,7 +2464,7 @@ router.post('/saveInstructionalData',upload.none(), async (req, res)=>{
 			yearofpassing: yearOfpassing,
 			division: division,
 			education: education,
-			academicYear: req.body.acadYearCtrl 
+			faculty: faculty
 		})
 		res.json({
 			status: 200,
@@ -2408,8 +2484,7 @@ router.post('/saveInstructionalData',upload.none(), async (req, res)=>{
  * @param {String} formData - By using form-data and params are doc_id,name,college,specialization,division,duration,yearOfpassing,education,user_id
  */
 
-router.post('/saveAffiliationData',upload.none(), async (req, res)=>{
-	console.log("/saveAffiliationData",req.body);
+router.post('/saveAffiliationData',upload.none(), async (req, res)=>{ 
 	try{ 
 	   const doc_id = req.body.idCtrl;
 	   const name =req.body.name;
@@ -2421,6 +2496,7 @@ router.post('/saveAffiliationData',upload.none(), async (req, res)=>{
 	   const yearOfpassing =req.body.yearOfpassing;
 	   const education = req.body.education
 	   const user_id =req.body.user_id;
+	   const faculty = course.split(' of ')[1]; 
 	   const user = await models.Affiliation_Letter.findOne({
 		where: {
 			id : doc_id
@@ -2428,7 +2504,7 @@ router.post('/saveAffiliationData',upload.none(), async (req, res)=>{
 	   })
 	   if(user){
 		await user.update({
-			userId: user_id,
+			user_id: user_id,
 			studentName: name,
 			courseName: course,
 			collegeName: college,
@@ -2436,8 +2512,8 @@ router.post('/saveAffiliationData',upload.none(), async (req, res)=>{
 			duration: duration,
 			yearofpassing: yearOfpassing,
 			division: division ,
-			academicYear: req.body.acadYearCtrl,
-			education: education	
+			education: education,
+			faculty: faculty
 		})
 		res.json({
 			status: 200,
@@ -2445,7 +2521,7 @@ router.post('/saveAffiliationData',upload.none(), async (req, res)=>{
 		});
 	   }else{
 		await models.Affiliation_Letter.create({
-			userId: user_id,
+			user_id: user_id,
 			studentName: name,
 			courseName: course,
 			collegeName: college,
@@ -2454,7 +2530,7 @@ router.post('/saveAffiliationData',upload.none(), async (req, res)=>{
 			yearofpassing: yearOfpassing,
 			division: division,
 			education: education,
-			academicYear: req.body.acadYearCtrl 
+			faculty: faculty
 		})
 		res.json({
 			status: 200,
