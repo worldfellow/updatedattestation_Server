@@ -1038,154 +1038,169 @@ router.get('/getNameChangeData', async (req, res) => {
 	}
 })
 
-/** Instructional Details*/
-router.get('/getInstructionalDetails', async (req, res) => { 
-	const userId = req.query.user_id;
-	// const appId = req.query.app_id;
-	const degreeValue = req.query.degrees;
-	var degreeVal = degreeValue.split(",");
-	const educationDetails = {
-		bachelors: [],
-		masters: [],
-		phd: []
-	};
-	for (let i = 0; i < degreeVal.length; i++) {
-		const instructionalDetails = await models.InstructionalDetails.findAll({
-			where: {
-				userId: userId,
-				education: degreeVal[i]
-			}
-		})
-		if (instructionalDetails) {
-			for (const inst of instructionalDetails) {
-				if (inst.education == "Masters") {
-					educationDetails.masters.push({
-						instructionalDetails: instructionalDetails
-					})
-				}
-				if (inst.education == "Bachelors") {
-					educationDetails.bachelors.push({
-						instructionalDetails: instructionalDetails
-					})
-				}
-				if (inst.education == "Phd") {
-					educationDetails.phd.push({
-						instructionalDetails: instructionalDetails
-					})
+/** Instructional and Affiliation Details*/
+router.get('/getletterDetails', async (req, res) => {
+	try {
+		const userId = req.query.user_id;
+		// const appId = req.query.app_id;
+		const degreeValue = req.query.degrees;
+		var degreeVal = degreeValue.split(",");
+		const educationDetailsInstructional = {
+			bachelors: [],
+			masters: [],
+			phd: []
+		};
+		const educationDetailsAffiliation = {
+			bachelors: [],
+			masters: [],
+			phd: []
+		};
+		for (let i = 0; i < degreeVal.length; i++) {
+			const type = ['instructional', 'affiliation']
+			for (let j = 0; j < type.length; j++) {
+				const instructionalDetails = await models.letter_details.findAll({
+					where: {
+						user_id: userId,
+						education_type: degreeVal[i],
+						type: type[j]
+					}
+				})
+				if (instructionalDetails) {
+					for (const inst of instructionalDetails) {
+						if (inst.education_type == "Masters" && inst.type == "instructional") {
+							educationDetailsInstructional.masters.push({
+								instructionalDetails: instructionalDetails
+							})
+						} else if (inst.education_type == "Masters" && inst.type == "affiliation") {
+							educationDetailsAffiliation.masters.push({
+								affiliationDetails: instructionalDetails
+							})
+						}
+						if (inst.education_type == "Bachelors" && inst.type == "instructional") {
+							educationDetailsInstructional.bachelors.push({
+								instructionalDetails: instructionalDetails
+							})
+						} else if (inst.education_type == "Bachelors" && inst.type == "affiliation") {
+							educationDetailsAffiliation.bachelors.push({
+								affiliationDetails: instructionalDetails
+							})
+						}
+						if (inst.education_type == "Phd" && inst.type == "instructional") {
+							educationDetailsInstructional.phd.push({
+								instructionalDetails: instructionalDetails
+							})
+						} else if (inst.education_type == "Phd" && inst.type == "affiliation") {
+							educationDetailsAffiliation.phd.push({
+								affiliationDetails: instructionalDetails
+							})
+						}
+					}
 				}
 			}
 		}
+		res.json({
+			status: 200,
+			dataInstructional: educationDetailsInstructional,
+			dataAffiliation: educationDetailsAffiliation
+		})
+	} catch (error) {
+		console.error("Error in getletterDetails", error);
+		return res.status(500).json({
+			status: 500,
+			message: "Internal Server Error"
+		});
 	}
-	res.json({
-		status: 200,
-		data: educationDetails
-	})
 })
 
-/** Affiliation letter Details */
-router.get('/getAffiliationDetails', async (req, res) => { 
-	const userId = req.query.user_id;
-	// const appId = req.query.app_id;
-	const degreeValue = req.query.degrees;
-	var degreeVal = degreeValue.split(",");
-	const educationDetails = {
-		bachelors: [],
-		masters: [],
-		phd: []
-	};
-	for (let i = 0; i < degreeVal.length; i++) {
-		const affiliationDetails = await models.Affiliation_Letter.findAll({
-			where: {
-				user_id: userId,
-				education: degreeVal[i]
-			}
-		})
-		if (affiliationDetails) {
-			for (const affiliation of affiliationDetails) {
-				if (affiliation.education == "Masters") {
-					educationDetails.masters.push({
-						affiliationDetails: affiliationDetails
-					})
-				}
-				if (affiliation.education == "Bachelors") {
-					educationDetails.bachelors.push({
-						affiliationDetails: affiliationDetails
-					})
-				}
-				if (affiliation.education == "Phd") {
-					educationDetails.phd.push({
-						affiliationDetails: affiliationDetails
-					})
-				}
-			}
-		}
-	}
-	res.json({
-		status: 200,
-		data: educationDetails
-	})
-})
 
 /**Instructional And Affiliation Form Length  */
-router.get('/getInstructionalForms',async (req, res) => {
-	const userId = req.query.user_id;
+router.get('/getInstructionalForms', async (req, res) => {
+	try {
+		const userId = req.query.user_id;
+		const userMarkList = await models.UserMarklist_Upload.findAll({
+			where: {
+				user_id: userId
+			},
+			attributes: ['education_type', 'pattern'],
+			order: [
+				['education_type', 'ASC']
+			]
+		})
+		const setDegreeValue = new Set(userMarkList.map(item => item.education_type));
+		const degree = Array.from(setDegreeValue);
 
-	const userMarkList = await models.UserMarklist_Upload.findAll({
-		where:{
-			user_id : userId
-		},
-		attributes:['education_type','pattern'],
-		order: [
-			['education_type', 'ASC']
-		]
-	})
-   const setDegreeValue = new Set(userMarkList.map(item => item.education_type));
-   const degree = Array.from(setDegreeValue);
+		const results = [];
 
-//   console.log(degree);
-  const results = [];
+		for (let i = 0; i < degree.length; i++) {
+			const collegeLength = await models.UserMarklist_Upload.count({
+				distinct: true,
+				col: 'collegeId',
+				where: {
+					user_id: userId,
+					education_type: degree[i]
+				}
+			});
 
-    for(let i=0; i<degree.length; i++) {
-	const collegeLength = await models.UserMarklist_Upload.count({
-		distinct: true,
-		col: 'collegeId',
-		where: {
-		  user_id: userId,
-		  education_type : degree[i]
+			const courseLength = await models.UserMarklist_Upload.count({
+				distinct: true,
+				col: 'faculty',
+				where: {
+					user_id: userId,
+					education_type: degree[i]
+				}
+			});
+
+			let formLength;
+			if (collegeLength == 1 && courseLength > 1) {
+				formLength = courseLength;
+			} else if (collegeLength > 1 && courseLength == 1) {
+				formLength = collegeLength;
+			} else {
+				formLength = 1;
+			}
+
+			if (userMarkList[i].pattern == "Semester") {
+				formLength *= 2
+			}
+			results.push({
+				education_type: degree[i],
+				formLength: formLength
+			});
 		}
-	  });
-
-	  const courseLength = await models.UserMarklist_Upload.count({
-		distinct: true,
-		col: 'faculty',
-		where: {
-		  user_id: userId,
-		  education_type : degree[i]
-		}
-	  });
-
-	  let formLength;
-    if (collegeLength == 1 && courseLength > 1) {
-		formLength = courseLength;
-    } else if (collegeLength > 1 && courseLength == 1) {
-		formLength = collegeLength;
-    } else {
-		formLength = 1;
-    }
-
-	if(userMarkList[i].pattern == "Semester") {
-       formLength *=2 
+		return res.json(results);
+	} catch (error) {
+		console.error("Error in getInstructionalForms", error);
+		return res.status(500).json({
+			status: 500,
+			message: "Internal Server Error"
+		});
 	}
-	  results.push({
-		education_type: degree[i],
-		formLength: formLength
-	  });
-}
-//   console.log(results);
-  return res.json(results); 
 })
 
-  
+
+/** Get Route of user Applied Details */
+router.get('/getAppliedUserDetail',async (req, res) => {
+	try{
+		const userId = req.query.user_id;
+		const user = await models.Applied_For_Details.findOne({
+			where:{
+				user_id : userId
+			}
+		})
+		if(user) { 
+			res.json({
+				status: 200,
+				data : user   
+			}); 
+		}
+	}catch(error){
+		console.error("Error in getAppliedUserDetail",error);
+		return res.status(500).json({
+			status: 500,
+			message: "Internal Server Error"
+		});
+	}
+})
 
 
 /** Post Routes */
@@ -2431,14 +2446,16 @@ router.post('/saveInstructionalData',upload.none(), async (req, res)=>{
 	   const education = req.body.education
 	   const user_id =req.body.user_id;
 	   const faculty = course.split(' of ')[1]; 
-	   const user = await models.InstructionalDetails.findOne({
+	   const type = req.body.type;
+	   console.log("formData",req.body);
+	   const user = await models.letter_details.findOne({
 		where: {
 			id : doc_id
 		}
 	   })
 	   if(user){
 		await user.update({
-			userId: user_id,
+			user_d: user_id,
 			studentName: name,
 			courseName: course,
 			collegeName: college,
@@ -2446,16 +2463,17 @@ router.post('/saveInstructionalData',upload.none(), async (req, res)=>{
 			duration: duration,
 			yearofpassing: yearOfpassing,
 			division: division ,
-			education: education,
-			faculty: faculty	
+			education_type: education,
+			faculty: faculty,
+			type:type	
 		})
 		res.json({
 			status: 200,
 			message: 'Data Updated successfully!!!'
 		});
 	   }else{
-		await models.InstructionalDetails.create({
-			userId: user_id,
+		await models.letter_details.create({
+			user_id: user_id,
 			studentName: name,
 			courseName: course,
 			collegeName: college,
@@ -2463,8 +2481,9 @@ router.post('/saveInstructionalData',upload.none(), async (req, res)=>{
 			duration: duration,
 			yearofpassing: yearOfpassing,
 			division: division,
-			education: education,
-			faculty: faculty
+			education_type: education,
+			faculty: faculty,
+			type:type
 		})
 		res.json({
 			status: 200,
@@ -2479,71 +2498,7 @@ router.post('/saveInstructionalData',upload.none(), async (req, res)=>{
 	}
 })
 
- /**
- * Saved and update the Affiliation letter Data of user.
- * @param {String} formData - By using form-data and params are doc_id,name,college,specialization,division,duration,yearOfpassing,education,user_id
- */
-
-router.post('/saveAffiliationData',upload.none(), async (req, res)=>{ 
-	try{ 
-	   const doc_id = req.body.idCtrl;
-	   const name =req.body.name;
-	   const college =req.body.college;
-	   const course =req.body.course;
-	   const specialization =req.body.specialization;
-	   const division =req.body.division;
-	   const duration =req.body.duration;
-	   const yearOfpassing =req.body.yearOfpassing;
-	   const education = req.body.education
-	   const user_id =req.body.user_id;
-	   const faculty = course.split(' of ')[1]; 
-	   const user = await models.Affiliation_Letter.findOne({
-		where: {
-			id : doc_id
-		}
-	   })
-	   if(user){
-		await user.update({
-			user_id: user_id,
-			studentName: name,
-			courseName: course,
-			collegeName: college,
-			specialization: specialization,
-			duration: duration,
-			yearofpassing: yearOfpassing,
-			division: division ,
-			education: education,
-			faculty: faculty
-		})
-		res.json({
-			status: 200,
-			message: 'Data Updated successfully!!!'
-		});
-	   }else{
-		await models.Affiliation_Letter.create({
-			user_id: user_id,
-			studentName: name,
-			courseName: course,
-			collegeName: college,
-			specialization: specialization,
-			duration: duration,
-			yearofpassing: yearOfpassing,
-			division: division,
-			education: education,
-			faculty: faculty
-		})
-		res.json({
-			status: 200,
-			message: 'Data saved successfully!!!'
-		});
-	   }
-	}catch(error){
-		console.error("Error:", error);
-		res.status(500).json({
-			error: 'Internal server error'
-		});
-	}
-})
+ 
 
 /** Delete Routes */
 

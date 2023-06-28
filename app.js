@@ -222,9 +222,9 @@ var unprotected = [
   '/api/student/saveLetterNameChangeData',
   '/api/student/saveInstructionalData',
   '/api/student/saveAffiliationData',
-  '/api/student/getInstructionalDetails',
-  '/api/student/getAffiliationDetails',
+  '/api/student/getletterDetails', 
   '/api/student/getInstructionalForms',
+  '/api/student/getAppliedUserDetail',
 
   //new admin
   '/api/admin/updateOtp',
