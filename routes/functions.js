@@ -104,20 +104,21 @@ module.exports = {
     },
 
     //create institute
-    getCreateInstitution: async (universityName, country, emailArr, contactNumber, user_id, contact_person, type, refno, emailAsWes, nameaswes, lastnameaswes, name, app_id, anotherEmailArr) => {
+    getCreateInstitution: async (formData, emailArr, user_id, type, app_id, anotherEmailArr, anotherEmail) => {
         return models.Institution_details.create({
-            university_name: universityName ? universityName : null,
-            country_name: country ? country : null,
+            university_name: formData.allUniversityCompanyName ? formData.allUniversityCompanyName : null,
+            country_name: formData.allCountryName ? formData.allCountryName : null,
             email: emailArr ? anotherEmailArr : null,
-            contact_number: contactNumber ? contactNumber : null,
+            otherEmail: anotherEmail ? anotherEmail : null,
+            contact_number: formData.allContactNo ? formData.allContactNo : null,
             user_id: user_id,
-            contact_person: contact_person ? contact_person : null,
+            contact_person: formData.allContactPersonName ? formData.allContactPersonName : null,
             type: type,
-            refno: refno ? refno : null,
-            emailAsWes: emailAsWes ? emailAsWes : null,
-            nameaswes: nameaswes ? nameaswes : null,
-            lastnameaswes: lastnameaswes ? lastnameaswes : null,
-            name: name ? name : null,
+            refno: formData.allRefNo ? formData.allRefNo : null,
+            emailAsWes: formData.wesEmail ? formData.wesEmail : null,
+            nameaswes: formData.wesName ? formData.wesName : null,
+            lastnameaswes: formData.wesSurname ? formData.wesSurname : null,
+            name: formData.allName ? formData.allName : null,
             app_id: app_id ? app_id : null,
         })
     },
@@ -128,20 +129,21 @@ module.exports = {
     },
 
     //update institute
-    getUpdateInstitution: async (universityName, country, emailArr, contactNumber, user_id, contact_person, type, refno, emailAsWes, nameaswes, lastnameaswes, name, app_id, anotherEmailArr, institute_id) => {
+    getUpdateInstitution: async (formData, emailArr, user_id, type, app_id, anotherEmailArr, anotherEmail, institute_id) => {
         return models.Institution_details.update({
-            university_name: universityName ? universityName : null,
-            country_name: country ? country : null,
+            university_name: formData.allUniversityCompanyName ? formData.allUniversityCompanyName : null,
+            country_name: formData.allCountryName ? formData.allCountryName : null,
             email: emailArr ? anotherEmailArr : null,
-            contact_number: contactNumber ? contactNumber : null,
+            otherEmail: anotherEmail ? anotherEmail : null,
+            contact_number: formData.allContactNo ? formData.allContactNo : null,
             user_id: user_id,
-            contact_person: contact_person ? contact_person : null,
+            contact_person: formData.allContactPersonName ? formData.allContactPersonName : null,
             type: type,
-            refno: refno ? refno : null,
-            emailAsWes: emailAsWes ? emailAsWes : null,
-            nameaswes: nameaswes ? nameaswes : null,
-            lastnameaswes: lastnameaswes ? lastnameaswes : null,
-            name: name ? name : null,
+            refno: formData.allRefNo ? formData.allRefNo : null,
+            emailAsWes: formData.wesEmail ? formData.wesEmail : null,
+            nameaswes: formData.wesName ? formData.wesName : null,
+            lastnameaswes: formData.wesSurname ? formData.wesSurname : null,
+            name: formData.allName ? formData.allName : null,
             app_id: app_id ? app_id : null,
         }, { where: { id: institute_id } })
     },
@@ -199,7 +201,7 @@ module.exports = {
         return models.UserMarklist_Upload.findAll({ where: { user_id: user_id, education_type: degree_type, faculty: faculty_type, app_id: app_id } })
     },
 
-    getCreateHrd: async (user_id, formData, degree_type, secondlastSem, lastSem) => {
+    getCreateHrd: async (user_id, formData, degree_type, secondlastSem, lastSem, app_id) => {
         return models.Hrd_details.create({
             fullName: formData.fullName ? formData.fullName : null,
             course_name: formData.courseName ? formData.courseName : null,
@@ -214,13 +216,14 @@ module.exports = {
             exam_date: formData.examDate ? formData.examDate : null,
             specialization: formData.specialization ? formData.specialization : null,
             user_id: user_id ? user_id : null,
+            app_id: app_id ? app_id : null,
             degree: degree_type ? degree_type : null,
             lastsem: lastSem ? lastSem : null,
             secondlastsem: secondlastSem ? secondlastSem : null,
         })
     },
 
-    getUpdateHrd: async (user_id, formData, degree_type, secondlastSem, lastSem, hrd_id) => {
+    getUpdateHrd: async (user_id, formData, degree_type, secondlastSem, lastSem, hrd_id, app_id) => {
         return models.Hrd_details.update({
             fullName: formData.fullName ? formData.fullName : null,
             course_name: formData.courseName ? formData.courseName : null,
@@ -235,6 +238,7 @@ module.exports = {
             exam_date: formData.examDate ? formData.examDate : null,
             specialization: formData.specialization ? formData.specialization : null,
             user_id: user_id ? user_id : null,
+            app_id: app_id ? app_id : null,
             degree: degree_type ? degree_type : null,
             lastsem: lastSem ? lastSem : null,
             secondlastsem: secondlastSem ? secondlastSem : null,
@@ -245,12 +249,13 @@ module.exports = {
         return models.Institution_details.findAll({ where: { user_id: user_id, app_id: app_id, type: purpose_name } })
     },
 
-    getCreateHrdInstitute: async (user_id, purpose_name, emailArr, anotherEmailArr, anotherEmail) => {
+    getCreateHrdInstitute: async (user_id, purpose_name, emailArr, anotherEmailArr, anotherEmail, app_id) => {
         return models.Institution_details.create({
             email: emailArr ? anotherEmailArr : null,
             otherEmail: anotherEmail ? anotherEmail : null,
             type: purpose_name ? purpose_name : null,
             user_id: user_id ? user_id : null,
+            app_id: app_id ? app_id : null,
         })
     },
 
@@ -296,6 +301,10 @@ module.exports = {
 
     updateUser: async (user_id, otp) => {
         return models.User.update({ otp: otp }, { where: { id: user_id } })
+    },
+
+    getUserNameChangeProof: async (user_id, app_id, type) => {
+        return models.User_Transcript.findAll({ where: { user_id: user_id, app_id: app_id, type: type } })
     },
 
     //get admin role details
@@ -377,12 +386,13 @@ module.exports = {
         }, { where: { id: id } })
     },
 
-    getCreateActivityTrackerChange: async (user_id, user_name, college_name, status, app_id) => {
+    getCreateActivityTrackerChange: async (user_id, changed_by, changed_item, status, app_id) => {
+        console.log('djsdhdfhasiu', app_id);
         return models.Activitytracker.create({
             user_id: user_id,
-            activity: status + ' ' + college_name,
-            data: college_name + ' has ' + status + ' by ' + user_name, 
-            applicaiton_id: app_id ? app_id: null,
+            activity: changed_item + ' ' + status,
+            data: changed_item + ' has ' + status + ' by ' + changed_by,
+            application_id: app_id ? app_id : null,
         })
     },
 
@@ -390,8 +400,8 @@ module.exports = {
         return models.Activitytracker.create({
             user_id: user_id,
             activity: deleted_item + ' deleted',
-            data: deleted_item + ' is deleted by ' + deleted_by, 
-            applicaiton_id: app_id ? app_id: null,
+            data: deleted_item + ' is deleted by ' + deleted_by,
+            application_id: app_id ? app_id : null,
         })
     },
 
@@ -399,8 +409,8 @@ module.exports = {
         return models.Activitytracker.create({
             user_id: user_id,
             activity: added_item + ' added',
-            data: added_item + ' is added by ' + added_by, 
-            applicaiton_id: app_id ? app_id: null,
+            data: added_item + ' is added by ' + added_by,
+            application_id: app_id ? app_id : null,
         })
     },
 
@@ -408,19 +418,98 @@ module.exports = {
         return models.Activitytracker.create({
             user_id: user_id,
             activity: updated_item + ' updated',
-            data: updated_item + ' is updated by ' + updated_by, 
-            applicaiton_id: app_id ? app_id: null,
+            data: updated_item + ' is updated by ' + updated_by,
+            application_id: app_id ? app_id : null,
         })
     },
+
+    // getCreateActivityTrackerReset: async (user_id, reset_by, reset_item, status, app_id) => {
+    //     return models.Activitytracker.create({
+    //         user_id: user_id,
+    //         activity: reset_item + ' reset',
+    //         data: reset_item + ' is reset by ' + reset_by, 
+    //         application_id: app_id ? app_id: null,
+    //     })
+    // },
 
     getActivityTrackerList: async () => {
         return models.Activitytracker.findAll({})
     },
-    
-    generateRandomString: function(length, charset) {
-		return randomstring.generate({
-			length: length,
-			charset: charset
-		});
-	},
+
+    getActivityTrackerSingle: async (user_id) => {
+        return models.Activitytracker.findAll({ where: { user_id: user_id } })
+    },
+
+    generateRandomString: function (length, charset) {
+        return randomstring.generate({
+            length: length,
+            charset: charset
+        });
+    },
+
+    getAllAppliedDetails: async (user_id) => {
+        return models.Applied_For_Details.findAll({ where: { user_id: user_id } })
+    },
+
+
+    getAllStudentDetails: async (user_type) => {
+        return models.User.findAll({ where: { user_type: user_type } })
+    },
+
+    getActiveInactiveStudent: async (status, student_id) => {
+        return models.User.update({
+            user_status: status,
+        }, { where: { id: student_id } })
+    },
+
+    getResetPassword: async (hashPassword, user_id) => {
+        return models.User.update({
+            password: hashPassword,
+        }, { where: { id: user_id } })
+    },
+
+    getApplicationDetails: async (student_id) => {
+        return models.Application.findOne({ where: { user_id: student_id } })
+    },
+
+    getChangeName: async (user_id, firstName, lastName) => {
+        return models.User.update({
+            name: firstName ? firstName : null,
+            surname: lastName ? lastName : null,
+        }, { where: { id: user_id } })
+    },
+
+    getChangeLocation: async (user_id, location) => {
+        console.log('%%%%%%%%%%%', user_id);
+        console.log('%%%%%%%%%%%', location);
+        return models.User.update({
+            current_location: location,
+        }, { where: { id: user_id } })
+    },
+
+    getDeleteMarksheet: async (id) => {
+        return models.UserMarklist_Upload.destroy({ where: { id: id } })
+    },
+
+    getDeleteTranscript: async (id) => {
+        return models.User_Transcript.destroy({ where: { id: id } })
+    },
+
+    getDeleteCurriculum: async (id) => {
+        return models.User_Transcript.destroy({ where: { id: id } })
+    },
+
+    getUpdateInstructionalAffiliation: async (id, app_id, formData, purpose) => {
+        return models.InstructionalDetails.update({
+            courseName: formData.courseName ? formData.courseName : null,
+            collegeName: formData.collegeName ? formData.collegeName : null,
+            specialization: formData.specialization ? formData.specialization : null,
+            yearofpassing: formData.yearOfPassing ? formData.yearOfPassing : null,
+            duration: formData.duration ? formData.duration : null,
+            division: formData.passedWith ? formData.passedWith : null,
+            education_type: formData.degree ? formData.degree : null,
+            type: purpose ? purpose : null,
+            app_id: app_id ? app_id : null,
+        }, { where: { id: id } })
+    },
 };

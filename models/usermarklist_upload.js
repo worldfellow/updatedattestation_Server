@@ -104,10 +104,10 @@ module.exports = function(sequelize, DataTypes) {
   //   return sequelize.query(query, { type: sequelize.QueryTypes.UPDATE});
   // }
 
-  // UserMarklist_Upload.deleteUserData = function(user_id){
-  //   var query = "DELETE FROM UserMarklist_Upload WHERE user_id = " + user_id;
-  //   return sequelize.query(query, { type: sequelize.QueryTypes.DELETE});
-  // }
+  UserMarklist_Upload.deleteUserData = function(user_id){
+    var query = "DELETE FROM UserMarklist_Upload WHERE user_id = " + user_id;
+    return sequelize.query(query, { type: sequelize.QueryTypes.DELETE});
+  }
 
   // UserMarklist_Upload.belongsTo(sequelize.models.User, {foreignKey: 'user_id'});
   // UserMarklist_Upload.belongsTo(sequelize.models.userMarkList, {foreignKey: 'user_marklist_id'});

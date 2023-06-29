@@ -10,7 +10,8 @@ module.exports = function(sequelize, DataTypes) {
     diplomaHolder : DataTypes.BOOLEAN(),
     affiliation : DataTypes.BOOLEAN(),
     CompetencyLetter : DataTypes.BOOLEAN(),
-    LetterforNameChange : DataTypes.BOOLEAN()
+    LetterforNameChange : DataTypes.BOOLEAN(),
+    applied_for : DataTypes.STRING(21),
   });
 
 

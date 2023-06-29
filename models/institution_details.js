@@ -100,10 +100,10 @@ module.exports = function(sequelize, DataTypes) {
 //     return sequelize.query(query, { type: sequelize.QueryTypes.SELECT});
 //   }
 
-//   Institution_details.deleteUserData = function(user_id){
-//     var query = "DELETE FROM Institution_details WHERE user_id = " + user_id;
-//     return sequelize.query(query, { type: sequelize.QueryTypes.DELETE});
-//   }
+  Institution_details.deleteUserData = function(user_id){
+    var query = "DELETE FROM Institution_details WHERE user_id = " + user_id;
+    return sequelize.query(query, { type: sequelize.QueryTypes.DELETE});
+  }
 
 
 //   Institution_details.belongsTo(sequelize.models.Application, {foreignKey: 'app_id'});
