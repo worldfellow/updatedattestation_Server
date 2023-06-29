@@ -234,6 +234,15 @@ var unprotected = [
   '/api/admin/deleteCollegeFaculty',
   '/api/admin/activeinactiveCollege',
   '/api/admin/getActivityTrackerList',
+  '/api/admin/getStudentList',
+  '/api/admin/activeinactiveUser',
+  '/api/admin/resetPasswordByAdmin',
+  '/api/admin/resetDocumentByAdmin',
+  '/api/admin/changeNameByAdmin',
+  '/api/admin/changeLocationByAdmin',
+  '/api/admin/getDocumentsData',
+  '/api/admin/deleteDocumentByAdmin',
+  '/api/admin/updateInstructionalAffiliation',
   
   
 ];
