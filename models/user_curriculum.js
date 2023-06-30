@@ -4,18 +4,33 @@ module.exports = function(sequelize, DataTypes) {
   var User_Curriculum = sequelize.define("User_Curriculum", {
     name: DataTypes.TEXT,
   	file_name: DataTypes.TEXT,
+    education_type : DataTypes.STRING(30),
     lock_transcript: {
       type: DataTypes.BOOLEAN(),
       allowNull: false,
       defaultValue: 0
     },
     collegeId: DataTypes.INTEGER(11),
-    emailStatus : DataTypes.STRING(20),
-    emailMsgId : DataTypes.TEXT
+    faculty :  DataTypes.STRING(30),
+    patteren: {
+      type: DataTypes.ENUM('Annual', 'Semester'),
+      allowNull: true,
+      defaultValue: null
+    },
+    lock_transcript: {
+      type: DataTypes.BOOLEAN(),
+      allowNull: false,
+      defaultValue: 0
+    },
+    upload_step: {
+      type: DataTypes.ENUM('default', 'requested','changed'),
+      allowNull: false,
+      defaultValue: 'default'
+    },
   });
 
   User_Curriculum.updateEmailStatus = function(id,status){
-    var query = "Update User_Curriculum set emailStatus = '" + status + "' where id = " + id;
+    var query = "Update User_Curriculum set emailStatus = '" + status + "' where id = " + id; 
     return sequelize.query(query, { type: sequelize.QueryTypes.UPDATE});
   },
 

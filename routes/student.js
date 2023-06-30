@@ -18,7 +18,12 @@ var functions = require('./functions');
 const e = require('express');
 const { pattern } = require('pdfkit');
 const upload = multer({ dest: 'public/upload/marklist' });
-
+const tesseract = require("node-tesseract-ocr");
+const config = {
+    lang: "eng",
+    oem: 1,
+    psm: 3
+}
 /* Editor : Prathmesh Pawar
 Route : educationalDetails - check email and password and return token and access to proceed ahead to student.
 Paramater : email and password of student */
@@ -1010,7 +1015,136 @@ router.get('/getCollegeList', async (req, res) => {
 		});
 	}
 })
+/**
+ * Fetch Details such as college course patteren and upload documents.
+ */
+router.post('/ScanData', async (req, res) => {
+	try {
+		var user_id = req.query.user_id;
+		var app_id = req.query.app_id;
+		var type = req.query.value;
+		var education_type = req.query.education_type;
+		var collegeid = req.query.collegeid;
+		var patteren = req.query.patteren;
+		var faculty = req.query.faculty;
+		var dir = constant.FILE_LOCATION + "public/upload/" + type +'/' + user_id;
+		var image;
+			if (!fs.existsSync(dir)) {
+				fs.mkdirSync(dir);
+			}
+			var storage = multer.diskStorage({
+				destination: function(req, file, callback) {
+					callback(null, constant.FILE_LOCATION + "public/upload/" + type +'/' + user_id);
+				},
+				filename: function(req, file, callback) {
+					var extension = path.extname(file.originalname)
+					var randomString = functions.generateRandomString(10,'alphabetic')
+					var newFileName = randomString.concat(extension);
+					image = newFileName;
+					callback(null, newFileName);
+				}
+			});
 
+			var upload = multer({
+				storage: storage,
+			}).single('file');
+			upload(req, res,async function (err, data) {
+				imageLocationToCallClient = image;
+				var uploadDocuments = await functions.uploadDocuments(patteren,collegeid,education_type,faculty,user_id,type,imageLocationToCallClient);
+				if(uploadDocuments){
+					if(type == 'marklist'){
+						var data = tesseract.recognize(constant.FILE_LOCATION  + 'public/upload/' + type+'/'+ user_id +  '/' +   image,config).then(async (text_data) => {
+							// if(text_data){
+							var getCollege = await functions.getCollegeList();
+							var getCourse = await functions.getProgramList();
+							var str = text_data.replace(/(\r\n|\n|\r)/gm, "");
+							var text = str.replace('&', 'and');
+							var collegeName;
+							var courseName;
+							var patteren;
+							var whichduration;
+							var data = [];
+							getCollege.forEach(function (college) {
+								if (text.includes(college.name)) {
+									collegeName =  college.name
+								}
+							})
+							if(text.includes('semester') || text.includes('Semester') ){
+								patteren = 'Semester'
+								if(text.includes('I')){
+									whichduration = 'Semester 1'
+								}
+								if(text.includes('II')){
+									whichduration = 'Semester 2'
+								}
+								if(text.includes('III')){
+									whichduration = 'Semester 3'
+								}
+								if(text.includes('IV')){
+									whichduration = 'Semester 4'
+								}
+								if(text.includes('V')){
+									whichduration = 'Semester 5'
+								}
+								if(text.includes('VI')){
+									whichduration = 'Semester 6'
+								}
+								if(text.includes('VII')){
+									whichduration = 'Semester 7'
+								}
+								if(text.includes('VIII')){
+									whichduration = 'Semester 8'
+								}
+								if(text.includes('IX')){
+									whichduration = 'Semester 9'
+								}
+								if(text.includes('X')){
+									whichduration = 'Semester 10'
+								}
+							}else{
+								patteren = 'Annual'
+								if(text.includes('F.Y')){
+									whichduration = 'First Year'
+								}
+								else if(text.includes('S.Y')){
+									whichduration = 'Second Year'
+								}
+								else if(text.includes('T.Y')){
+									whichduration = 'Third Year'
+								}
+							}
+							getCourse.forEach(function (course) {
+								if (text.includes(course.short_name)) {
+									courseName =  course.full_name
+								}
+							})
+							data.push(collegeName,courseName,whichduration,uploadDocuments.id);
+							res.json({
+								data : data,
+								status : 200
+							})
+						}).catch((error) => {console.log('**********error.message***************', error.message)});
+					}else{
+						res.json({
+							status : 200
+						})
+					}
+				}else{
+					
+					res.json({
+						status : 400
+					})
+				}
+			});
+	} catch (err) {
+		console.error(err);
+		return res.status(500).json({
+			status: 500,
+			message: `Internal server error.`,
+			error: err.message
+		});
+	}
+})
 /**
  * Fetched the Course List for user to display in Dropdown.
  */
@@ -2823,6 +2957,156 @@ router.delete('/deleteInfo', async (req, res) => {
 			message: "Internal Server Error"
 		})
 	}
+})
+/**
+ * Fetched all the documents on ngonit
+ */
+router.get('/getUploadeddocument_student',async function(req,res){
+	var user_id = req.query.user_id;
+	// var type = 'transcript';
+	var app_id = null;
+	var DocumentData = [];
+	var marksheetData = [];
+	var extraData = [];
+	var transcriptData = [];
+	var transcriptDisplay = [];
+	var curriculumData = [];
+	var gradtoperData = [];
+	var unique_college = [];
+	var Applied = await functions.getAppliedFor(user_id,app_id);
+	var uniqueData = await functions.getDistinctData(user_id);
+		const uniqueValues = uniqueData.map((item) => item.dataValues.uniqueValues);
+		for(var i = 0 ; i < uniqueValues.length ; i++){
+		  college = await functions.getCollegeDetails_student(uniqueValues[i]);
+		  transcriptDisplay.push({'coursename' : college[0].coursename ,'college' : college[0].college  , 'collegeid' : college[0].collegeid,'faculty' : college[0].faculty ,'education_type' :  college[0].education_type ,'patteren' : college[0].patteren});
+		}
+	var marksheet = await functions.getDocumentFuntion(user_id,app_id,'marklist');
+	if(marksheet.length > 0){
+		for(var i= 0 ; i< marksheet.length ; i++){
+			college = await functions.getCollegeName(marksheet[i].collegeId);
+			marksheetData.push({
+				'name' : marksheet[i].name,
+				'CollegeName' : college ? college.name : 'null',
+				'filePath' : constant.FILE_LOCATION  + 'public/upload/' + 'marklist' + '/' + user_id +  '/' +   marksheet[i].file_name,
+				'fileName' : marksheet[i].file_name,
+				'extension' : marksheet[i].file_name.split('.').pop(),
+				'id' : marksheet[i].id,
+				'user_id' : marksheet[i].user_id,
+				'app_id' : marksheet[i].app_id,
+				'upload_step' : marksheet[i].upload_step,
+				'lock_transcript' : marksheet[i].lock_transcript
+			})
+		}
+		var uniqueData = await functions.getCollegeName_unique(user_id);
+		const uniqueValues = uniqueData.map((item) => item.dataValues.uniqueValues);
+		for(var i = 0 ; i < uniqueValues.length ; i++){
+		  college = await functions.getCollegeDetails_unique(uniqueValues[i]);
+		  unique_college.push(college)
+		}
+	
+	}
+	if(Applied.educationalDetails == true){
+		var transcript = await functions.getDocumentFuntion(user_id,app_id,'transcript');
+		if(transcript){
+			if(transcript.length > 0){
+				for(var i= 0 ; i< transcript.length ; i++){
+					college = await functions.getCollegeName(transcript[i].collegeId);
+					transcriptData.push({
+						'name' : transcript[i].name,
+						'CollegeName' : college ? college.name : 'null',
+						'filePath' : constant.FILE_LOCATION  + 'public/upload/' + 'transcript' + '/' + user_id +  '/' +   transcript[i].file_name,
+						'fileName' : transcript[i].file_name,
+						'extension' : transcript[i].file_name.split('.').pop(),
+						'id' : transcript[i].id,
+						'user_id' : transcript[i].user_id,
+						'app_id' : transcript[i].app_id,
+						'upload_step' : transcript[i].upload_step,
+						'lock_transcript' : transcript[i].lock_transcript
+					})
+				}
+			};
+		}
+	}
+	if(Applied.curriculum == true){
+		var curriculum = await functions.getDocumentFuntion(user_id,app_id,'curriculum');
+		if(curriculum.length > 0){
+			for(var i= 0 ; i< curriculum.length ; i++){
+				college = await functions.getCollegeName(curriculum[i].collegeId);
+				curriculumData.push({
+					'name' : curriculum[i].name,
+					'CollegeName' : college ? college.name : 'null',
+					'filePath' : constant.FILE_LOCATION  + 'public/upload/' + 'curriculum' + '/' + user_id +  '/' +   curriculum[i].file_name,
+					'fileName' : curriculum[i].file_name,
+					'extension' : curriculum[i].file_name.split('.').pop(),
+					'id' : curriculum[i].id,
+					'user_id' : curriculum[i].user_id,
+					'app_id' : curriculum[i].app_id,
+					'upload_step' : curriculum[i].upload_step,
+					'lock_transcript' : curriculum[i].lock_transcript
+				})
+			}
+		}
+	}
+	if(Applied.instructionalField == true){
+		
+	}
+	if(Applied.gradToPer == true){
+		var gradtoper = await functions.getDocumentFuntion(user_id,app_id,'GradeToPercentageLetter');
+		if(gradtoper.length > 0){
+			for(var i= 0 ; i< gradtoper.length ; i++){
+				college = await functions.getCollegeName(gradtoper[i].collegeId);
+				gradtoperData.push({
+					'name' : gradtoper[i].name,
+					'CollegeName' : college ? college.name : 'null',
+					'filePath' : constant.FILE_LOCATION  + 'public/upload/' + 'gradtoper' + '/' + user_id +  '/' +   gradtoper[i].file_name,
+					'fileName' : gradtoper[i].file_name,
+					'extension' : gradtoper[i].file_name.split('.').pop(),
+					'id' : gradtoper[i].id,
+					'user_id' : gradtoper[i].user_id,
+					'app_id' : gradtoper[i].app_id,
+					'upload_step' : gradtoper[i].upload_step,
+					'lock_transcript' : gradtoper[i].lock_transcript
+				})
+			}
+		}
+	}
+	if(Applied.affiliation == true){
+		
+	}
+	if(Applied.CompetencyLetter == true){
+		
+	}
+	if(Applied.LetterforNameChange == true){
+		
+	}
+	var extra = await functions.getDocumentFuntion(user_id,app_id,'extra');
+	if(extra.length > 0){
+		for(var i= 0 ; i< extra.length ; i++){
+			college = await functions.getCollegeName(extra[i].collegeId);
+			extraData.push({
+				'name' : extra[i].name,
+				'filePath' : constant.FILE_LOCATION  + 'public/upload/' + 'extra' + '/' + user_id +  '/' +   extra[i].file_name,
+				'fileName' : extra[i].file_name,
+				'extension' : extra[i].file_name.split('.').pop(),
+				'id' : extra[i].id,
+				'user_id' : extra[i].user_id,
+				'app_id' : extra[i].app_id,
+				'upload_step' : extra[i].upload_step,
+				'lock_transcript' : extra[i].lock_transcript
+			})
+		}
+		var uniqueData = await functions.getCollegeName_unique(user_id);
+		const uniqueValues = uniqueData.map((item) => item.dataValues.uniqueValues);
+		console.log(uniqueValues);
+		for(var i = 0 ; i < uniqueValues.length ; i++){
+		  college = await functions.getCollegeDetails_unique(uniqueValues[i]);
+		  unique_college.push(college)
+		}
+	
+	}
+	DocumentData.push(marksheetData,transcriptData,transcriptDisplay,unique_college,extraData,curriculumData,gradtoperData)
+	res.json({status : 200,data : DocumentData});
+	
 })
 
 module.exports = router;

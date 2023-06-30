@@ -192,6 +192,8 @@ var unprotected = [
 
   //new students
   '/api/student/login',
+  '/api/student/getUploadeddocument_student',
+  '/api/student/ScanData',
   '/api/student/educationalDetails',
   '/api/student/getPurposeList',
   '/api/student/createAllInstitute',

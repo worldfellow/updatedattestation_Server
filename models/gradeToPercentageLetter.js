@@ -5,15 +5,19 @@ module.exports = function(sequelize, DataTypes) {
 var GradToPerdetails = sequelize.define("GradeToPercentageLetter", {
     name: DataTypes.TEXT,
   	file_name: DataTypes.TEXT,
-    type: DataTypes.STRING(30),
+    education_type: DataTypes.STRING(30),
     collegeId :  DataTypes.STRING(30),
+    faculty :  DataTypes.STRING(30),
+    patteren: {
+      type: DataTypes.ENUM('Annual', 'Semester'),
+      allowNull: true,
+      defaultValue: null
+    },
     lock_transcript: {
       type: DataTypes.BOOLEAN(),
       allowNull: false,
       defaultValue: 0
     },
-    emailMsgId : DataTypes.TEXT,
-    collegeEmailStatus : DataTypes.STRING(20),
     upload_step: {
       type: DataTypes.ENUM('default', 'requested','changed'),
       allowNull: false,

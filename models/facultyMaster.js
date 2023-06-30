@@ -5,7 +5,8 @@ module.exports = function(sequelize, DataTypes) {
     year : DataTypes.STRING(3),
     faculty: DataTypes.STRING(30),
     degree : DataTypes.STRING(255),
-    // name:DataTypes.STRING(255)
+    full_name:DataTypes.STRING(255),
+    short_name:DataTypes.STRING(255)
   });
 
   facultymaster.getfaculty = function(){
