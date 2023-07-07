@@ -18,6 +18,8 @@ var functions = require('./functions');
 const e = require('express');
 const { pattern } = require('pdfkit');
 const { log } = require('console');
+var json2xls = require('json2xls');
+
 
 router.post('/updateOtp', async (req, res) => {
     console.log('/updateOtp');
@@ -320,7 +322,7 @@ router.get('/getActivityTrackerList', async (req, res) => {
                 status: 400,
             });
         }
-    }else{
+    } else {
         var trackerList = await functions.getActivityTrackerSingle(student_id);
 
         if (trackerList.length > 0) {
@@ -558,6 +560,7 @@ router.get('/getDocumentsData', async (req, res) => {
 
     getApplied.forEach(async function (marksheets) {
         extension = marksheets.file_name.split('.').pop();
+        console.log('get------------------', JSON.stringify(marksheets.collegeId));
 
         var collegeDetails = await functions.getCollegeDetails(marksheets.collegeId);
 
@@ -854,6 +857,320 @@ router.post('/updateInstructionalAffiliation', async (req, res) => {
                 message: 'Failed to update ' + formData.courseName,
             });
         }
+    }
+})
+
+router.post('/uploadStudentDocument', (req, res) => {
+    console.log('/uploadStudentDocument');
+
+    var doc_name = req.body.doc_name;
+    console.log('doc_name', doc_name);
+    var doc_id = req.body.doc_id;
+    console.log('doc_id', doc_id);
+    var user_id = req.body.user_id;
+    console.log('user_id', user_id);
+    var type = req.body.type;
+    console.log('type', type);
+
+})
+
+router.get('/getApplicationData', async (req, res) => {
+    console.log('/getApplicationData');
+
+    var tracker = req.query.tracker;
+    var status = req.query.status;
+    var app_id = req.query.app_id;
+    var limit = req.query.limit;
+    var offset = req.query.offset;
+    var name = req.query.name;
+    var email = req.query.email;
+    var globalSearch = req.query.globalSearch;
+
+    console.log('/tracker', tracker);
+    console.log('/status', status);
+    console.log('/app_id', app_id);
+    console.log('/limit', limit);
+    console.log('/offset', offset);
+    console.log('/globalSearch', globalSearch);
+
+    const data = await models.Application.getUserApplications(tracker, status, app_id, limit, offset, name, email, globalSearch);
+    var length = data.length;
+
+    if (data.length > 0) {
+        res.json({
+            status: 200,
+            data: data, length
+        })
+    } else {
+        res.json({
+            status: 400,
+        });
+    }
+
+})
+
+router.get('/getDownloadExcel', async (req, res) => {
+    console.log('/getDownloadExcel');
+
+    var startDate = req.query.startDate;
+    var endDate = req.query.endDate;
+    var type = req.query.type;
+    var tracker = req.query.tracker;
+    var status = req.query.status;
+    var applicationData = [];
+
+    const data = await models.Application.getDownloadExcel(startDate, endDate, tracker, status);
+
+    if (type == 'total') {
+        data.forEach(function (app) {
+            applicationData.push({
+                'Application Id': app.id,
+                'Student Name': app.name,
+                'Student Email': app.email,
+                'Applied for': app.applied_for,
+                'Purpose': app.type,
+                'Application status': app.tracker,
+                'colleges': app.college_name,
+                'application_date': app.created_at,
+            })
+        })
+    } else if (type == 'pending') {
+        data.forEach(function (app) {
+            applicationData.push({
+                'Application Id': app.id,
+                'Student Name': app.name,
+                'Student Email': app.email,
+                'Student contact': app.mobile,
+                'Applied for': app.applied_for,
+                'Purpose': app.type,
+                'Colleges': app.college_name,
+                'Application_date': app.created_at,
+            })
+        })
+    } else if (type == 'verified') {
+        data.forEach(function (app) {
+            applicationData.push({
+                'Application Id': app.id,
+                'Student Name': app.name,
+                'Student Email': app.email,
+                'Applied for': app.applied_for,
+                'Purpose': app.type,
+                'Approved by': app.approved_by,
+                'Colleges': app.college_name,
+                'Application_date': app.created_at,
+            })
+        })
+    } else if (type == 'signed') {
+        data.forEach(function (app) {
+            applicationData.push({
+                'Application Id': app.id,
+                'Student Name': app.name,
+                'Student Email': app.email,
+                'Applied for': app.applied_for,
+                'Purpose': app.type,
+                'Approved by': app.approved_by,
+                'Emailed Date': app.updated_at,
+                'Colleges': app.college_name,
+                'Application_date': app.created_at,
+            })
+        })
+    } else if (type == 'emailed') {
+        data.forEach(function (app) {
+            applicationData.push({
+                'Application Id': app.id,
+                'Student Name': app.name,
+                'Student Email': app.email,
+                'Applied for': app.applied_for,
+                'Purpose': app.type,
+                'Approved by': app.approved_by,
+                'Emailed Date': app.updated_at,
+                'Colleges': app.college_name,
+                'Application_date': app.created_at,
+            })
+        })
+    } else if (type == 'finance') {
+        data.forEach(function (app) {
+            applicationapp.push({
+                'Application Id': app.id,
+                'Student Name': app.name,
+                'Student Email': app.email,
+                'Applied for': app.applied_for,
+                'Purpose': app.type,
+                'Approved by': app.approved_by,
+                'Emailed Date': app.updated_at,
+                'Colleges': app.college_name,
+                // "OrderId": app.orderId,
+                // "Transaction id": app.tracking_id,
+                // "Split Status": app.split_status,
+                // "Amount Payable": app.amount,
+                // "CCAvenue Refernce No/Transaction id": app.tracking_id,
+                // 'courses': course_name,
+                'Application_date': app.created_at,
+            })
+        })
+    } else {
+        console.log('type not found!');
+    }
+
+    var xls = json2xls(applicationData);
+    var file_location = constant.FILE_LOCATION + "/public/Excel/" + type + ".xlsx";
+    fs.writeFileSync(file_location, xls, 'binary');
+    var filepath = constant.FILE_LOCATION + "/public/Excel/" + type + ".xlsx";
+
+    if (filepath) {
+        res.json({
+            status: 200,
+            data: filepath
+        })
+    } else {
+        res.json({
+            status: 400
+        })
+    }
+})
+
+router.get('/getDownloadExcelBySaveAs', (req, res) => {
+    console.log('/getDownloadExcelBySaveAs');
+
+    var filepath = req.query.filepath;
+
+    const downloadData = filepath;
+    console.log("downloadData", downloadData);
+    res.download(downloadData);
+})
+
+router.post('/resendApplication', async (req, res) => {
+    console.log('/resendApplication');
+
+    var user_id = req.body.user_id;
+    var app_id = req.body.app_id;
+    var user_name = req.body.user_name;
+    var type = req.body.type;
+    var admin_email = req.body.admin_email;
+    var tracker;
+    var status;
+
+    //verified to pending
+    if (type == 'pending') {
+        tracker = 'apply';
+        status = 'new';
+    } else {
+        tracker = 'verified';
+        status = 'accept';
+    }
+
+    //signed to verified
+    if (type == 'verified') {
+        tracker = 'verified';
+        status = 'accept';
+    } else {
+        tracker = 'signed';
+        status = 'accept';
+    }
+
+    var resend = await functions.getResendRejectApplication(user_id, app_id, tracker, status);
+    console.log('resend-------->', resend);
+    console.log('resend-------->', resend.length);
+
+    if (resend == true) {
+        var data = user_name + "'s Application no " + app_id + " is resend by " + admin_email;
+        var activity = "Application resend";
+
+        functions.getCreateActivityTracker(user_id, app_id, activity, data);
+
+        res.json({
+            status: 200,
+            message: 'Application resend successfully ' + type + ' applications',
+        })
+    } else {
+        res.json({
+            status: 400,
+            message: 'Failed to resend application',
+        })
+    }
+
+})
+
+router.post('/rejectApplication', async (req, res) => {
+    console.log('/rejectApplication');
+
+    var user_id = req.body.user_id;
+    var app_id = req.body.app_id;
+    var user_name = req.body.user_name;
+    var type = req.body.type;
+    var admin_email = req.body.admin_email;
+    var tracker;
+    var status;
+
+    //verified to pending
+    if (type == 'pending') {
+        tracker = 'apply';
+        status = 'reject';
+    } else {
+        tracker = 'verified';
+        status = 'accept';
+    }
+
+    //signed to verified
+    if (type == 'verified') {
+        tracker = 'verified';
+        status = 'reject';
+    } else {
+        tracker = 'signed';
+        status = 'accept';
+    }
+
+    var reject = await functions.getResendRejectApplication(user_id, app_id, tracker, status);
+    console.log('reject-------->', reject);
+    console.log('reject-------->', reject.length);
+
+    if (reject == true) {
+        var data = user_name + "'s Application no " + app_id + " is reject by " + admin_email;
+        var activity = "Application reject";
+
+        functions.getCreateActivityTracker(user_id, app_id, activity, data);
+
+        res.json({
+            status: 200,
+            message: 'Application reject successfully to ' + type + ' applications',
+        })
+    } else {
+        res.json({
+            status: 400,
+            message: 'Failed to reject application',
+        })
+    }
+
+})
+
+router.post('/updateNotes', async (req, res) => {
+    console.log('/updateNotes');
+
+    var notes_data = req.body.notes_data;
+    var user_id = req.body.user_id;
+    var app_id = req.body.app_id;
+    // var type = req.body.type;
+    var admin_email = req.body.admin_email;
+
+    var updateNotes = await functions.getUpdateUserNotes(notes_data, app_id);
+    console.log('up----------------', updateNotes);
+    console.log('up----------------', updateNotes.length);
+
+    if (updateNotes == true) {
+        var data = "Note of application " + app_id + " is updated by " + admin_email;
+        var activity = "Note Updated";
+
+        functions.getCreateActivityTracker(user_id, app_id, activity, data);
+
+        res.json({
+            status: 200,
+            message: "Notes Saved Successfully!",
+        })
+    } else {
+        res.json({
+            status: 400,
+            message: "Failed to save notes",
+        })
     }
 
 })

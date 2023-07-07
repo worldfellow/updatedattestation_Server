@@ -245,7 +245,12 @@ var unprotected = [
   '/api/admin/getDocumentsData',
   '/api/admin/deleteDocumentByAdmin',
   '/api/admin/updateInstructionalAffiliation',
-  
+  '/api/admin/getApplicationData',
+  '/api/admin/resendApplication',
+  '/api/admin/rejectApplication',
+  '/api/admin/updateNotes',
+  '/api/admin/getDownloadExcel',
+  '/api/admin/getDownloadExcelBySaveAs',
   
 ];
 app.use(checkjwt({

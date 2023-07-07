@@ -507,128 +507,195 @@ module.exports = {
             app_id: app_id ? app_id : null,
         }, { where: { id: id } })
     },
-    uploadDocuments : async function(patteren,collegeid,education_type,faculty,user_id,type,image){
-		try{
-			if(type == 'marklist'){
-				return await models.UserMarklist_Upload.create({ user_id : user_id ,file_name : image ,upload_step : 'default' });
-			}
-			if(type == 'transcript'){
-				return await models.User_Transcript.create({ user_id : user_id ,file_name : image ,upload_step : 'default' ,name : education_type + '_' + faculty + '_'+ 'Transcript'  ,education_type : education_type + '_' +'transcript' , faculty : faculty , collegeId : collegeid ,patteren :patteren});
-			}
-			if(type == 'extra'){
-				return await models.User_Transcript.create({ user_id : user_id ,file_name : image ,upload_step : 'default' ,name : 'extra_Document' ,education_type :  'extra_document'});
-			}
-			if(type == 'curriculum'){
-				return await models.User_Curriculum.create({ user_id : user_id ,file_name : image ,upload_step : 'default' ,name :  education_type + '_' + faculty + '_Curriculum',education_type :  education_type + '_curriculum' , faculty  : faculty , collegeId : collegeid , patteren : patteren});
-			}
-			if(type == 'gradtoper'){
-				return await models.GradeToPercentageLetter.create({ user_id : user_id ,file_name : image ,upload_step : 'default' ,name :  education_type + '_' + faculty + '_GradeToPercentageLetter', faculty  : faculty , collegeId : collegeid , patteren : patteren ,education_type :   education_type + '_GradeToPercentageLetter'});
-			}
-		}catch{
-		}
-		
-	},
-    getCollegeList : async function(){
-		return await models.College.findAll({});
-	},
-    getProgramList : async function(){
-		return await models.facultymaster.findAll({where  : {id : 6}});
-	},
-    getAppliedFor : async function(user_id,app_id){
-		try{
-		return await models.Applied_For_Details.findOne({where :{user_id  : user_id , app_id: {
-			[Op.eq]: null
-		}}});
-		}catch{
-		}
-	},
-    getDistinctData : async function(user_id){
-		return await models.UserMarklist_Upload.findAll({where :{user_id  : user_id , app_id: {
-			[Op.eq]: null
-		}},attributes: [
-			[Sequelize.fn('DISTINCT', Sequelize.col('courseClgId')), 'uniqueValues']
-		  ]});
-	},
-    
-	getCollegeDetails_student : async function(name){
-		var data=[];
-		var id=await models.UserMarklist_Upload.findOne({where :{courseClgId : name}});
-		var college = await models.College.findOne({where :{id:  id.collegeId}})
-		data.push({'coursename' : id.education_type + '_' + id.faculty , 'college' : college.name  , 'collegeid' : college.id ,'faculty' : id.faculty ,'education_type' :  id.education_type ,'patteren' : id.patteren});
-		return data;
-		
-	},
-    getDocumentFuntion : async function(user_id,app_id,type){
-		try{
-			if(type == 'marklist'){
-				return await models.UserMarklist_Upload.findAll({where :{user_id : user_id , app_id: {
-					[Op.eq]: app_id
-				}}});
-			}
-			if(type == 'transcript' || type == 'extra'){
-				return await models.User_Transcript.findAll({where :{user_id : user_id , app_id: {
-					[Op.eq]: app_id
-				},education_type :{
-					[Op.like] : '%'+ type+'%'
-				}}});
-			}
-			if(type == 'curriculum'){
-				return await models.User_Curriculum.findAll({where :{user_id : user_id , app_id: {
-					[Op.eq]: app_id
-				},education_type :{
-					[Op.like] : '%'+ type+'%'
-				}
-			}});
-			}
-			if(type == 'GradeToPercentageLetter'){
-				return await models.GradeToPercentageLetter.findAll({where :{user_id : user_id , app_id: {
-					[Op.eq]: app_id
-				},education_type :{
-					[Op.like] : '%'+ type+'%'
-				}
-			}});
-			}
-		}catch{
-		}
+    uploadDocuments: async function (patteren, collegeid, education_type, faculty, user_id, type, image) {
+        try {
+            if (type == 'marklist') {
+                return await models.UserMarklist_Upload.create({ user_id: user_id, file_name: image, upload_step: 'default' });
+            }
+            if (type == 'transcript') {
+                return await models.User_Transcript.create({ user_id: user_id, file_name: image, upload_step: 'default', name: education_type + '_' + faculty + '_' + 'Transcript', education_type: education_type + '_' + 'transcript', faculty: faculty, collegeId: collegeid, patteren: patteren });
+            }
+            if (type == 'extra') {
+                return await models.User_Transcript.create({ user_id: user_id, file_name: image, upload_step: 'default', name: 'extra_Document', education_type: 'extra_document' });
+            }
+            if (type == 'curriculum') {
+                return await models.User_Curriculum.create({ user_id: user_id, file_name: image, upload_step: 'default', name: education_type + '_' + faculty + '_Curriculum', education_type: education_type + '_curriculum', faculty: faculty, collegeId: collegeid, patteren: patteren });
+            }
+            if (type == 'gradtoper') {
+                return await models.GradeToPercentageLetter.create({ user_id: user_id, file_name: image, upload_step: 'default', name: education_type + '_' + faculty + '_GradeToPercentageLetter', faculty: faculty, collegeId: collegeid, patteren: patteren, education_type: education_type + '_GradeToPercentageLetter' });
+            }
+        } catch {
+        }
 
-	},
-    getCollegeName : async function(id){
-		try{
-		return await models.College.findOne({where :{id : id}});
-		}catch{
-		}
-	},
-    getCollegeName_unique : async function(user_id){
-		return await models.UserMarklist_Upload.findAll({where :{user_id  : user_id , app_id: {
-			[Op.eq]: null
-		}},attributes: [
-			[Sequelize.fn('DISTINCT', Sequelize.col('collegeId')), 'uniqueValues']
-		  ]});
-	},
-    getCollegeDetails_unique : async function(id){
-		return await models.College.findOne({where :{id:  id}})		
-	},
-    updateDocuments : async function(documentid,data,type){
-		var DATA = data[0]
-		var patteren;
-		var patteren_name;
-		if(DATA.patteren.name){
-			patteren =  DATA.patteren.value
-			patteren_name =  DATA.patteren.name
-		}else{
-			if(DATA.patteren.includes('Semester')){
-				patteren ='Semester'
-			}else{
-				patteren ='Annual'
-			}
-			patteren_name =  DATA.patteren
-		}
-		try{
-			if(type == 'marklist'){
-				return await models.UserMarklist_Upload.update({name : DATA.degree + '_' + DATA.faculty+ '_' + patteren_name, education_type : DATA.degree ,faculty : DATA.faculty , patteren : patteren, collegeId : DATA.collegeId ,courseClgId : DATA.degree + '_' + DATA.faculty+ '_' + patteren_name + '_' + DATA.collegeId}, { where: { id : documentid } });
-			}
-		}catch{
-		}
+    },
+    getCollegeList: async function () {
+        return await models.College.findAll({});
+    },
+    getProgramList: async function () {
+        return await models.facultymaster.findAll({ where: { id: 6 } });
+    },
+    getAppliedFor: async function (user_id, app_id) {
+        try {
+            return await models.Applied_For_Details.findOne({
+                where: {
+                    user_id: user_id, app_id: {
+                        [Op.eq]: null
+                    }
+                }
+            });
+        } catch {
+        }
+    },
+    getDistinctData: async function (user_id) {
+        return await models.UserMarklist_Upload.findAll({
+            where: {
+                user_id: user_id, app_id: {
+                    [Op.eq]: null
+                }
+            }, attributes: [
+                [Sequelize.fn('DISTINCT', Sequelize.col('courseClgId')), 'uniqueValues']
+            ]
+        });
+    },
 
-	},
+    getCollegeDetails_student: async function (name) {
+        var data = [];
+        var id = await models.UserMarklist_Upload.findOne({ where: { courseClgId: name } });
+        var college = await models.College.findOne({ where: { id: id.collegeId } })
+        data.push({ 'coursename': id.education_type + '_' + id.faculty, 'college': college.name, 'collegeid': college.id, 'faculty': id.faculty, 'education_type': id.education_type, 'patteren': id.patteren });
+        return data;
+
+    },
+    getDocumentFuntion: async function (user_id, app_id, type) {
+        try {
+            if (type == 'marklist') {
+                return await models.UserMarklist_Upload.findAll({
+                    where: {
+                        user_id: user_id, app_id: {
+                            [Op.eq]: app_id
+                        }
+                    }
+                });
+            }
+            if (type == 'transcript' || type == 'extra') {
+                return await models.User_Transcript.findAll({
+                    where: {
+                        user_id: user_id, app_id: {
+                            [Op.eq]: app_id
+                        }, education_type: {
+                            [Op.like]: '%' + type + '%'
+                        }
+                    }
+                });
+            }
+            if (type == 'curriculum') {
+                return await models.User_Curriculum.findAll({
+                    where: {
+                        user_id: user_id, app_id: {
+                            [Op.eq]: app_id
+                        }, education_type: {
+                            [Op.like]: '%' + type + '%'
+                        }
+                    }
+                });
+            }
+            if (type == 'GradeToPercentageLetter') {
+                return await models.GradeToPercentageLetter.findAll({
+                    where: {
+                        user_id: user_id, app_id: {
+                            [Op.eq]: app_id
+                        }, education_type: {
+                            [Op.like]: '%' + type + '%'
+                        }
+                    }
+                });
+            }
+        } catch {
+        }
+
+    },
+    getCollegeName: async function (id) {
+        try {
+            return await models.College.findOne({ where: { id: id } });
+        } catch {
+        }
+    },
+    getCollegeName_unique: async function (user_id) {
+        return await models.UserMarklist_Upload.findAll({
+            where: {
+                user_id: user_id, app_id: {
+                    [Op.eq]: null
+                }
+            }, attributes: [
+                [Sequelize.fn('DISTINCT', Sequelize.col('collegeId')), 'uniqueValues']
+            ]
+        });
+    },
+    getCollegeDetails_unique: async function (id) {
+        return await models.College.findOne({ where: { id: id } })
+    },
+    updateDocuments: async function (documentid, data, type) {
+        var DATA = data[0]
+        var patteren;
+        var patteren_name;
+        if (DATA.patteren.name) {
+            patteren = DATA.patteren.value
+            patteren_name = DATA.patteren.name
+        } else {
+            if (DATA.patteren.includes('Semester')) {
+                patteren = 'Semester'
+            } else {
+                patteren = 'Annual'
+            }
+            patteren_name = DATA.patteren
+        }
+        try {
+            if (type == 'marklist') {
+                return await models.UserMarklist_Upload.update({ name: DATA.degree + '_' + DATA.faculty + '_' + patteren_name, education_type: DATA.degree, faculty: DATA.faculty, patteren: patteren, collegeId: DATA.collegeId, courseClgId: DATA.degree + '_' + DATA.faculty + '_' + patteren_name + '_' + DATA.collegeId }, { where: { id: documentid } });
+            }
+        } catch {
+        }
+
+    },
+
+    getCreateActivityTrackerResend: async (user_id, updated_by, updated_item, app_id) => {
+        return models.Activitytracker.create({
+            user_id: user_id,
+            activity: 'Application resend',
+            data: updated_by + ' has resend the application and changed the tracker and status to ' + updated_item + ' of application no ' + app_id,
+            application_id: app_id ? app_id : null,
+        })
+    },
+
+    getCreateActivityTrackerReject: async (user_id, updated_by, updated_item, app_id) => {
+        return models.Activitytracker.create({
+            user_id: user_id,
+            activity: 'Application reject',
+            data: updated_by + ' has reject the application and changed the tracker & status to ' + updated_item + ' of application no ' + app_id,
+            application_id: app_id ? app_id : null,
+        })
+    },
+
+    getResendRejectApplication: async (user_id, app_id, tracker, status) => {
+        return models.Application.update({
+            tracker: tracker ? tracker : null,
+            status: status ? status : null,
+        }, { where: { id: app_id, user_id: user_id } })
+    },
+
+    getUpdateUserNotes: async (notes_data, app_id) => {
+        return models.Application.update({
+            notes: notes_data ? notes_data : null,
+        }, { where: { id: app_id } })
+    },
+
+    //using for all activities trackers
+    getCreateActivityTracker: async (user_id, app_id, activity, data) => {
+        return models.Activitytracker.create({
+            user_id: user_id ? user_id : null,
+            activity: activity ? activity : null,
+            data: data ? data : null,
+            application_id: app_id ? app_id : null,
+        })
+    },
 };
