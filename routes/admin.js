@@ -874,40 +874,208 @@ router.post('/uploadStudentDocument', (req, res) => {
 
 })
 
+/**Fetched all the Application Data based on their application TRACKER and STATUS using STORE PROCEDURE*/
 router.get('/getApplicationData', async (req, res) => {
-    console.log('/getApplicationData');
+    const tracker = req.query.tracker;
+    const status = req.query.status;
+    const app_id = req.query.app_id;
+    const limit = req.query.limit;
+    const offset = req.query.offset;
+    const name = req.query.name;
+    const email = req.query.email;
+    const globalSearch = req.query.globalSearch;
+    const students = [];  
+    const count = await functions.getApplicationCount(tracker,status,app_id,name,email,globalSearch);
 
-    var tracker = req.query.tracker;
-    var status = req.query.status;
-    var app_id = req.query.app_id;
-    var limit = req.query.limit;
-    var offset = req.query.offset;
-    var name = req.query.name;
-    var email = req.query.email;
-    var globalSearch = req.query.globalSearch;
+    const user = await models.Application.getUserApplications(tracker, status, app_id, limit, offset, name, email, globalSearch);
+    if (user) {    
+      for (const student of user) {
+        const col = await models.Application.getCollegeDetails(student.id); 
+        for(i=0;i<col.length;i++){ 
+        students.push({
+          id: student.id,
+          name: student.name,
+          email: student.email,
+          tracker: student.tracker,
+          college : col[i].college_Name,
+          status : student.status,
+          current_location: student.current_location,
+          user_id : student.user_id, 
+          instructionalField:student.instructionalField,
+          educationalDetails:student.educationalDetails,
+          CompetencyLetter : student.CompetencyLetter,
+          Letterfor_NameChange : student.LetterforNameChange,
+          gradToPer : student.gradToPer,
+          curriculum:student.curriculum,
+          affiliation : student.affiliation,
+          type : student.type,
+          notes : student.notes,
+          approved_by : student.approved_by,
+        //   collegeConfirmation : student.collegeConfirmation,
+          application_date : moment(new Date(student.created_at)).format("DD/MM/YYYY")
+        });
+       }
+      }
+  
+      res.json({
+        status: 200,
+        message: 'Students retrieved successfully',
+        data: students,
+        count:count
+      });
+    }
+});
 
-    console.log('/tracker', tracker);
-    console.log('/status', status);
-    console.log('/app_id', app_id);
-    console.log('/limit', limit);
-    console.log('/offset', offset);
-    console.log('/globalSearch', globalSearch);
+/** Reject Application Route from Pending Tab with activity Tracker*/
+router.post('/rejectApplications', async (req, res) => {
+    try {
+        const userId = req.body.user_id;
+        const appId = req.body.app_id;
+        const adminEmail = req.body.admin_email;
 
-    const data = await models.Application.getUserApplications(tracker, status, app_id, limit, offset, name, email, globalSearch);
-    var length = data.length;
-
-    if (data.length > 0) {
-        res.json({
-            status: 200,
-            data: data, length
+        const user = await models.User.findOne({ 
+            where : {
+                id : userId
+            }
         })
-    } else {
-        res.json({
+        if(user){
+        const application = await models.Application.findOne({
+            where: {
+                user_id: userId,
+                id: appId
+            }
+        });
+
+        if (application) {
+            const updatedApplication = await application.update({
+                tracker: 'apply',
+                status: 'reject'
+            });
+
+            if (updatedApplication) {
+                let data = user.name +"'s ( "+user.email+" ) application rejected by "+adminEmail+".";
+                let activity = "Application Rejected"; 
+                functions.activitylog(userId,appId,activity,data,req);
+                return res.json({
+                    status: 200,
+                    message: "User Application Rejected Successfully!"
+                });
+            } else {
+                return res.json({
+                    status: 400,
+                    message: "Application Not Rejected!"
+                });
+            }
+        } else {
+            return res.json({
+                status: 400,
+                message: "Application Not Found"
+            });
+        }
+    }else{
+        return res.json({
             status: 400,
+            message: "User Not Found"
         });
     }
+    } catch (error) {
+        console.error("Error in /rejectApplication", error);
+        return res.json({
+            status: 500,
+            message: "Internal Server Error"
+        });
+    }
+});
 
+/** Verified Application Route from Pending Tab with activity Tracker*/
+router.post('/verifiedApplication', async (req, res) => {
+    try{
+        const userId = req.body.user_id;
+        const appId = req.body.app_id;
+        const adminEmail = req.body.admin_email;
+
+        const user = await models.User.findOne({
+            where : {
+                id : userId
+            }
+        })
+        if(user) {
+            const application = await models.Application.findOne({
+                where : {
+                    user_Id : userId,
+                    id : appId
+                }
+            })
+            if(application) {
+                const updatedApplication = await application.update({
+                    tracker : 'verified',
+                    status : 'accept'
+                })
+                if (updatedApplication) {
+                    let data = user.name +"'s ( "+user.email+" ) application verified by "+adminEmail+".";
+                    let activity = "Application Verified"; 
+                    functions.activitylog(userId,appId,activity,data,req);
+                    return res.json({
+                        status: 200,
+                        message: "Application Verified Successfully!"
+                    });
+                } else {
+                    return res.json({
+                        status: 400,
+                        message: "Application Not Verified!"
+                    });
+                }
+            }  else {
+                return res.json({
+                    status: 400,
+                    message: "Application Not Found"
+                });
+            }
+        }else{
+            return res.json({
+                status: 400,
+                message: "User Not Found"
+            });
+        }
+  
+    }catch(error){
+        console.error("Error in /verifiedApplication", error);
+        return res.json({
+            status: 500,
+            message: "Internal Server Error"
+        });
+    }
 })
+
+/**Fetched all the Wes Application Data  using STORE PROCEDURE */
+router.get('/getWesApplication', async (req, res) => {
+    try {
+        const name = req.query.name;
+        const email = req.query.email;
+        const appId = req.query.app_id;
+        const wesNo = req.query.wesno;
+        const limit = req.query.limit;
+        const offset = req.query.offset;
+
+        const wesApplicationCount = await models.Institution_details.getWesData(appId, name, email, wesNo, "", "");
+        const count = wesApplicationCount.length;
+        const wesApplication = await models.Institution_details.getWesData(appId, name, email, wesNo, limit, offset);
+
+        return res.json({
+            status: 200,
+            data: wesApplication,
+            count: count
+        });
+
+    } catch (error) {
+        console.error("Error in /getWesApplication", error);
+        return res.json({
+            status: 500,
+            message: "Internal Server Error"
+        });
+    }
+})
+
 
 router.get('/getDownloadExcel', async (req, res) => {
     console.log('/getDownloadExcel');
@@ -1076,7 +1244,7 @@ router.post('/resendApplication', async (req, res) => {
         var data = user_name + "'s Application no " + app_id + " is resend by " + admin_email;
         var activity = "Application resend";
 
-        functions.getCreateActivityTracker(user_id, app_id, activity, data);
+        functions.activitylog(user_id, app_id, activity, data,req);
 
         res.json({
             status: 200,
@@ -1128,7 +1296,7 @@ router.post('/rejectApplication', async (req, res) => {
         var data = user_name + "'s Application no " + app_id + " is reject by " + admin_email;
         var activity = "Application reject";
 
-        functions.getCreateActivityTracker(user_id, app_id, activity, data);
+        functions.activitylog(user_id, app_id, activity, data,req);
 
         res.json({
             status: 200,
@@ -1160,7 +1328,7 @@ router.post('/updateNotes', async (req, res) => {
         var data = "Note of application " + app_id + " is updated by " + admin_email;
         var activity = "Note Updated";
 
-        functions.getCreateActivityTracker(user_id, app_id, activity, data);
+        functions.activitylog(user_id, app_id, activity, data,req);
 
         res.json({
             status: 200,

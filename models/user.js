@@ -40,6 +40,8 @@ User.associate = (models) => {
   User.hasOne(models.Role, { foreignKey: 'userid' });
   User.hasOne(models.Application, { foreignKey: 'user_id' });
   //User.hasMany(models.percentageToGradeLetter, { foreignKey: 'user_id' });
+User.hasMany(models.Application);
+
 };
 
 
@@ -218,6 +220,8 @@ User.getStudentManagment = function(student_id){
 }
 
 User.hasOne(sequelize.models.Application, { foreignKey: 'user_id' });
-
+// User.associate = (models) => {
+// User.hasMany(models.Application);
+// }
   return User;
 };

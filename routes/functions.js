@@ -698,4 +698,47 @@ module.exports = {
             application_id: app_id ? app_id : null,
         })
     },
+       /**Activity Tracker function */
+    activitylog : async (userId,appId,activity,data,req)=>{
+        let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;  
+        const activityTracker = await models.Activitytracker.create({
+            user_id: userId,
+			activity: activity,
+			data: data,
+			application_id: appId,
+            ip_address: ip,
+			created_at: moment()
+        })
+    },
+    /**get count of Total and filtered Application Count */
+    getApplicationCount : async (tracker,status,app_id,name,email,globalSearch)=>{
+        const whereApplication = {};
+        const whereUser = {};  
+      if (tracker) { 
+        whereApplication.tracker = tracker;
+      } 
+      if (status) {
+        whereApplication.status = status;
+      }
+      if (app_id != "null" ) {
+        whereApplication.id = {[Op.like]:`%${app_id}%`};
+      } 
+      if (name ) {
+        whereUser[Op.or] = [
+          Sequelize.literal(`CONCAT(name, ' ', surname) LIKE '%${name}%'`),
+        ];
+      } 
+      if(email != "null"){
+        whereUser.email = { [Op.like]:`%${email}%`}
+      }
+      const count = await models.Application.count({
+          include:{
+              model:models.User,
+              where: whereUser
+          },
+        where: whereApplication
+      });
+      
+      return count;
+      }
 };

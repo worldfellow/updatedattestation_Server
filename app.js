@@ -251,6 +251,10 @@ var unprotected = [
   '/api/admin/updateNotes',
   '/api/admin/getDownloadExcel',
   '/api/admin/getDownloadExcelBySaveAs',
+  '/api/admin/getApplicationData',
+  '/api/admin/rejectApplication',
+  '/api/admin/verifiedApplication',
+  '/api/admin/getWesApplication'
   
 ];
 app.use(checkjwt({
