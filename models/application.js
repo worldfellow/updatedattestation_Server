@@ -20,45 +20,17 @@ module.exports = function (sequelize, DataTypes) {
   });
 
   /**getUserApplication Function to Fetched Application data from Database using Store procedure */
-Application.getUserApplications =function(tracker,status,app_id,limit,offset,name,email,globalSearch){ 
-  let LimitOffset = "LIMIT" + " " + limit + " OFFSET" + " "+ offset; 
-  let appId;
-  let searchEmail;
-  let global_Search;
-  let app_Tracker;
-  let app_status;
-
-  if(tracker){
-    app_Tracker="AND tracker='"+tracker+"'"
-  }
-  if(status){
-    app_status="AND status='"+status+"'";
-  }
-console.log("status",status);
-  if(app_id == "null"){
-     appId ="";
-  }else{
-    appId="AND a.id='"+app_id+"'";
-  }
- if(email == "null"){
-  searchEmail ="";
-}else{
-  searchEmail="AND u.email='"+email+"'";
-} 
-if(globalSearch == "null"){
-  global_Search ="";
-}else{
-  global_Search="AND  CONCAT(u.name, ' ', u.surname, ' ',u.email, ' ',a.id) LIKE '%"+globalSearch+"%'";
-}
-  return sequelize.query('CALL sp_getTotalApplication(:where_tracker, :where_status, :where_application_id, :limitOffsetVal, :where_email, :where_name, :where_globalSearch)', {
+Application.getUserApplications =function(tracker,status,app_id,name,email,globalSearch,limit,offset){  
+  return sequelize.query('CALL sp_getTotalApplication(:where_tracker, :where_status, :where_application_id, :where_name, :where_email, :where_globalSearch, :limits, :offsets)', {
     replacements: {
-      where_tracker: app_Tracker ? app_Tracker : "",
-      where_status: app_status ? app_status :  "",
-      where_application_id: appId ? appId :  " ",
-      limitOffsetVal : LimitOffset ? LimitOffset : "",
-      where_email : searchEmail ? searchEmail : "",
+      where_tracker: tracker ? tracker : "",
+      where_status: status ? status :  "",
+      where_application_id: app_id ? app_id :  " ", 
       where_name: name ? name : " ", 
-      where_globalSearch : global_Search ? global_Search : ""
+      where_email : email ? email : "",
+      where_globalSearch : globalSearch ? globalSearch : "",
+      limits: limit ? limit : "",
+      offsets: offset ? offset : ""
   },
     type: sequelize.QueryTypes.RAW
 });

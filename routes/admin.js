@@ -885,9 +885,9 @@ router.get('/getApplicationData', async (req, res) => {
     const email = req.query.email;
     const globalSearch = req.query.globalSearch;
     const students = [];  
-    const count = await functions.getApplicationCount(tracker,status,app_id,name,email,globalSearch);
+    const count = await functions.getApplicationCount(tracker,status,app_id,name,email,globalSearch); 
 
-    const user = await models.Application.getUserApplications(tracker, status, app_id, limit, offset, name, email, globalSearch);
+    const user = await models.Application.getUserApplications(tracker, status, app_id, name, email, globalSearch, limit, offset);
     if (user) {    
       for (const student of user) {
         const col = await models.Application.getCollegeDetails(student.id); 
