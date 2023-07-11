@@ -714,23 +714,27 @@ module.exports = {
     getApplicationCount : async (tracker,status,app_id,name,email,globalSearch)=>{
         const whereApplication = {};
         const whereUser = {};  
-      if (tracker) { 
+      if (tracker) {  
         whereApplication.tracker = tracker;
       } 
       if (status) {
         whereApplication.status = status;
       }
-      if (app_id != "null" ) {
-        whereApplication.id = {[Op.like]:`%${app_id}%`};
-      } 
-      if (name ) {
-        whereUser[Op.or] = [
-          Sequelize.literal(`CONCAT(name, ' ', surname) LIKE '%${name}%'`),
-        ];
-      } 
-      if(email != "null"){
-        whereUser.email = { [Op.like]:`%${email}%`}
-      }
+    //   if (app_id) {
+    //     console.log("app_id",app_id);
+    //     whereApplication.id = {[Op.like]:`%${app_id}%`};
+    //   } 
+    //   if (name) {
+    //     console.log("name",name);
+    //     whereUser[Op.or] = [
+    //       Sequelize.literal(`CONCAT(name, ' ', surname) LIKE '%${name}%'`),
+    //     ];
+    //   } 
+    //   if(email){
+    //     console.log("email",email);
+
+    //     whereUser.email = { [Op.like]:`%${email}%`}
+    //   }
       const count = await models.Application.count({
           include:{
               model:models.User,
