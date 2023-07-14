@@ -876,53 +876,61 @@ router.post('/uploadStudentDocument', (req, res) => {
 
 /**Fetched all the Application Data based on their application TRACKER and STATUS using STORE PROCEDURE*/
 router.get('/getApplicationData', async (req, res) => {
-    const tracker = req.query.tracker;
-    const status = req.query.status;
-    const app_id = req.query.app_id;
-    const limit = req.query.limit;
-    const offset = req.query.offset;
-    const name = req.query.name;
-    const email = req.query.email;
-    const globalSearch = req.query.globalSearch;
-    const students = [];  
-    const count = await functions.getApplicationCount(tracker,status,app_id,name,email,globalSearch); 
-
-    const user = await models.Application.getUserApplications(tracker, status, app_id, name, email, globalSearch, limit, offset);
-    if (user) {    
-      for (const student of user) {
-        const col = await models.Application.getCollegeDetails(student.id); 
-        for(i=0;i<col.length;i++){ 
-        students.push({
-          id: student.id,
-          name: student.name,
-          email: student.email,
-          tracker: student.tracker,
-          college : col[i].college_Name,
-          status : student.status,
-          current_location: student.current_location,
-          user_id : student.user_id, 
-          instructionalField:student.instructionalField,
-          educationalDetails:student.educationalDetails,
-          CompetencyLetter : student.CompetencyLetter,
-          Letterfor_NameChange : student.LetterforNameChange,
-          gradToPer : student.gradToPer,
-          curriculum:student.curriculum,
-          affiliation : student.affiliation,
-          type : student.type,
-          notes : student.notes,
-          approved_by : student.approved_by,
-        //   collegeConfirmation : student.collegeConfirmation,
-          application_date : moment(new Date(student.created_at)).format("DD/MM/YYYY")
+    try {
+        const tracker = req.query.tracker;
+        const status = req.query.status;
+        const app_id = req.query.app_id;
+        const limit = req.query.limit;
+        const offset = req.query.offset;
+        const name = req.query.name;
+        const email = req.query.email;
+        const globalSearch = req.query.globalSearch;
+        const purpose = req.query.purpose_search
+        const students = [];
+        const count = await functions.getApplicationCount(tracker, status, app_id, name, email, globalSearch);
+console.log("count",count);
+        const user = await models.Application.getUserApplications(tracker, status, app_id, name, email, globalSearch, purpose, limit, offset);
+        if (user) {
+            for (const student of user) {
+                const col = await models.Application.getCollegeDetails(student.id);
+                for (i = 0; i < col.length; i++) {
+                    students.push({
+                        id: student.id,
+                        name: student.name,
+                        email: student.email,
+                        tracker: student.tracker,
+                        college: col[i].college_Name,
+                        status: student.status,
+                        current_location: student.current_location,
+                        user_id: student.user_id,
+                        instructionalField: student.instructionalField,
+                        educationalDetails: student.educationalDetails,
+                        CompetencyLetter: student.CompetencyLetter,
+                        Letterfor_NameChange: student.LetterforNameChange,
+                        gradToPer: student.gradToPer,
+                        curriculum: student.curriculum,
+                        affiliation: student.affiliation,
+                        type: student.type,
+                        notes: student.notes,
+                        approved_by: student.approved_by,
+                        //   collegeConfirmation : student.collegeConfirmation,
+                        application_date: moment(new Date(student.created_at)).format("DD/MM/YYYY")
+                    });
+                }
+            }
+            res.json({
+                status: 200,
+                message: 'Students retrieved successfully',
+                data: students,
+                count: count
+            });
+        }
+    } catch (error) {
+        console.error("Error in /getApplicationData", error);
+        return res.json({
+            status: 500,
+            message: "Internal Server Error"
         });
-       }
-      }
-  
-      res.json({
-        status: 200,
-        message: 'Students retrieved successfully',
-        data: students,
-        count:count
-      });
     }
 });
 
@@ -1076,6 +1084,62 @@ router.get('/getWesApplication', async (req, res) => {
     }
 })
 
+/**Fetched all the Emailed Application Data using STORE PROCEDURE */
+router.get('/getEmailedApplication', async (req, res) => {
+    try {
+        const appId = req.query.app_id;
+        const name = req.query.name;
+        const email = req.query.email;
+        const globalSearch = req.query.globalSearch;
+        const limit = req.query.limit;
+        const offset = req.query.offset;
+        const students = [];
+
+        const count = await models.Application.getEmailedCount(appId,name,email,globalSearch);
+
+        const EmailedData = await models.Application.getEmailedData(appId,name,email,globalSearch,limit,offset); 
+
+        if(EmailedData){
+
+            for (const student of EmailedData) { 
+                    students.push({
+                        id: student.id,
+                        name: student.name,
+                        email: student.email,  
+                        current_location: student.current_location,
+                        user_id: student.user_id,
+                        instructionalField: student.instructionalField,
+                        educationalDetails: student.educationalDetails,
+                        CompetencyLetter: student.CompetencyLetter,
+                        Letterfor_NameChange: student.LetterforNameChange,
+                        gradToPer: student.gradToPer,
+                        curriculum: student.curriculum,
+                        affiliation: student.affiliation,
+                        type: student.type,
+                        notes: student.notes,
+                        approved_by: student.approved_by,
+                        collegeConfirmation : student.collegeConfirmation,
+                        email_status: student.opens_count,
+                        application_date: moment(new Date(student.created_at)).format("DD/MM/YYYY"),
+                        updated_at: moment(new Date(student.created_at)).format("DD/MM/YYYY")
+                    }); 
+            }
+            
+            return res.json({
+                status:200,
+                data:students,
+                count: count
+            })
+
+        }
+    } catch (error) {
+        console.error("Error in /getEmailedApplication", error);
+        return res.json({
+            status: 500,
+            message: "Internal Server Error"
+        });
+    }
+})
 
 router.get('/getDownloadExcel', async (req, res) => {
     console.log('/getDownloadExcel');

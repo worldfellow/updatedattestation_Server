@@ -64,10 +64,10 @@ module.exports = function(sequelize, DataTypes) {
   }
   
 
-//   Institution_details.belongsTo(sequelize.models.Application, {foreignKey: 'app_id'});
-//   Institution_details.associate = (models) => {
-//     Institution_details.belongsTo(models.User, {foreignKey: 'user_id'});
-//   };
+  Institution_details.hasMany(sequelize.models.Application);
+  Institution_details.associate = (models) => {
+    Institution_details.belongsTo(models.User, {foreignKey: 'user_id'});
+  };
 
   
 

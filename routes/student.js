@@ -3080,6 +3080,7 @@ router.get('/getUploadeddocument_student',async function(req,res){
 		
 	}
 	var extra = await functions.getDocumentFuntion(user_id,app_id,'extra');
+	if(extra){
 	if(extra.length > 0){
 		for(var i= 0 ; i< extra.length ; i++){
 			college = await functions.getCollegeName(extra[i].collegeId);
@@ -3104,6 +3105,7 @@ router.get('/getUploadeddocument_student',async function(req,res){
 		}
 	
 	}
+}
 	DocumentData.push(marksheetData,transcriptData,transcriptDisplay,unique_college,extraData,curriculumData,gradtoperData)
 	res.json({status : 200,data : DocumentData});
 	

@@ -220,6 +220,8 @@ User.getStudentManagment = function(student_id){
 }
 
 User.hasOne(sequelize.models.Application, { foreignKey: 'user_id' });
+User.hasOne(sequelize.models.Institution_details, { foreignKey: 'user_id' });
+
 // User.associate = (models) => {
 // User.hasMany(models.Application);
 // }

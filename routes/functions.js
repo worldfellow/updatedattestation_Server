@@ -1,11 +1,12 @@
+"use strict";
 var crypto = require('crypto');
 var randomstring = require('randomstring');
 var constants = require('../config/constant');
 var moment = require('moment');
 var Moment = require('moment-timezone');
 var models = require('../models');
-algorithm = 'aes-256-ctr',
-    password = 'je93KhWE08lH9S7SN83sneI87';
+// algorithm = 'aes-256-ctr',
+//     password = 'je93KhWE08lH9S7SN83sneI87';
 var Sequelize = require("sequelize");
 const Op = Sequelize.Op;
 const express = require('express');
@@ -711,38 +712,47 @@ module.exports = {
         })
     },
     /**get count of Total and filtered Application Count */
-    getApplicationCount : async (tracker,status,app_id,name,email,globalSearch)=>{
-        const whereApplication = {};
-        const whereUser = {};  
-      if (tracker) {  
-        whereApplication.tracker = tracker;
-      } 
-      if (status) {
-        whereApplication.status = status;
-      }
-    //   if (app_id) {
-    //     console.log("app_id",app_id);
-    //     whereApplication.id = {[Op.like]:`%${app_id}%`};
-    //   } 
-    //   if (name) {
-    //     console.log("name",name);
-    //     whereUser[Op.or] = [
-    //       Sequelize.literal(`CONCAT(name, ' ', surname) LIKE '%${name}%'`),
-    //     ];
-    //   } 
-    //   if(email){
-    //     console.log("email",email);
+    getApplicationCount: async (tracker, status, app_id, name, email, globalSearch) => {
+        const whereUser = {};
+        if (tracker) {
+            whereUser.tracker = tracker;
+        }
+        if (status) {
+            whereUser.status = status;
+        }
+        if (app_id != '' && email != '' && name != '') {
+        } else {
+            if (app_id) {
+                whereUser.id = { [Op.like]: `%${app_id}%` };
+            }
+            if (name) {
+                whereUser[Op.and] = [
+                    Sequelize.literal(`CONCAT(User.name, ' ',User.surname) LIKE '%${name}%'`),
+                ];
+            }
+            if (email) {
+                whereUser[Op.and] = [
+                    Sequelize.literal(`User.email LIKE '%${email}%'`),
+                ];
+            }
+        }
 
-    //     whereUser.email = { [Op.like]:`%${email}%`}
-    //   }
-      const count = await models.Application.count({
-          include:{
-              model:models.User,
-              where: whereUser
-          },
-        where: whereApplication
-      });
-      
-      return count;
-      }
+        if (globalSearch) {
+            whereUser[Op.or] = [
+                Sequelize.literal(`CONCAT(User.name, ' ', User.surname, ' ',Application.id, ' ',User.email) LIKE '%${globalSearch}%'`),
+            ];
+        }
+        const count = await models.Application.count({
+           include: [{
+                model: models.User,
+            },
+            {
+                model:models.Institution_details,
+           }
+        ],
+            where: whereUser
+        });
+
+        return count;
+    }
 };
