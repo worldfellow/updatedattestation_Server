@@ -343,33 +343,58 @@ router.get('/getActivityTrackerList', async (req, res) => {
 router.get('/getStudentList', async (req, res) => {
     console.log('/getStudentList');
 
-    var student_id = req.query.id;
-    console.log('-----', student_id);
+    var user_id = req.query.id;
+    var limit = req.query.limit;
+    var offset = req.query.offset;
+    var name = req.query.name;
+    var email = req.query.email;
+    var user_type = req.query.user_type;
+    var globalSearch = req.query.globalSearch;
 
-    models.User.getStudentManagment(student_id).then(student => {
-        if (student.length > 0) {
-            return res.json({
-                status: 200,
-                data: student,
-            });
-        } else {
-            return res.json({
-                status: 400,
-            });
-        }
-    })
+    console.log('/name', name);
+    console.log('/email', email);
+    console.log('/user_id', user_id);
+    console.log('/limit', limit);
+    console.log('/offset', offset);
+    console.log('/globalSearch', globalSearch);
+    console.log('/user_type', user_type);
+
+    const data = await models.User.getStudentDetails(user_id, limit, offset, name, email, user_type, globalSearch);
+    console.log('dataaaa', data);
+
+    if (data.length > 0) {
+        return res.json({
+            status: 200,
+            data: data,
+        });
+    } else {
+        return res.json({
+            status: 400,
+        });
+    }
+
+    // models.User.getStudentManagment(student_id).then(student => {
+    //     if (student.length > 0) {
+    //         return res.json({
+    //             status: 200,
+    //             data: student,
+    //         });
+    //     } else {
+    //         return res.json({
+    //             status: 400,
+    //         });
+    //     }
+    // })
 })
 
 router.post('/activeinactiveUser', async (req, res) => {
     console.log('/activeinactiveUser');
 
-    var user_id = req.body.user_id;
-    var user_name = req.body.user_name;
+    var admin_email = req.body.admin_email;
+    console.log('/activeinactiveUser', admin_email);
     var event = req.body.event;
     var status;
-    var student_id = req.body.studentData.id;
-    var student_app_id = req.body.studentData.app_id;
-    var student_name = req.body.studentData.name + ' ' + req.body.studentData.surname;
+    var user_id = req.body.data.id;
 
     if (event == true) {
         status = 'active';
@@ -377,19 +402,32 @@ router.post('/activeinactiveUser', async (req, res) => {
         status = 'inactive';
     }
 
-    var activeinactive = await functions.getActiveInactiveStudent(status, student_id);
+    var userDetails = await functions.getUserData(user_id);
 
-    if (activeinactive.length > 0) {
-        var createActivityTrackerChange = await functions.getCreateActivityTrackerChange(user_id, user_name, student_name, status, student_app_id);
-        return res.json({
-            status: 200,
-            message: student_name + ' ' + status + ' successfully!',
-            data: status
-        });
+    if (userDetails) {
+        var activeinactive = await functions.getActiveInactiveUser(status, user_id);
+
+        if (activeinactive == true) {
+            var data = "sub-admin " + userDetails.name + ' ' + userDetails.surname + " is " + status + " by " + admin_email;
+            var activity = "Sub-admin " + status;
+
+            functions.getCreateActivityTracker(user_id, null, activity, data);
+
+            return res.json({
+                status: 200,
+                message: userDetails.name + ' ' + userDetails.surname + ' ' + status + ' successfully!',
+                data: status
+            });
+        } else {
+            return res.json({
+                status: 400,
+                message: 'Failed to ' + status + userDetails.name + ' ' + userDetails.surname,
+            });
+        }
     } else {
         return res.json({
             status: 400,
-            message: 'Failed to ' + status + student_name,
+            message: 'Something went wrong',
         });
     }
 })
@@ -439,7 +477,7 @@ router.post('/resetDocumentByAdmin', async (req, res) => {
     var user_id = req.body.user_id;
     var user_name = req.body.user_name;
 
-    var applicationDetails = await functions.getApplicationDetails(student_id);
+    var applicationDetails = await functions.getUserApplicationDetails(student_id);
 
     if (applicationDetails == null || applicationDetails == 'null') {
         models.Applied_For_Details.deleteUserData(student_id).then(function (appliedDetails) {
@@ -540,8 +578,11 @@ router.get('/getDocumentsData', async (req, res) => {
 
     var student_id = req.query.student_id;
     var student_app_id = req.query.student_app_id;
-    console.log('---------------********************', student_app_id);
-    let encounteredColleges = {};
+    if (student_app_id == 'null') {
+        student_app_id = null
+    }
+
+    // let encounteredColleges = {};
     var marksheetsData = [];
     var transcriptsData = [];
     var curriculumData = [];
@@ -553,6 +594,10 @@ router.get('/getDocumentsData', async (req, res) => {
     var namechangeproofData = [];
     var documentsData = [];
     var extension;
+
+    var applied_for_details = await functions.getAppliedForDetails(student_id, student_app_id);
+    console.log('............', JSON.stringify(applied_for_details));
+    console.log('applied_for_details=======', applied_for_details.educationalDetails);
 
     //marksheets
     var getApplied = await functions.getAppliedDetails(student_id, student_app_id);
@@ -575,140 +620,157 @@ router.get('/getDocumentsData', async (req, res) => {
     })
 
     //transcript
-    var getTranscripts = await functions.getUserTrascripts(student_id, student_app_id);
+    if (applied_for_details.educationalDetails == true) {
+        var getTranscripts = await functions.getUserTrascripts(student_id, student_app_id);
 
-    getTranscripts.forEach(async function (transcripts) {
-        extension = transcripts.file_name.split('.').pop();
+        getTranscripts.forEach(async function (transcripts) {
+            extension = transcripts.file_name.split('.').pop();
 
-        var collegeDetails = await functions.getCollegeDetails(transcripts.collegeId);
+            var collegeDetails = await functions.getCollegeDetails(transcripts.collegeId);
 
-        transcriptsData.push({
-            id: transcripts.id,
-            name: transcripts.name,
-            filePath: constant.BASE_URL + "/api/upload/transcript/" + student_id + "/" + transcripts.file_name,
-            extension: extension,
-            collegeName: collegeDetails.name,
-            fileName: transcripts.file_name,
+            transcriptsData.push({
+                id: transcripts.id,
+                name: transcripts.name,
+                filePath: constant.BASE_URL + "/api/upload/transcript/" + student_id + "/" + transcripts.file_name,
+                extension: extension,
+                collegeName: collegeDetails.name,
+                fileName: transcripts.file_name,
+            })
         })
-    })
+    }
 
     //instructional
-    var getInstructional = await functions.getUserInstructional(student_id, student_app_id);
+    if (applied_for_details.instructionalField == true) {
+        console.log('inideeeeeeeeeeeeeeeeee');
+        var getInstructional = await functions.getUserInstructional(student_id, student_app_id);
+        console.log('::::::::::::::::', getInstructional);
+        console.log('::::::::::::::::', getInstructional.length);
 
-    getInstructional.forEach(function (instructional) {
+        getInstructional.forEach(function (instructional) {
 
-        instructionalData.push({
-            id: instructional.id,
-            name: instructional.studentName,
-            course: instructional.courseName,
-            college: instructional.collegeName,
-            specialization: instructional.specialization,
-            duration: instructional.duration,
-            division: instructional.division,
-            yearofpassing: instructional.yearofpassing,
-            education_type: instructional.education_type,
+            instructionalData.push({
+                id: instructional.id,
+                name: instructional.studentName,
+                course: instructional.courseName,
+                college: instructional.collegeName,
+                specialization: instructional.specialization,
+                duration: instructional.duration,
+                division: instructional.division,
+                yearofpassing: instructional.yearofpassing,
+                education_type: instructional.education_type,
+            })
         })
-    })
+    }
 
     //curriculum
-    var getCurriculum = await functions.getUserCurriculum(student_id, student_app_id);
+    if (applied_for_details.curriculum == true) {
+        var getCurriculum = await functions.getUserCurriculum(student_id, student_app_id);
 
-    getCurriculum.forEach(async function (curriculum) {
-        extension = curriculum.file_name.split('.').pop();
+        getCurriculum.forEach(async function (curriculum) {
+            extension = curriculum.file_name.split('.').pop();
 
-        var collegeDetails = await functions.getCollegeDetails(curriculum.collegeId);
+            var collegeDetails = await functions.getCollegeDetails(curriculum.collegeId);
 
-        curriculumData.push({
-            id: curriculum.id,
-            name: curriculum.name,
-            filePath: constant.BASE_URL + "/api/upload/curriculum/" + student_id + "/" + curriculum.file_name,
-            extension: extension,
-            collegeName: collegeDetails.name,
-            fileName: curriculum.file_name,
+            curriculumData.push({
+                id: curriculum.id,
+                name: curriculum.name,
+                filePath: constant.BASE_URL + "/api/upload/curriculum/" + student_id + "/" + curriculum.file_name,
+                extension: extension,
+                collegeName: collegeDetails.name,
+                fileName: curriculum.file_name,
+            })
         })
-    })
+    }
 
     //gradetoper
-    var getGradtoper = await functions.getUserGradtoper(student_id, student_app_id);
+    if (applied_for_details.gradToPer == true) {
+        var getGradtoper = await functions.getUserGradtoper(student_id, student_app_id);
 
-    getGradtoper.forEach(async function (gradtoper) {
-        extension = gradtoper.file_name.split('.').pop();
+        getGradtoper.forEach(async function (gradtoper) {
+            extension = gradtoper.file_name.split('.').pop();
 
-        var collegeDetails = await functions.getCollegeDetails(gradtoper.collegeId);
+            var collegeDetails = await functions.getCollegeDetails(gradtoper.collegeId);
 
-        gradtoperData.push({
-            id: gradtoper.id,
-            name: gradtoper.name,
-            filePath: constant.BASE_URL + "/api/upload/gradeToPercentLetter/" + student_id + "/" + gradtoper.file_name,
-            extension: extension,
-            collegeName: collegeDetails.name,
-            fileName: gradtoper.file_name,
+            gradtoperData.push({
+                id: gradtoper.id,
+                name: gradtoper.name,
+                filePath: constant.BASE_URL + "/api/upload/gradeToPercentLetter/" + student_id + "/" + gradtoper.file_name,
+                extension: extension,
+                collegeName: collegeDetails.name,
+                fileName: gradtoper.file_name,
+            })
         })
-    })
+    }
 
     //affiliation
-    var getAffiliation = await functions.getUserAffiliation(student_id, student_app_id);
+    if (applied_for_details.affiliation == true) {
+        var getAffiliation = await functions.getUserAffiliation(student_id, student_app_id);
 
-    getAffiliation.forEach(function (affiliation) {
+        getAffiliation.forEach(function (affiliation) {
 
-        affiliationData.push({
-            id: affiliation.id,
-            name: affiliation.studentName,
-            course: affiliation.courseName,
-            college: affiliation.collegeName,
-            specialization: affiliation.specialization,
-            duration: affiliation.duration,
-            division: affiliation.division,
-            yearofpassing: affiliation.yearofpassing,
-            education_type: affiliation.education_type,
+            affiliationData.push({
+                id: affiliation.id,
+                name: affiliation.studentName,
+                course: affiliation.courseName,
+                college: affiliation.collegeName,
+                specialization: affiliation.specialization,
+                duration: affiliation.duration,
+                division: affiliation.division,
+                yearofpassing: affiliation.yearofpassing,
+                education_type: affiliation.education_type,
+            })
         })
-    })
+    }
 
     //competency
-    var getCompetency = await functions.getUserCompetency(student_id, student_app_id);
+    if (applied_for_details.CompetencyLetter == true) {
+        var getCompetency = await functions.getUserCompetency(student_id, student_app_id);
 
-    getCompetency.forEach(async function (competency) {
-        extension = competency.file_name.split('.').pop();
+        getCompetency.forEach(async function (competency) {
+            extension = competency.file_name.split('.').pop();
 
-        var collegeDetails = await functions.getCollegeDetails(competency.collegeId);
+            var collegeDetails = await functions.getCollegeDetails(competency.collegeId);
 
-        competencyData.push({
-            id: competency.id,
-            name: competency.name,
-            filePath: constant.BASE_URL + "/api/upload/CompetencyLetter/" + student_id + "/" + competency.file_name,
-            extension: extension,
-            collegeName: collegeDetails.name,
-            fileName: competency.file_name,
+            competencyData.push({
+                id: competency.id,
+                name: competency.name,
+                filePath: constant.BASE_URL + "/api/upload/CompetencyLetter/" + student_id + "/" + competency.file_name,
+                extension: extension,
+                collegeName: collegeDetails.name,
+                fileName: competency.file_name,
+            })
         })
-    })
+    }
 
     //letter for name change
-    var getLetterfornamechange = await functions.getUserLetterfornamechange(student_id, student_app_id);
+    if (applied_for_details.LetterforNameChange == true) {
+        var getLetterfornamechange = await functions.getUserLetterfornamechange(student_id, student_app_id);
 
-    getLetterfornamechange.forEach(async function (letterfornamechange) {
-        extension = letterfornamechange.file_name.split('.').pop();
+        getLetterfornamechange.forEach(async function (letterfornamechange) {
+            extension = letterfornamechange.file_name.split('.').pop();
 
-        var collegeDetails = await functions.getCollegeDetails(letterfornamechange.collegeId);
+            var collegeDetails = await functions.getCollegeDetails(letterfornamechange.collegeId);
 
-        letterfornamechangeData.push({
-            id: letterfornamechange.id,
-            name: letterfornamechange.name,
-            filePath: constant.BASE_URL + "/api/upload/NameChangeLetter/" + student_id + "/" + letterfornamechange.file_name,
-            extension: extension,
-            collegeName: collegeDetails.name,
-            firstnameaspermarksheet: letterfornamechange.firstnameaspermarksheet,
-            fathersnameaspermarksheet: letterfornamechange.fathersnameaspermarksheet,
-            mothersnameaspermarksheet: letterfornamechange.mothersnameaspermarksheet,
-            lastnameaspermarksheet: letterfornamechange.lastnameaspermarksheet,
-            firstnameasperpassport: letterfornamechange.firstnameasperpassport,
-            fathersnameasperpassport: letterfornamechange.fathersnameasperpassport,
-            lastnameasperpassport: letterfornamechange.lastnameasperpassport,
-            fileName: letterfornamechange.file_name,
+            letterfornamechangeData.push({
+                id: letterfornamechange.id,
+                name: letterfornamechange.name,
+                filePath: constant.BASE_URL + "/api/upload/NameChangeLetter/" + student_id + "/" + letterfornamechange.file_name,
+                extension: extension,
+                collegeName: collegeDetails.name,
+                firstnameaspermarksheet: letterfornamechange.firstnameaspermarksheet,
+                fathersnameaspermarksheet: letterfornamechange.fathersnameaspermarksheet,
+                mothersnameaspermarksheet: letterfornamechange.mothersnameaspermarksheet,
+                lastnameaspermarksheet: letterfornamechange.lastnameaspermarksheet,
+                firstnameasperpassport: letterfornamechange.firstnameasperpassport,
+                fathersnameasperpassport: letterfornamechange.fathersnameasperpassport,
+                lastnameasperpassport: letterfornamechange.lastnameasperpassport,
+                fileName: letterfornamechange.file_name,
+            })
         })
-    })
+    }
 
     //name change proof
-    var getNameChangeProof = await functions.getUserNameChangeProof(student_id, student_app_id, 'extraDocument');
+    var getNameChangeProof = await functions.getUserNameChangeProof(student_id, 'extraDocument');
 
     getNameChangeProof.forEach(async function (namechangeproof) {
         extension = namechangeproof.file_name.split('.').pop();
@@ -842,19 +904,31 @@ router.post('/updateInstructionalAffiliation', async (req, res) => {
     if (type == 'add') {
 
     } else {
-        var updateInstructionalAffiliation = await functions.getUpdateInstructionalAffiliation(id, student_app_id, formData, purpose);
+        var instructionalAffilationDetails = await functions.getInstructionalAffilationDetails(id);
 
-        if (updateInstructionalAffiliation == true) {
-            var createActivityTrackerUpdate = await functions.getCreateActivityTrackerUpdate(user_id, user_email, formData.courseName, student_app_id);
+        if (instructionalAffilationDetails) {
+            var updateInstructionalAffiliation = await functions.getUpdateInstructionalAffiliation(id, student_app_id, formData, purpose);
 
-            return res.json({
-                status: 200,
-                message: formData.courseName + ' updated successfully',
-            });
+            if (updateInstructionalAffiliation == true) {
+                var data = "'s Instructional details of " + app_id + " is updated by " + user_email;
+                var activity = "Instructional details update";
+
+                functions.getCreateActivityTracker(student_id, student_app_id, activity, data);
+
+                return res.json({
+                    status: 200,
+                    message: formData.courseName + ' updated successfully',
+                });
+            } else {
+                res.json({
+                    status: 400,
+                    message: 'Failed to update ' + formData.courseName,
+                });
+            }
         } else {
             res.json({
                 status: 400,
-                message: 'Failed to update ' + formData.courseName,
+                message: 'Something went wrong',
             });
         }
     }
@@ -876,153 +950,129 @@ router.post('/uploadStudentDocument', (req, res) => {
 
 /**Fetched all the Application Data based on their application TRACKER and STATUS using STORE PROCEDURE*/
 router.get('/getApplicationData', async (req, res) => {
-    try {
-        const tracker = req.query.tracker;
-        const status = req.query.status;
-        const app_id = req.query.app_id;
-        const limit = req.query.limit;
-        const offset = req.query.offset;
-        const name = req.query.name;
-        const email = req.query.email;
-        const globalSearch = req.query.globalSearch;
-        const purpose = req.query.purpose_search
-        const students = [];
-        const count = await functions.getApplicationCount(tracker, status, app_id, name, email, globalSearch);
-console.log("count",count);
-        const user = await models.Application.getUserApplications(tracker, status, app_id, name, email, globalSearch, purpose, limit, offset);
-        if (user) {
-            for (const student of user) {
-                const col = await models.Application.getCollegeDetails(student.id);
-                for (i = 0; i < col.length; i++) {
-                    students.push({
-                        id: student.id,
-                        name: student.name,
-                        email: student.email,
-                        tracker: student.tracker,
-                        college: col[i].college_Name,
-                        status: student.status,
-                        current_location: student.current_location,
-                        user_id: student.user_id,
-                        instructionalField: student.instructionalField,
-                        educationalDetails: student.educationalDetails,
-                        CompetencyLetter: student.CompetencyLetter,
-                        Letterfor_NameChange: student.LetterforNameChange,
-                        gradToPer: student.gradToPer,
-                        curriculum: student.curriculum,
-                        affiliation: student.affiliation,
-                        type: student.type,
-                        notes: student.notes,
-                        approved_by: student.approved_by,
-                        //   collegeConfirmation : student.collegeConfirmation,
-                        application_date: moment(new Date(student.created_at)).format("DD/MM/YYYY")
-                    });
-                }
-            }
-            res.json({
-                status: 200,
-                message: 'Students retrieved successfully',
-                data: students,
-                count: count
-            });
-        }
-    } catch (error) {
-        console.error("Error in /getApplicationData", error);
-        return res.json({
-            status: 500,
-            message: "Internal Server Error"
+    console.log('/getApplicationData');
+
+    var tracker = req.query.tracker;
+    var status = req.query.status;
+    var app_id = req.query.app_id;
+    var limit = req.query.limit;
+    var offset = req.query.offset;
+    var name = req.query.name;
+    var email = req.query.email;
+    var globalSearch = req.query.globalSearch;
+    var purposeSearch = req.query.purposeSearch;
+
+    console.log('/tracker', tracker);
+    console.log('/status', status);
+    console.log('/app_id', app_id);
+    console.log('/limit', limit);
+    console.log('/offset', offset);
+    console.log('/globalSearch', globalSearch);
+    console.log('/purposeSearch', purposeSearch);
+
+    const data = await models.Application.getUserApplications(tracker, status, app_id, limit, offset, name, email, globalSearch, purposeSearch);
+    var length = data.length;
+
+    if (data.length > 0) {
+        res.json({
+            status: 200,
+            data: data, length
+        })
+    } else {
+        res.json({
+            status: 400,
         });
     }
-});
+
+})
 
 /** Reject Application Route from Pending Tab with activity Tracker*/
-router.post('/rejectApplications', async (req, res) => {
-    try {
-        const userId = req.body.user_id;
-        const appId = req.body.app_id;
-        const adminEmail = req.body.admin_email;
+router.post('/rejectApplication', async (req, res) => {
+    console.log('/rejectApplication');
 
-        const user = await models.User.findOne({ 
-            where : {
-                id : userId
-            }
-        })
-        if(user){
-        const application = await models.Application.findOne({
-            where: {
-                user_id: userId,
-                id: appId
-            }
-        });
+    var user_id = req.body.user_id;
+    var app_id = req.body.app_id;
+    var user_name = req.body.user_name;
+    var type = req.body.type;
+    var admin_email = req.body.admin_email;
+    var tracker;
+    var status;
 
-        if (application) {
-            const updatedApplication = await application.update({
-                tracker: 'apply',
-                status: 'reject'
-            });
+    //verified to pending
+    if (type == 'pending') {
+        tracker = 'apply';
+        status = 'reject';
+    } else {
+        tracker = 'verified';
+        status = 'accept';
+    }
 
-            if (updatedApplication) {
-                let data = user.name +"'s ( "+user.email+" ) application rejected by "+adminEmail+".";
-                let activity = "Application Rejected"; 
-                functions.activitylog(userId,appId,activity,data,req);
-                return res.json({
-                    status: 200,
-                    message: "User Application Rejected Successfully!"
-                });
-            } else {
-                return res.json({
-                    status: 400,
-                    message: "Application Not Rejected!"
-                });
-            }
+    //signed to verified
+    if (type == 'verified') {
+        tracker = 'verified';
+        status = 'reject';
+    } else {
+        tracker = 'signed';
+        status = 'accept';
+    }
+
+    var applicationDetails = await functions.getApplicationDetails(app_id);
+
+    if (applicationDetails) {
+        var reject = await functions.getResendRejectApplication(user_id, app_id, tracker, status);
+
+        if (reject == true) {
+            var data = user_name + "'s Application no " + app_id + " is reject by " + admin_email;
+            var activity = "Application reject";
+
+            functions.getCreateActivityTracker(user_id, app_id, activity, data);
+
+            res.json({
+                status: 200,
+                message: 'Application reject successfully to ' + type + ' applications',
+            })
         } else {
-            return res.json({
+            res.json({
                 status: 400,
-                message: "Application Not Found"
-            });
+                message: 'Failed to reject application',
+            })
         }
-    }else{
-        return res.json({
+    } else {
+        res.json({
             status: 400,
-            message: "User Not Found"
-        });
+            message: 'Something went wrong',
+        })
     }
-    } catch (error) {
-        console.error("Error in /rejectApplication", error);
-        return res.json({
-            status: 500,
-            message: "Internal Server Error"
-        });
-    }
-});
+})
 
 /** Verified Application Route from Pending Tab with activity Tracker*/
 router.post('/verifiedApplication', async (req, res) => {
-    try{
+    try {
         const userId = req.body.user_id;
         const appId = req.body.app_id;
         const adminEmail = req.body.admin_email;
 
         const user = await models.User.findOne({
-            where : {
-                id : userId
+            where: {
+                id: userId
             }
         })
-        if(user) {
+        if (user) {
             const application = await models.Application.findOne({
-                where : {
-                    user_Id : userId,
-                    id : appId
+                where: {
+                    user_Id: userId,
+                    id: appId
                 }
             })
-            if(application) {
+            if (application) {
                 const updatedApplication = await application.update({
-                    tracker : 'verified',
-                    status : 'accept'
+                    tracker: 'verified',
+                    status: 'accept'
                 })
                 if (updatedApplication) {
-                    let data = user.name +"'s ( "+user.email+" ) application verified by "+adminEmail+".";
-                    let activity = "Application Verified"; 
-                    functions.activitylog(userId,appId,activity,data,req);
+                    let data = user.name + "'s ( " + user.email + " ) application verified by " + adminEmail + ".";
+                    let activity = "Application Verified";
+                    functions.activitylog(userId, appId, activity, data, req);
                     return res.json({
                         status: 200,
                         message: "Application Verified Successfully!"
@@ -1033,20 +1083,20 @@ router.post('/verifiedApplication', async (req, res) => {
                         message: "Application Not Verified!"
                     });
                 }
-            }  else {
+            } else {
                 return res.json({
                     status: 400,
                     message: "Application Not Found"
                 });
             }
-        }else{
+        } else {
             return res.json({
                 status: 400,
                 message: "User Not Found"
             });
         }
-  
-    }catch(error){
+
+    } catch (error) {
         console.error("Error in /verifiedApplication", error);
         return res.json({
             status: 500,
@@ -1095,39 +1145,39 @@ router.get('/getEmailedApplication', async (req, res) => {
         const offset = req.query.offset;
         const students = [];
 
-        const count = await models.Application.getEmailedCount(appId,name,email,globalSearch);
+        const count = await models.Application.getEmailedCount(appId, name, email, globalSearch);
 
-        const EmailedData = await models.Application.getEmailedData(appId,name,email,globalSearch,limit,offset); 
+        const EmailedData = await models.Application.getEmailedData(appId, name, email, globalSearch, limit, offset);
 
-        if(EmailedData){
+        if (EmailedData) {
 
-            for (const student of EmailedData) { 
-                    students.push({
-                        id: student.id,
-                        name: student.name,
-                        email: student.email,  
-                        current_location: student.current_location,
-                        user_id: student.user_id,
-                        instructionalField: student.instructionalField,
-                        educationalDetails: student.educationalDetails,
-                        CompetencyLetter: student.CompetencyLetter,
-                        Letterfor_NameChange: student.LetterforNameChange,
-                        gradToPer: student.gradToPer,
-                        curriculum: student.curriculum,
-                        affiliation: student.affiliation,
-                        type: student.type,
-                        notes: student.notes,
-                        approved_by: student.approved_by,
-                        collegeConfirmation : student.collegeConfirmation,
-                        email_status: student.opens_count,
-                        application_date: moment(new Date(student.created_at)).format("DD/MM/YYYY"),
-                        updated_at: moment(new Date(student.created_at)).format("DD/MM/YYYY")
-                    }); 
+            for (const student of EmailedData) {
+                students.push({
+                    id: student.id,
+                    name: student.name,
+                    email: student.email,
+                    current_location: student.current_location,
+                    user_id: student.user_id,
+                    instructionalField: student.instructionalField,
+                    educationalDetails: student.educationalDetails,
+                    CompetencyLetter: student.CompetencyLetter,
+                    Letterfor_NameChange: student.LetterforNameChange,
+                    gradToPer: student.gradToPer,
+                    curriculum: student.curriculum,
+                    affiliation: student.affiliation,
+                    type: student.type,
+                    notes: student.notes,
+                    approved_by: student.approved_by,
+                    collegeConfirmation: student.collegeConfirmation,
+                    email_status: student.opens_count,
+                    application_date: moment(new Date(student.created_at)).format("DD/MM/YYYY"),
+                    updated_at: moment(new Date(student.created_at)).format("DD/MM/YYYY")
+                });
             }
-            
+
             return res.json({
-                status:200,
-                data:students,
+                status: 200,
+                data: students,
                 count: count
             })
 
@@ -1300,27 +1350,33 @@ router.post('/resendApplication', async (req, res) => {
         status = 'accept';
     }
 
-    var resend = await functions.getResendRejectApplication(user_id, app_id, tracker, status);
-    console.log('resend-------->', resend);
-    console.log('resend-------->', resend.length);
+    var applicationDetails = await functions.getApplicationDetails(app_id);
 
-    if (resend == true) {
-        var data = user_name + "'s Application no " + app_id + " is resend by " + admin_email;
-        var activity = "Application resend";
+    if (applicationDetails) {
+        var resend = await functions.getResendRejectApplication(user_id, app_id, tracker, status);
 
-        functions.activitylog(user_id, app_id, activity, data,req);
+        if (resend == true) {
+            var data = user_name + "'s Application no " + app_id + " is resend by " + admin_email;
+            var activity = "Application resend";
 
-        res.json({
-            status: 200,
-            message: 'Application resend successfully ' + type + ' applications',
-        })
+            functions.getCreateActivityTracker(user_id, app_id, activity, data);
+
+            res.json({
+                status: 200,
+                message: 'Application resend successfully ' + type + ' applications',
+            })
+        } else {
+            res.json({
+                status: 400,
+                message: 'Failed to resend application',
+            })
+        }
     } else {
         res.json({
             status: 400,
-            message: 'Failed to resend application',
+            message: 'Something went wrong',
         })
     }
-
 })
 
 router.post('/rejectApplication', async (req, res) => {
@@ -1360,7 +1416,7 @@ router.post('/rejectApplication', async (req, res) => {
         var data = user_name + "'s Application no " + app_id + " is reject by " + admin_email;
         var activity = "Application reject";
 
-        functions.activitylog(user_id, app_id, activity, data,req);
+        functions.activitylog(user_id, app_id, activity, data, req);
 
         res.json({
             status: 200,
@@ -1381,30 +1437,192 @@ router.post('/updateNotes', async (req, res) => {
     var notes_data = req.body.notes_data;
     var user_id = req.body.user_id;
     var app_id = req.body.app_id;
-    // var type = req.body.type;
     var admin_email = req.body.admin_email;
 
-    var updateNotes = await functions.getUpdateUserNotes(notes_data, app_id);
-    console.log('up----------------', updateNotes);
-    console.log('up----------------', updateNotes.length);
+    var applicationDetails = await functions.getApplicationDetails(app_id);
 
-    if (updateNotes == true) {
-        var data = "Note of application " + app_id + " is updated by " + admin_email;
-        var activity = "Note Updated";
+    if (applicationDetails) {
+        var updateNotes = await functions.getUpdateUserNotes(notes_data, app_id);
 
-        functions.activitylog(user_id, app_id, activity, data,req);
+        if (updateNotes == true) {
+            var data = "Note of application " + app_id + " is updated by " + admin_email;
+            var activity = "Note Updated";
 
+            functions.getCreateActivityTracker(user_id, app_id, activity, data);
+
+            res.json({
+                status: 200,
+                message: "Notes Saved Successfully!",
+            })
+        } else {
+            res.json({
+                status: 400,
+                message: "Failed to save notes",
+            })
+        }
+    } else {
+        res.json({
+            status: 400,
+            message: "Something went wrong",
+        })
+    }
+})
+
+router.get('/getRolesData', async (req, res) => {
+    console.log('/getRolesData');
+
+    var rolesData = [];
+    var i = 1;
+
+    var subAdminDetails = await functions.getAllUserDetails('sub-admin');
+
+    if (subAdminDetails.length > 0) {
+        for (const subadmin of subAdminDetails) {
+            var roleDetails = await functions.getRoleDetails(subadmin.id);
+
+            rolesData.push({
+                srNo: i++,
+                id: subadmin.id,
+                name: subadmin.name + ' ' + subadmin.surname,
+                email: subadmin.email,
+                status: subadmin.user_status,
+                roles: roleDetails,
+            })
+        }
+
+        if (rolesData.length > 0) {
+            res.json({
+                status: 200,
+                data: rolesData
+            })
+        } else {
+            res.json({
+                status: 400,
+            });
+        }
+    } else {
+        res.json({
+            status: 400,
+        });
+    }
+})
+
+router.get('/getUserDetails', async (req, res) => {
+    console.log('/getUserDetails');
+
+    var user_id = req.query.user_id;
+
+    var userDetails = await functions.getUserData(user_id);
+
+    if (userDetails) {
         res.json({
             status: 200,
-            message: "Notes Saved Successfully!",
+            data: userDetails,
         })
     } else {
         res.json({
             status: 400,
-            message: "Failed to save notes",
         })
     }
+})
 
+router.post('/getUpdateSubAdmin', async (req, res) => {
+    console.log('/getUpdateSubAdmin');
+
+    var user_id = req.body.user_id;
+    var formData = req.body.formData;
+    var type = req.body.type;
+    var admin_email = req.body.admin_email;
+
+    if (type == 'add') {
+        var password = "P@ssw0rd";
+        var hashPassword = functions.generateHashPassword(password);
+        var otp = functions.generateRandomString(6, 'numeric');
+
+        var createSubAdmin = await functions.getCreateUser(formData, hashPassword, otp);
+
+        if (createSubAdmin) {
+            var data = admin_email + " is added sub-admin " + createSubAdmin.name + ' ' + createSubAdmin.surname;
+            var activity = "Added sub-admin";
+
+            functions.getCreateActivityTracker(user_id, null, activity, data);
+
+            res.json({
+                status: 200,
+                message: "Sub-admin added successfully!",
+            })
+        } else {
+            res.json({
+                status: 400,
+                message: "Failed to add sub-admin",
+            })
+        }
+    } else {
+        var userDetails = await functions.getUserData(user_id);
+
+        if (userDetails) {
+            var updateSubAdmin = await functions.getUpdateUser(user_id, formData);
+
+            if (updateSubAdmin == true) {
+                var data = "sub-admin " + userDetails.name + ' ' + userDetails.surname + " is updated by " + admin_email;
+                var activity = "Update sub-admin";
+
+                functions.getCreateActivityTracker(user_id, null, activity, data);
+
+                res.json({
+                    status: 200,
+                    message: "Sub-admin added successfully!",
+                })
+            } else {
+                res.json({
+                    status: 400,
+                    message: "Failed to add sub-admin",
+                })
+            }
+        } else {
+            res.json({
+                status: 400,
+                message: "Something went wrong!",
+            })
+        }
+    }
+})
+
+router.post('/getUpdateRoles', async (req, res) => {
+    console.log('/getUpdateRoles');
+
+    var user_id = req.body.user_id;
+    var formData = req.body.formData;
+    var admin_email = req.body.admin_email;
+
+    var userDetails = await functions.getUserData(user_id);
+    var rolesDetails = await functions.getRolesData(user_id);
+
+    if (rolesDetails) {
+        var updateRoles = await functions.getUpdateRoles(user_id, formData);
+
+        if (updateRoles == true) {
+            var data = admin_email + " is update roles of sub-admin " + userDetails.name + ' ' + userDetails.surname;
+            var activity = "Added sub-admin";
+
+            functions.getCreateActivityTracker(user_id, null, activity, data);
+
+            res.json({
+                status: 200,
+                message: "Roles update successfully!",
+            })
+        } else {
+            res.json({
+                status: 400,
+                message: "Failed to update roles",
+            })
+        }
+    } else {
+        res.json({
+            status: 400,
+            message: "Something went wrong!",
+        })
+    }
 })
 
 module.exports = router;

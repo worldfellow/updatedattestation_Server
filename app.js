@@ -255,7 +255,11 @@ var unprotected = [
   '/api/admin/rejectApplication',
   '/api/admin/verifiedApplication',
   '/api/admin/getWesApplication',
-  '/api/admin/getEmailedApplication'
+  '/api/admin/getEmailedApplication',
+  '/api/admin/getRolesData',
+  '/api/admin/getUserDetails',
+  '/api/admin/getUpdateSubAdmin',
+  '/api/admin/getUpdateRoles',
   
 ];
 app.use(checkjwt({

@@ -448,14 +448,14 @@ module.exports = {
     },
 
 
-    getAllStudentDetails: async (user_type) => {
+    getAllUserDetails: async (user_type) => {
         return models.User.findAll({ where: { user_type: user_type } })
     },
 
-    getActiveInactiveStudent: async (status, student_id) => {
+    getActiveInactiveUser: async (status, user_id) => {
         return models.User.update({
             user_status: status,
-        }, { where: { id: student_id } })
+        }, { where: { id: user_id } })
     },
 
     getResetPassword: async (hashPassword, user_id) => {
@@ -464,7 +464,7 @@ module.exports = {
         }, { where: { id: user_id } })
     },
 
-    getApplicationDetails: async (student_id) => {
+    getUserApplicationDetails: async (student_id) => {
         return models.Application.findOne({ where: { user_id: student_id } })
     },
 
@@ -699,16 +699,16 @@ module.exports = {
             application_id: app_id ? app_id : null,
         })
     },
-       /**Activity Tracker function */
-    activitylog : async (userId,appId,activity,data,req)=>{
-        let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;  
+    /**Activity Tracker function */
+    activitylog: async (userId, appId, activity, data, req) => {
+        let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
         const activityTracker = await models.Activitytracker.create({
             user_id: userId,
-			activity: activity,
-			data: data,
-			application_id: appId,
+            activity: activity,
+            data: data,
+            application_id: appId,
             ip_address: ip,
-			created_at: moment()
+            created_at: moment()
         })
     },
     /**get count of Total and filtered Application Count */
@@ -743,16 +743,82 @@ module.exports = {
             ];
         }
         const count = await models.Application.count({
-           include: [{
+            include: [{
                 model: models.User,
             },
             {
-                model:models.Institution_details,
-           }
-        ],
+                model: models.Institution_details,
+            }
+            ],
             where: whereUser
         });
 
         return count;
-    }
+    },
+
+    getApplicationDetails: async (app_id) => {
+        return models.Application.findOne({ where: { id: app_id } })
+    },
+
+    getInstructionalAffilationDetails: async (id) => {
+        return models.InstructionalDetails.findOne({ where: { id: id } })
+    },
+
+    getUserData: async (user_id) => {
+        return models.User.findOne({ where: { id: user_id } })
+    },
+
+    getCreateUser: async (formData, hashPassword, otp) => {
+        return models.User.create({
+            name: formData.allName ? formData.allName : null,
+            surname: formData.allSurname ? formData.allSurname : null,
+            email: formData.allEmail ? formData.allEmail : null,
+            mobile: formData.allMobile ? formData.allMobile : null,
+            gender: formData.allGender ? formData.allGender : null,
+            password: hashPassword ? hashPassword : null,
+            user_status: 'active',
+            user_type: 'sub-admin',
+            postal_code: '',
+            otp: otp ? otp : null,
+            is_otp_verified: 1,
+            is_email_verified: 0
+        })
+    },
+
+    getUpdateUser: async (user_id, formData) => {
+        return models.User.update({
+            name: formData.allName ? formData.allName : null,
+            surname: formData.allSurname ? formData.allSurname : null,
+            email: formData.allEmail ? formData.allEmail : null,
+            mobile: formData.allMobile ? formData.allMobile : null,
+            gender: formData.allGender ? formData.allGender : null,
+        }, { where: { id: user_id } })
+    },
+
+    getRolesData: async (user_id) => {
+        return models.Role.findOne({ where: { userid: user_id } })
+    },
+
+    getUpdateRoles: async (user_id, formData) => {
+        return models.Role.update({
+            studentManagement: formData.studentManagement ? formData.studentManagement : 0,
+            adminManagement: formData.adminManagement ? formData.adminManagement : 0,
+            adminTotal: formData.adminTotal ? formData.adminTotal : 0,
+            adminPending: formData.adminPending ? formData.adminPending : 0,
+            adminVerified: formData.adminVerified ? formData.adminVerified : 0,
+            adminSigned: formData.adminSigned ? formData.adminSigned : 0,
+            adminWesApp: formData.adminWesApp ? formData.adminWesApp : 0,
+            adminemailed: formData.adminemailed ? formData.adminemailed : 0,
+            adminPayment: formData.adminPayment ? formData.adminPayment : 0,
+            adminEmailTracker: formData.adminEmailTracker ? formData.adminEmailTracker : 0,
+            adminReport: formData.adminReport ? formData.adminReport : 0,
+            adminActivityTracker: formData.adminActivityTracker ? formData.adminActivityTracker : 0,
+            adminhelp: formData.adminhelp ? formData.adminhelp : 0,
+            studentFeedback: formData.studentFeedback ? formData.studentFeedback : 0,
+        }, { where: { userid: user_id } })
+    },
+
+    getInstituteData: async (institute_id) => {
+        return models.Institution_details.findOne({ where: { id: institute_id } })
+    },
 };
