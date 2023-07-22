@@ -1,4 +1,7 @@
 This is a server side code for attestation module 
+# Version
+
+node - @16.19.0
 
 To run this locally 
 1)make sure node-dev is installed then issue the command
