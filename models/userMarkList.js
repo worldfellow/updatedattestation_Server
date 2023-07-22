@@ -55,9 +55,9 @@ module.exports = function(sequelize, DataTypes) {
    return sequelize.query(query, { type: sequelize.QueryTypes.DELETE});
   }
 
-  userMarkList.belongsTo(sequelize.models.User, {foreignKey: 'user_id'});
-  userMarkList.belongsTo(sequelize.models.College, {foreignKey: 'collegeId'});
-  userMarkList.belongsTo(sequelize.models.Application, {foreignKey: 'app_id'});
+  // userMarkList.belongsTo(sequelize.models.User, {foreignKey: 'user_id'});
+  // userMarkList.belongsTo(sequelize.models.College, {foreignKey: 'collegeId'});
+  // userMarkList.belongsTo(sequelize.models.Application, {foreignKey: 'app_id'});
 
 //   userMarkList.hasOne(sequelize.models.Emailed_Docs, { foreignKey: 'transcript_id' });
   

@@ -13,6 +13,7 @@ const express = require('express');
 var router = express.Router();
 const cfg = require('../auth/config');
 const jwt = require('jwt-simple');
+const { groupBy } = require('async');
 // const secret = cfg.jwtSecret;
 // const jsonwebtoken = require('jsonwebtoken');
 // const token = headers.authorization.split(' ')[1];
@@ -684,10 +685,16 @@ module.exports = {
         }, { where: { id: app_id, user_id: user_id } })
     },
 
-    getUpdateUserNotes: async (notes_data, app_id) => {
-        return models.Application.update({
-            notes: notes_data ? notes_data : null,
-        }, { where: { id: app_id } })
+    getUpdateUserNotes: async (notes_data, app_id,type) => {
+        const data={};
+        if (type == "rejected"){
+            data.rejectedNotes = notes_data
+        }else{
+            data.notes = notes_data
+        } 
+        return models.Application.update(
+            data
+        , { where: { id: app_id } })
     },
 
     //using for all activities trackers
@@ -713,6 +720,68 @@ module.exports = {
     },
     /**get count of Total and filtered Application Count */
     getApplicationCount: async (tracker, status, app_id, name, email, globalSearch) => {
+        const whereUser = {};
+
+
+         
+        if (tracker) {
+            whereUser.tracker = tracker;
+        }
+        if (status) {
+            whereUser.status = status;
+        }
+        if (app_id != '' && email != '' && name != '') {
+        } else {
+            if (app_id) {
+                whereUser.id = { [Op.like]: `%${app_id}%` };
+            }
+            if (name) {
+                whereUser[Op.and] = [
+                    Sequelize.literal(`CONCAT(User.name, ' ',User.surname) LIKE '%${name}%'`),
+                ];
+            }
+            if (email) {
+                whereUser[Op.and] = [
+                    Sequelize.literal(`User.email LIKE '%${email}%'`),
+                ];
+            }
+        }
+
+        if (globalSearch) {
+            whereUser[Op.or] = [
+                Sequelize.literal(`CONCAT(User.name, ' ', User.surname, ' ',Application.id, ' ',User.email) LIKE '%${globalSearch}%'`),
+            ];
+        }
+        // const count = await models.Application.count({
+        //    include: [{
+        //         model: models.User,
+        //     },
+        //     {
+        //         model:models.Institution_details,
+        //    }
+        // ],
+        //     where: whereUser
+        // });
+
+        const count = await models.Application.count({
+            include: [{
+                 model: models.User, 
+             },
+             {
+                 model:models.Institution_details, 
+            },
+            {
+             model:models.Applied_For_Details, 
+        } 
+         ],
+             where: whereUser,
+         });
+
+        return count;
+    },
+
+      /**get totalapplication data through sequelize joins for backup */
+    getApplicationData: async (tracker, status, app_id, name, email, globalSearch,limits,offsets) => {
         const whereUser = {};
         if (tracker) {
             whereUser.tracker = tracker;
@@ -742,83 +811,65 @@ module.exports = {
                 Sequelize.literal(`CONCAT(User.name, ' ', User.surname, ' ',Application.id, ' ',User.email) LIKE '%${globalSearch}%'`),
             ];
         }
-        const count = await models.Application.count({
-            include: [{
+        const data = await models.Application.findAndCountAll({
+           include: [{
                 model: models.User,
+                attributes:['email','current_location','name','surname']
             },
             {
-                model: models.Institution_details,
-            }
-            ],
-            where: whereUser
+                model:models.Institution_details,
+               attributes:['email','OtherEmail','refno','type']
+           },
+           {
+            model:models.Applied_For_Details,
+           attributes:['applied_for','educationalDetails','gradToPer','instructionalField','curriculum','CompetencyLetter','affiliation']
+       } 
+        ],
+            where: whereUser,
+            attributes:['id','tracker','status','user_id','collegeConfirmation','transcriptRequiredMail','approved_by','notes','created_at'],
+            limit: 10,
+            offset: 0,
+            raw:true,
+            order: [['created_at', 'DESC']]
         });
 
-        return count;
+        return data;
     },
+    /**get college data through sequelize joins for backup */
+    check: async (appID) => {
+        const result = await models.UserMarklist_Upload.findAll({
+          include: [
+            {
+              model: models.College,
+              attributes: []
+            },
+          ],
+          where: {
+            app_id: appID,
+          },
+          attributes: [
+            [Sequelize.fn('GROUP_CONCAT', Sequelize.literal('DISTINCT College.name')), 'collegeNames']
+          ],
+          group: ['UserMarklist_Upload.app_id'],
+        });
+        console.log("result: ", result);
+        return result;
+      },
+      
+    /**get user data function to get user data by userId*/
+    getUser: async (userId) => {
+        const user = await models.User.findByPk(userId);
+        return user;
+      },
+    /** get user Application data function to get userApplication data by appId*/
+      getApplication: async (appId) => {
+        const application = await models.Application.findByPk(appId);
+        return application;
+      },
 
-    getApplicationDetails: async (app_id) => {
-        return models.Application.findOne({ where: { id: app_id } })
-    },
+      getWesData : async (appId) => {
+        const wesData = await models.Wes_Records.findAll({where:{appl_id:appId}});
+        return wesData;
+      }
 
-    getInstructionalAffilationDetails: async (id) => {
-        return models.InstructionalDetails.findOne({ where: { id: id } })
-    },
-
-    getUserData: async (user_id) => {
-        return models.User.findOne({ where: { id: user_id } })
-    },
-
-    getCreateUser: async (formData, hashPassword, otp) => {
-        return models.User.create({
-            name: formData.allName ? formData.allName : null,
-            surname: formData.allSurname ? formData.allSurname : null,
-            email: formData.allEmail ? formData.allEmail : null,
-            mobile: formData.allMobile ? formData.allMobile : null,
-            gender: formData.allGender ? formData.allGender : null,
-            password: hashPassword ? hashPassword : null,
-            user_status: 'active',
-            user_type: 'sub-admin',
-            postal_code: '',
-            otp: otp ? otp : null,
-            is_otp_verified: 1,
-            is_email_verified: 0
-        })
-    },
-
-    getUpdateUser: async (user_id, formData) => {
-        return models.User.update({
-            name: formData.allName ? formData.allName : null,
-            surname: formData.allSurname ? formData.allSurname : null,
-            email: formData.allEmail ? formData.allEmail : null,
-            mobile: formData.allMobile ? formData.allMobile : null,
-            gender: formData.allGender ? formData.allGender : null,
-        }, { where: { id: user_id } })
-    },
-
-    getRolesData: async (user_id) => {
-        return models.Role.findOne({ where: { userid: user_id } })
-    },
-
-    getUpdateRoles: async (user_id, formData) => {
-        return models.Role.update({
-            studentManagement: formData.studentManagement ? formData.studentManagement : 0,
-            adminManagement: formData.adminManagement ? formData.adminManagement : 0,
-            adminTotal: formData.adminTotal ? formData.adminTotal : 0,
-            adminPending: formData.adminPending ? formData.adminPending : 0,
-            adminVerified: formData.adminVerified ? formData.adminVerified : 0,
-            adminSigned: formData.adminSigned ? formData.adminSigned : 0,
-            adminWesApp: formData.adminWesApp ? formData.adminWesApp : 0,
-            adminemailed: formData.adminemailed ? formData.adminemailed : 0,
-            adminPayment: formData.adminPayment ? formData.adminPayment : 0,
-            adminEmailTracker: formData.adminEmailTracker ? formData.adminEmailTracker : 0,
-            adminReport: formData.adminReport ? formData.adminReport : 0,
-            adminActivityTracker: formData.adminActivityTracker ? formData.adminActivityTracker : 0,
-            adminhelp: formData.adminhelp ? formData.adminhelp : 0,
-            studentFeedback: formData.studentFeedback ? formData.studentFeedback : 0,
-        }, { where: { userid: user_id } })
-    },
-
-    getInstituteData: async (institute_id) => {
-        return models.Institution_details.findOne({ where: { id: institute_id } })
-    },
 };

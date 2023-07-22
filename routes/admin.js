@@ -19,7 +19,8 @@ const e = require('express');
 const { pattern } = require('pdfkit');
 const { log } = require('console');
 var json2xls = require('json2xls');
-
+const { promisify } = require('util');  
+const unlinkAsync = promisify(fs.unlink);
 
 router.post('/updateOtp', async (req, res) => {
     console.log('/updateOtp');
@@ -950,100 +951,178 @@ router.post('/uploadStudentDocument', (req, res) => {
 
 /**Fetched all the Application Data based on their application TRACKER and STATUS using STORE PROCEDURE*/
 router.get('/getApplicationData', async (req, res) => {
-    console.log('/getApplicationData');
-
-    var tracker = req.query.tracker;
-    var status = req.query.status;
-    var app_id = req.query.app_id;
-    var limit = req.query.limit;
-    var offset = req.query.offset;
-    var name = req.query.name;
-    var email = req.query.email;
-    var globalSearch = req.query.globalSearch;
-    var purposeSearch = req.query.purposeSearch;
-
-    console.log('/tracker', tracker);
-    console.log('/status', status);
-    console.log('/app_id', app_id);
-    console.log('/limit', limit);
-    console.log('/offset', offset);
-    console.log('/globalSearch', globalSearch);
-    console.log('/purposeSearch', purposeSearch);
-
-    const data = await models.Application.getUserApplications(tracker, status, app_id, limit, offset, name, email, globalSearch, purposeSearch);
-    var length = data.length;
-
-    if (data.length > 0) {
-        res.json({
-            status: 200,
-            data: data, length
-        })
-    } else {
-        res.json({
-            status: 400,
-        });
-    }
-
-})
-
-/** Reject Application Route from Pending Tab with activity Tracker*/
-router.post('/rejectApplication', async (req, res) => {
-    console.log('/rejectApplication');
-
-    var user_id = req.body.user_id;
-    var app_id = req.body.app_id;
-    var user_name = req.body.user_name;
-    var type = req.body.type;
-    var admin_email = req.body.admin_email;
-    var tracker;
-    var status;
-
-    //verified to pending
-    if (type == 'pending') {
-        tracker = 'apply';
-        status = 'reject';
-    } else {
-        tracker = 'verified';
-        status = 'accept';
-    }
-
-    //signed to verified
-    if (type == 'verified') {
-        tracker = 'verified';
-        status = 'reject';
-    } else {
-        tracker = 'signed';
-        status = 'accept';
-    }
-
-    var applicationDetails = await functions.getApplicationDetails(app_id);
-
-    if (applicationDetails) {
-        var reject = await functions.getResendRejectApplication(user_id, app_id, tracker, status);
-
-        if (reject == true) {
-            var data = user_name + "'s Application no " + app_id + " is reject by " + admin_email;
-            var activity = "Application reject";
-
-            functions.getCreateActivityTracker(user_id, app_id, activity, data);
-
+    try {
+        const tracker = req.query.tracker;
+        const status = req.query.status;
+        const app_id = req.query.app_id;
+        const limit = req.query.limit;
+        const offset = req.query.offset;
+        const name = req.query.name;
+        const email = req.query.email;
+        const globalSearch = req.query.globalSearch;
+        const purpose = req.query.purpose_search
+        const students = [];
+        const count = await functions.getApplicationCount(tracker, status, app_id, name, email, globalSearch);
+console.log("count",count);
+        const user = await models.Application.getUserApplications(tracker, status, app_id, name, email, globalSearch, purpose, limit, offset);
+        if (user) {
+            for (const student of user) {
+                const col = await models.Application.getCollegeDetails(student.id);
+                for (i = 0; i < col.length; i++) {
+                    students.push({
+                        id: student.id,
+                        name: student.name,
+                        email: student.email,
+                        tracker: student.tracker,
+                        college: col[i].college_Name,
+                        status: student.status,
+                        current_location: student.current_location,
+                        user_id: student.user_id,
+                        instructionalField: student.instructionalField,
+                        educationalDetails: student.educationalDetails,
+                        CompetencyLetter: student.CompetencyLetter,
+                        Letterfor_NameChange: student.LetterforNameChange,
+                        gradToPer: student.gradToPer,
+                        curriculum: student.curriculum,
+                        affiliation: student.affiliation,
+                        type: student.type,
+                        notes: student.notes,
+                        approved_by: student.approved_by,
+                        //   collegeConfirmation : student.collegeConfirmation,
+                        application_date: moment(new Date(student.created_at)).format("DD/MM/YYYY")
+                    });
+                }
+            }
             res.json({
                 status: 200,
-                message: 'Application reject successfully to ' + type + ' applications',
-            })
-        } else {
-            res.json({
-                status: 400,
-                message: 'Failed to reject application',
-            })
+                message: 'Students retrieved successfully',
+                data: students,
+                count: count
+            });
         }
-    } else {
-        res.json({
-            status: 400,
-            message: 'Something went wrong',
-        })
+    } catch (error) {
+        console.error("Error in /getApplicationData", error);
+        return res.json({
+            status: 500,
+            message: "Internal Server Error"
+        });
     }
+});
+
+router.get('/test', async (req,res)=>{
+    const tracker = req.query.tracker;
+    const status = req.query.status;
+    const app_id = req.query.app_id;
+    const name = req.query.name;
+    const email = req.query.email;
+    const globalSearch = req.query.globalSearch;
+    const limits = req.query.limit;
+    const offsets = req.query.offset;
+    let students=[];
+    const count = await functions.getApplicationCount(tracker, status, app_id, name, email, globalSearch);
+    console.log("data",count);
+ 
+    const user = await functions.getApplicationData(tracker, status, app_id, name, email, globalSearch,limits,offsets); 
+    if (user) {
+        for (const student of user['rows']) {
+                console.log("student.id", student.id); 
+                const col = await functions.check(student.id); 
+ 
+                    //   const collegeName = result[0].dataValues.college_Name;
+                    //   console.log(collegeName);
+                   
+                    for (i = 0; i < col.length; i++) {
+               
+                  console.log("col[i].collegeNames",col[i].dataValues.collegeNames);
+                students.push({
+                    id: student.id,
+                    name: student['User.name'],
+                    email: student['User.email'],
+                    tracker: student.tracker,
+                    college: col[i].dataValues.collegeNames,
+                    status: student.status,
+                    current_location: student['User.current_location'],
+                    user_id: student.user_id,
+                    instructionalField: student['Applied_For_Detail.instructionalField'],
+                    educationalDetails: student['Applied_For_Detail.educationalDetails'],
+                    CompetencyLetter: student['Applied_For_Detail.CompetencyLetter'],
+                    Letterfor_NameChange: student['Applied_For_Detail.LetterforNameChange'],
+                    gradToPer: student['Applied_For_Detail.gradToPer'],
+                    curriculum: student['Applied_For_Detail.curriculum'],
+                    affiliation: student['Applied_For_Detail.affiliation'],
+                    type: student['Institution_detail.type'],
+                    notes: student.notes,
+                    approved_by: student.approved_by,
+                      collegeConfirmation : student.collegeConfirmation,
+                    application_date: moment(new Date(student.created_at)).format("DD/MM/YYYY")
+                });
+            }
+            };
+        }
+        return res.json({
+            status: 200,
+            message: 'Students retrieved successfully',
+            data: students,
+            count: count
+        });
+    
 })
+
+/** Reject Application Route from Pending and verified Tab with activity Tracker*/
+router.post('/rejectApplications', async (req, res) => {
+    try {
+        const userId = req.body.user_id;
+        const appId = req.body.app_id;
+        const adminEmail = req.body.admin_email;
+        const type = req.body.type;
+        const tracker = type === 'pending' ? 'apply' : type === 'verified' ? 'verified' : undefined; 
+
+        const user = await functions.getUser(userId);
+
+        if (user) {
+
+            const application = await functions.getApplication(appId);
+
+            if (application) {
+                const updatedApplication = await application.update({
+                    tracker: tracker,
+                    status: 'reject'
+                });
+
+                if (updatedApplication) {
+                    let data = user.name + "'s ( " + user.email + " ) application rejected by " + adminEmail + ".";
+                    let activity = "Application Rejected";
+                    functions.activitylog(userId, appId, activity, data, req);
+                    return res.json({
+                        status: 200,
+                        message: "User Application Rejected Successfully!"
+                    });
+                } else {
+                    return res.json({
+                        status: 400,
+                        message: "Application Not Rejected!"
+                    });
+                }
+            } else {
+                return res.json({
+                    status: 400,
+                    message: "Application Not Found"
+                });
+            }
+        } else {
+            return res.json({
+                status: 400,
+                message: "User Not Found"
+            });
+        }
+    } catch (error) {
+        console.error("Error in /rejectApplication", error);
+        return res.json({
+            status: 500,
+            message: "Internal Server Error"
+        });
+    }
+});
 
 /** Verified Application Route from Pending Tab with activity Tracker*/
 router.post('/verifiedApplication', async (req, res) => {
@@ -1052,19 +1131,13 @@ router.post('/verifiedApplication', async (req, res) => {
         const appId = req.body.app_id;
         const adminEmail = req.body.admin_email;
 
-        const user = await models.User.findOne({
-            where: {
-                id: userId
-            }
-        })
-        if (user) {
-            const application = await models.Application.findOne({
-                where: {
-                    user_Id: userId,
-                    id: appId
-                }
-            })
-            if (application) {
+        const user = await functions.getUser(userId);
+
+        if(user) {
+
+            const application = await functions.getApplication(appId);
+
+            if(application) {
                 const updatedApplication = await application.update({
                     tracker: 'verified',
                     status: 'accept'
@@ -1321,112 +1394,126 @@ router.get('/getDownloadExcelBySaveAs', (req, res) => {
     res.download(downloadData);
 })
 
+/** Resend Application Route from verified,signed and emailed Tab with activity Tracker*/
 router.post('/resendApplication', async (req, res) => {
-    console.log('/resendApplication');
 
-    var user_id = req.body.user_id;
-    var app_id = req.body.app_id;
-    var user_name = req.body.user_name;
-    var type = req.body.type;
-    var admin_email = req.body.admin_email;
-    var tracker;
-    var status;
+    try {
+        const userId = req.body.user_id;
+        const appId = req.body.app_id;
+        const type = req.body.type;
+        const adminEmail = req.body.admin_email;
+        const tracker = type === 'pending' ? 'apply' : type === 'verified' ? 'verified' : undefined;
+        const status = type === 'pending' ? 'new' : type === 'verified' ? 'accept' : undefined;
 
-    //verified to pending
-    if (type == 'pending') {
-        tracker = 'apply';
-        status = 'new';
-    } else {
-        tracker = 'verified';
-        status = 'accept';
-    }
+        const user = await functions.getUser(userId);
 
-    //signed to verified
-    if (type == 'verified') {
-        tracker = 'verified';
-        status = 'accept';
-    } else {
-        tracker = 'signed';
-        status = 'accept';
-    }
+        if (user) {
 
-    var applicationDetails = await functions.getApplicationDetails(app_id);
+            const application = await functions.getApplication(appId);
 
-    if (applicationDetails) {
-        var resend = await functions.getResendRejectApplication(user_id, app_id, tracker, status);
+            if (application) {
+                const updatedApplication = await application.update({
+                    tracker: tracker,
+                    status: status
+                });
+                if (updatedApplication) {
+                    let data = user.name + "'s Application no " + appId + "is application resend by " + adminEmail + ".";
+                    let activity = "Application Resend";
+                    functions.activitylog(userId, appId, activity, data, req);
+                    return res.json({
+                        status: 200,
+                        message: `User Application Successfully Resend to ${type} Application!`
+                    });
+                } else {
+                    return res.json({
+                        status: 400,
+                        message: "Application Not Resend!"
+                    });
+                }
+            } else {
+                return res.json({
+                    status: 400,
+                    message: "Application Not Found"
+                });
+            }
 
-        if (resend == true) {
-            var data = user_name + "'s Application no " + app_id + " is resend by " + admin_email;
-            var activity = "Application resend";
-
-            functions.getCreateActivityTracker(user_id, app_id, activity, data);
-
-            res.json({
-                status: 200,
-                message: 'Application resend successfully ' + type + ' applications',
-            })
         } else {
-            res.json({
+            return res.json({
                 status: 400,
-                message: 'Failed to resend application',
-            })
+                message: "User Not Found"
+            });
         }
-    } else {
-        res.json({
-            status: 400,
-            message: 'Something went wrong',
-        })
+
+    } catch (error) {
+        console.error("Error in /resendApplication", error);
+        return res.json({
+            status: 500,
+            message: "Internal Server Error"
+        });
     }
 })
 
-router.post('/rejectApplication', async (req, res) => {
-    console.log('/rejectApplication');
+/** Resend Wes Application Route from Wes Tab with activity Tracker*/
+router.post('/resendWesApplication', async (req, res) => {
+    const appId = req.body.app_id;
+    const userId = req.body.user_id;
+    console.log("req.body", req.body);
+    try {
+        const application = await functions.getApplication(appId);
 
-    var user_id = req.body.user_id;
-    var app_id = req.body.app_id;
-    var user_name = req.body.user_name;
-    var type = req.body.type;
-    var admin_email = req.body.admin_email;
-    var tracker;
-    var status;
+        if (application) {
+            const wes_Records = await functions.getWesData(appId);
 
-    //verified to pending
-    if (type == 'pending') {
-        tracker = 'apply';
-        status = 'reject';
-    } else {
-        tracker = 'verified';
-        status = 'accept';
-    }
-
-    //signed to verified
-    if (type == 'verified') {
-        tracker = 'verified';
-        status = 'reject';
-    } else {
-        tracker = 'signed';
-        status = 'accept';
-    }
-
-    var reject = await functions.getResendRejectApplication(user_id, app_id, tracker, status);
-    console.log('reject-------->', reject);
-    console.log('reject-------->', reject.length);
-
-    if (reject == true) {
-        var data = user_name + "'s Application no " + app_id + " is reject by " + admin_email;
-        var activity = "Application reject";
-
-        functions.activitylog(user_id, app_id, activity, data, req);
-
-        res.json({
-            status: 200,
-            message: 'Application reject successfully to ' + type + ' applications',
-        })
-    } else {
-        res.json({
-            status: 400,
-            message: 'Failed to reject application',
-        })
+            if (wes_Records) {
+                for (const wesRecord of wes_Records) {
+                    // const filePath = constant.FILE_LOCATION + 'public/signedpdf/' + userId + '/' + wesRecord.fileName;
+                    // await unlinkAsync(filePath);
+                    const delWes = await wesRecord.destroy();
+                    if (delWes) {
+                        const email_docs = await models.Emailed_Docs.findOne({
+                            where: {
+                                filename: wesRecord.fileName,
+                                app_id: appId
+                            }
+                        })
+                        if (email_docs) {
+                            await email_docs.destroy();
+                        }
+                    }
+                }
+                const applicationUpdated = await application.update({
+                    tracker: 'verified',
+                    status : 'accept'
+                });
+                if (applicationUpdated) {
+                    return res.json({
+                        status: 200,
+                        message: "Application resent to verified tab."
+                    });
+                } else {
+                    return res.json({
+                        status: 400,
+                        message: "Failed to update this application"
+                    });
+                }
+            } else {
+                return res.json({
+                    status: 404,
+                    message: "WES record not found."
+                });
+            }
+        } else {
+            return res.json({
+                status: 404,
+                message: "Application not found."
+            });
+        }
+    } catch (error) {
+        console.error("Error in /resendWesApplication", error);
+        return res.json({
+            status: 500,
+            message: "Internal Server Error"
+        });
     }
 
 })
@@ -1437,16 +1524,13 @@ router.post('/updateNotes', async (req, res) => {
     var notes_data = req.body.notes_data;
     var user_id = req.body.user_id;
     var app_id = req.body.app_id;
+    var type = req.body.type;
     var admin_email = req.body.admin_email;
 
-    var applicationDetails = await functions.getApplicationDetails(app_id);
-
-    if (applicationDetails) {
-        var updateNotes = await functions.getUpdateUserNotes(notes_data, app_id);
-
-        if (updateNotes == true) {
-            var data = "Note of application " + app_id + " is updated by " + admin_email;
-            var activity = "Note Updated";
+    var updateNotes = await functions.getUpdateUserNotes(notes_data, app_id,type);
+    if (updateNotes.length == true) {
+        var data = "Note of application " + app_id + " is updated by " + admin_email;
+        var activity = "Note Updated";
 
             functions.getCreateActivityTracker(user_id, app_id, activity, data);
 

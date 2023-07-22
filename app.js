@@ -247,12 +247,11 @@ var unprotected = [
   '/api/admin/updateInstructionalAffiliation',
   '/api/admin/getApplicationData',
   '/api/admin/resendApplication',
-  '/api/admin/rejectApplication',
+  '/api/admin/rejectApplications',
   '/api/admin/updateNotes',
   '/api/admin/getDownloadExcel',
   '/api/admin/getDownloadExcelBySaveAs',
-  '/api/admin/getApplicationData',
-  '/api/admin/rejectApplication',
+  '/api/admin/getApplicationData', 
   '/api/admin/verifiedApplication',
   '/api/admin/getWesApplication',
   '/api/admin/getEmailedApplication',
@@ -260,6 +259,8 @@ var unprotected = [
   '/api/admin/getUserDetails',
   '/api/admin/getUpdateSubAdmin',
   '/api/admin/getUpdateRoles',
+  '/api/admin/test',
+  '/api/admin/resendWesApplication'
   
 ];
 app.use(checkjwt({

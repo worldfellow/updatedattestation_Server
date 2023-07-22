@@ -20,11 +20,11 @@ module.exports = function(sequelize, DataTypes) {
     return sequelize.query(query, { type: sequelize.QueryTypes.DELETE});
   }
 
-
-  appliedForDetails.associate = (models) => {
-    appliedForDetails.belongsTo(models.User, {foreignKey: 'user_id'});
-    appliedForDetails.belongsTo(models.Application, {foreignKey: 'app_id'});
-};
+  appliedForDetails.belongsTo(sequelize.models.Application);
+//   appliedForDetails.associate = (models) => {
+//     appliedForDetails.belongsTo(models.User, {foreignKey: 'user_id'});
+//     appliedForDetails.belongsTo(models.Application, {foreignKey: 'app_id'}); 
+// };
   
   return appliedForDetails;
 };

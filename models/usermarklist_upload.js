@@ -114,10 +114,16 @@ module.exports = function(sequelize, DataTypes) {
     var query = "DELETE FROM UserMarklist_Upload WHERE user_id = " + user_id;
     return sequelize.query(query, { type: sequelize.QueryTypes.DELETE});
   }
+  // UserMarklist_Upload.hasMany(sequelize.models.Application);
+  // UserMarklist_Upload.belongsTo(sequelize.Collage,{foreignKey:'collegeId'}) 
 
+  UserMarklist_Upload.belongsTo(sequelize.models.College, {foreignKey: 'collegeId'});
   UserMarklist_Upload.belongsTo(sequelize.models.User, {foreignKey: 'user_id'});
   UserMarklist_Upload.belongsTo(sequelize.models.userMarkList, {foreignKey: 'user_marklist_id'});
-  UserMarklist_Upload.belongsTo(sequelize.models.Application, {foreignKey: 'app_id'});
+  // UserMarklist_Upload.belongsTo(sequelize.models.Application, {foreignKey: 'app_id'});
+
+
+  UserMarklist_Upload.belongsTo(sequelize.models.Application, { foreignKey: 'app_id' }); 
   
   return UserMarklist_Upload;
 };

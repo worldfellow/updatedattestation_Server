@@ -13,19 +13,24 @@ module.exports = function(sequelize, DataTypes) {
     type : DataTypes.STRING(20)
 });
 
-collegeList.getColleges = function(){
-  var query = "SELECT * FROM College ORDER BY name";
-  return sequelize.query(query, { type: sequelize.QueryTypes.SELECT});
-}
+// collegeList.getColleges = function(){
+//   var query = "SELECT * FROM College ORDER BY name";
+//   return sequelize.query(query, { type: sequelize.QueryTypes.SELECT});
+// }
 
-collegeList.getAllColleges = function(limit,offset){
-  var limitOffset = '';
-  if (limit != null && offset != null) {
-    limitOffset = ' LIMIT ' + limit + ' OFFSET ' + offset;
-  }
-  var query = "SELECT * FROM College ORDER BY name";
-  query += limitOffset;
-  return sequelize.query(query, { type: sequelize.QueryTypes.SELECT});
+// collegeList.getAllColleges = function(limit,offset){
+//   var limitOffset = '';
+//   if (limit != null && offset != null) {
+//     limitOffset = ' LIMIT ' + limit + ' OFFSET ' + offset;
+//   }
+//   var query = "SELECT * FROM College ORDER BY name";
+//   query += limitOffset;
+//   return sequelize.query(query, { type: sequelize.QueryTypes.SELECT});
+// }
+
+
+collegeList.associate = (models) => {
+  collegeList.hasMany(sequelize.models.UserMarklist_Upload);
 }
 
 return collegeList;
