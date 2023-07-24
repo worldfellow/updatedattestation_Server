@@ -161,7 +161,7 @@ Paramater : formdata and user_id of student */
 router.post('/educationalDetails', middlewares.getUserInfo, async (req, res) => {
 	console.log("/educationalDetails");
 
-	var user_id = req.body.user_id;
+	var user_id = req.User.id;
 	var degree = req.body.degree;
 	app_id = req.body.app_id;
 	if (app_id == 'null' || app_id == null || app_id == undefined || app_id == '') {
@@ -195,7 +195,7 @@ router.post('/educationalDetails', middlewares.getUserInfo, async (req, res) => 
 /* Author : Prathmesh Pawar
 Route : getPurposeList - get list of purpose for dropdown list name in step 3 and show inputs on addInstitutionDialog box as per table boolean values.
 Paramater : purposeList and purpose_name of student */
-router.get('/getPurposeList', async (req, res) => {
+router.get('/getPurposeList', middlewares.getUserInfo,async (req, res) => {
 	console.log("/getPurposeList");
 
 	var purpose_name = req.query.purpose_name;
@@ -220,7 +220,7 @@ router.get('/getPurposeList', async (req, res) => {
 /* Author : Prathmesh Pawar
 Route : updateAllInstitute - create & update purpose data of student side.
 Paramater : type, refNo, wesEmail, wesName, wesSurname, universityCompanyName, name, countryName, contactPersonName, contactNo, emails, user_type, user_id, app_id, institute_id and function_type of student */
-router.post('/updateAllInstitute', async (req, res) => {
+router.post('/updateAllInstitute',middlewares.getUserInfo, async (req, res) => {
 	console.log('/updateAllInstitute');
 
 	var formData = req.body.formData;
@@ -228,7 +228,7 @@ router.post('/updateAllInstitute', async (req, res) => {
 	var emailArr;
 	var anotherEmailArr;
 	var anotherEmail;
-	var user_id = req.body.user_id;
+	var user_id = req.User.id;
 	var amount;
 	var app_id = req.body.app_id;
 	var type = req.body.type;
@@ -330,12 +330,12 @@ router.post('/updateAllInstitute', async (req, res) => {
 /* Author : Prathmesh Pawar
 Route : deleteInstituteHrd - delete both purpose records all institute as well as hrd.
 Paramater : institute_id, purpose_name and user_id of student */
-router.post('/deleteInstituteHrd', async (req, res) => {
+router.post('/deleteInstituteHrd', middlewares.getUserInfo, async (req, res) => {
 	console.log('/deleteInstitute');
 
 	var institute_id = req.body.institute_id;
 	var purpose_name = req.body.purpose_name;
-	var user_id = req.body.user_id;
+	var user_id = req.User.id;
 
 	if (purpose_name == 'HRD') {
 		var deleteHrd = await functions.getDeleteHrd(institute_id);
@@ -392,7 +392,7 @@ router.post('/deleteInstituteHrd', async (req, res) => {
 /* Author : Prathmesh Pawar
 Route : getInstituteData - get all institute data to show on purpose page and get single institute data for patchvales while editing.
 Paramater : app_id, purpose_name, user_type, institute_id and user_id of student */
-router.get('/getInstituteData', async (req, res) => {
+router.get('/getInstituteData',middlewares.getUserInfo, async (req, res) => {
 	console.log('/getInstituteData');
 
 	var purpose_name = req.query.purpose_name;
@@ -402,7 +402,7 @@ router.get('/getInstituteData', async (req, res) => {
 	} else {
 		app_id = req.query.app_id
 	}
-	var user_id = req.query.user_id;
+	var user_id = req.User.id;
 	var institute_id = req.query.institute_id;
 	var status;
 	var data = [];
@@ -499,10 +499,10 @@ router.get('/getInstituteData', async (req, res) => {
 /* Author : Prathmesh Pawar
 Route : getAppliedDetails - get students details that is applied for which degree.
 Paramater : app_id, user_type and user_id of student */
-router.get('/getAppliedDetails', async (req, res) => {
+router.get('/getAppliedDetails',middlewares.getUserInfo, async (req, res) => {
 	console.log('/getAppliedDetails');
 
-	var user_id = req.query.user_id;
+	var user_id = req.User.id;
 	var app_id = req.query.app_id;
 	var Masters;
 	var Bachelors;
@@ -544,10 +544,10 @@ router.get('/getAppliedDetails', async (req, res) => {
 /* Author : Prathmesh Pawar
 Route : getHrdInfo - get students details for pre-filled name & course_name & annual semester pattern as well as for diierent courses.
 Paramater : degree_type, faculty_type and user_id of student */
-router.get('/getHrdInfo', async (req, res) => {
+router.get('/getHrdInfo',middlewares.getUserInfo, async (req, res) => {
 	console.log('/getHrdInfo');
 
-	var user_id = req.query.user_id;
+	var user_id = req.User.id;
 	var degree_type = req.query.degree_type;
 	var data = [];
 	let encounteredFaculties = {};
@@ -598,11 +598,11 @@ router.get('/getHrdInfo', async (req, res) => {
 /* Author : Prathmesh Pawar
 Route : updateAllHrd - create & update hrd purpose data of student side.
 Paramater : degree_type, faculty_type, formData, function_type, secondlastSem, lastSem, purpose_name, hrd_id and user_id of student */
-router.post('/updateAllHrd', async (req, res) => {
+router.post('/updateAllHrd',middlewares.getUserInfo, async (req, res) => {
 	console.log('/updateAllHrd');
 
 	var formData = req.body.formData;
-	var user_id = req.body.user_id;
+	var user_id = req.User.id;
 	var function_type = req.body.function_type;
 	var secondlastSem = req.body.secondlastSem;
 	var degree_type = req.body.degree_type;
@@ -716,13 +716,11 @@ router.post('/updateAllHrd', async (req, res) => {
 /* Author : Prathmesh Pawar
 Route : getHrdData - get all hrd data to show on purpose page and get single hrd data for patchvales while editing.
 Paramater : purpose_name, hrd_id and user_id of student */
-router.get('/getHrdData', async (req, res) => {
+router.get('/getHrdData',middlewares.getUserInfo, async (req, res) => {
 	console.log('/getHrdData');
 
-	var user_id = req.query.user_id;
-	console.log('/user_id', user_id);
+	var user_id = req.User.id;
 	var hrd_id = req.query.hrd_id;
-	console.log('/hrd_id', hrd_id);
 	var purpose_name = req.query.purpose_name;
 	var app_id = req.query.app_id;
 	if (app_id == 'null' || app_id == null || app_id == undefined || app_id == '') {
@@ -763,10 +761,10 @@ router.get('/getHrdData', async (req, res) => {
 /* Author : Prathmesh Pawar
 Route : preViewApplication - get all data to show users all details like educational,marksheets n all on preview page.
 Paramater : user_id of student */
-router.get('/preViewApplication', async (req, res) => {
+router.get('/preViewApplication',middlewares.getUserInfo, async (req, res) => {
 	console.log('/preViewApplication');
 
-	var user_id = req.query.user_id;
+	var user_id = req.User.id;
 	let encounteredColleges = {};
 	var educationalDetails = [];
 	var collegeData = [];
@@ -980,8 +978,8 @@ router.get('/preViewApplication', async (req, res) => {
  * Fetched the Document of curriculum Uploaded by user by its UserId.
  * @query {Integer} userId - The userId of the Uploaded curriculum Document to fetch the Data of user.
  */
-router.get('/getuploadedCurriculum', async (req, res) => {
-	const userId = req.query.user_id;
+router.get('/getuploadedCurriculum',middlewares.getUserInfo, async (req, res) => {
+	const userId = req.User.id;
 	const curriculumInfos = [];
 	let counts = 0
 	const curriculums = await models.User_Curriculum.findAll({
@@ -1032,10 +1030,10 @@ router.get('/getuploadedCurriculum', async (req, res) => {
  * Fetched the Data of ExtraDocuments uploaded by User by its userId.
  * @query {Integer} userId - The userId of the Uploaded ExtraDocument to fetch the Data of user.
  */
-router.get('/getExtraDocuments', async (req, res) => {
+router.get('/getExtraDocuments',middlewares.getUserInfo, async (req, res) => {
 	try {
 		const data = [];
-		const userId = req.query.user_id;
+		const userId = req.User.id;
 		const userExtraDoc = await models.User_Transcript.findAll({
 			where: {
 				user_id: userId,
@@ -1095,9 +1093,9 @@ router.get('/getCollegeList', async (req, res) => {
 /**
  * Fetch Details such as college course pattern and upload documents.
  */
-router.post('/ScanData', async (req, res) => {
+router.post('/ScanData',middlewares.getUserInfo, async (req, res) => {
 	try {
-		var user_id = req.query.user_id;
+		var user_id = req.User.id;
 		var app_id = req.query.app_id;
 		var type = req.query.value;
 		var education_type = req.query.education_type;
@@ -1263,8 +1261,8 @@ router.get('/getFacultyLists', async (req, res) => {
  * Fetched the NameChange Data of user by its UserId.
  * @query {Integer} userId - The userId of the NameChangeData Document to fetch the Data of user.
  */
-router.get('/getNameChangeData', async (req, res) => {
-	const userId = req.query.user_id
+router.get('/getNameChangeData', middlewares.getUserInfo,async (req, res) => {
+	const userId = req.User.id;
 	let filename = [];
 	const user = await models.Letterfor_NameChange.findOne({
 		where: {
@@ -1285,9 +1283,9 @@ router.get('/getNameChangeData', async (req, res) => {
 })
 
 /** Instructional and Affiliation Details*/
-router.get('/getletterDetails', async (req, res) => {
+router.get('/getletterDetails',middlewares.getUserInfo, async (req, res) => {
 	try {
-		const userId = req.query.user_id;
+		const userId = req.User.id;
 		// const appId = req.query.app_id;
 		const degreeValue = req.query.degrees;
 		var degreeVal = degreeValue.split(",");
@@ -1360,9 +1358,9 @@ router.get('/getletterDetails', async (req, res) => {
 
 
 /**Instructional And Affiliation Form Length  */
-router.get('/getInstructionalForms', async (req, res) => {
+router.get('/getInstructionalForms',middlewares.getUserInfo, async (req, res) => {
 	try {
-		const userId = req.query.user_id;
+		const userId = req.User.id;
 		const userMarkList = await models.UserMarklist_Upload.findAll({
 			where: {
 				user_id: userId
@@ -1425,9 +1423,9 @@ router.get('/getInstructionalForms', async (req, res) => {
 
 
 /** Get Route of user Applied Details */
-router.get('/getAppliedUserDetail', async (req, res) => {
+router.get('/getAppliedUserDetail',middlewares.getUserInfo, async (req, res) => {
 	try {
-		const userId = req.query.user_id;
+		const userId = req.User.id;
 		const user = await models.Applied_For_Details.findOne({
 			where: {
 				user_id: userId
@@ -1459,9 +1457,9 @@ router.get('/getAppliedUserDetail', async (req, res) => {
  * @param {String} transcript_doc - Type of the document
  * @param {Integer} collegeId - College ID of the document
  */
-router.post('/upload_gradeToPercentLetter', async (req, res) => {
+router.post('/upload_gradeToPercentLetter',middlewares.getUserInfo, async (req, res) => {
 	try {
-		const userId = req.query.user_id;
+		const userId = req.User.id;
 		let image;
 		const degree_name = req.query.degree_name;
 		const transcript_doc = req.query.hiddentype;
@@ -1644,10 +1642,10 @@ router.post('/upload_gradeToPercentLetter', async (req, res) => {
 /**
  * @
  */
-router.post('/saveUserMarkList', async (req, res) => {
+router.post('/saveUserMarkList',middlewares.getUserInfo, async (req, res) => {
 	var documentid = req.body.documentid;
 	var app_id = req.body.app_id;
-	var user_id = req.body.user_id;
+	var user_id = req.User.id;
 	var type = req.body.value;
 	var data = req.body.data;
 	var updateDocuments = await functions.updateDocuments(documentid, data, type);
@@ -1817,9 +1815,9 @@ router.post('/saveUserMarkList', async (req, res) => {
  * @param {String} transcript_doc - Type of the document
  * @param {Integer} collegeId - College ID of the document
  */
-router.post('/upload_transcript', async (req, res) => {
+router.post('/upload_transcript',middlewares.getUserInfo, async (req, res) => {
 	try {
-		const userId = req.query.user_id;
+		const userId = req.User.id;
 		let image;
 		const transcript_name = req.query.transcript_name;
 		const transcript_doc = req.query.hiddentype;
@@ -2006,8 +2004,8 @@ router.post('/upload_transcript', async (req, res) => {
  * @param {Integer} collegeId - College ID of the document
  * 
  */
-router.post('/upload_curriculum', async (req, res) => {
-	const userId = req.query.user_id;
+router.post('/upload_curriculum',middlewares.getUserInfo, async (req, res) => {
+	const userId = req.User.id;
 	let image;
 	const transcript_name = req.query.transcript_name;
 	const transcript_doc = req.query.hiddentype;
@@ -2191,8 +2189,8 @@ router.post('/upload_curriculum', async (req, res) => {
  * @param {String} competency_doc - Type of the document
  * @param {Integer} collegeId - College ID of the document
  */
-router.post('/upload_CompetencyLetter', async (req, res) => {
-	const userId = req.query.user_id;
+router.post('/upload_CompetencyLetter',middlewares.getUserInfo, async (req, res) => {
+	const userId = req.User.id;
 	let image;
 	const competency_name = req.query.degree_name;
 	const competency_doc = req.query.hiddentype;
@@ -2373,9 +2371,8 @@ router.post('/upload_CompetencyLetter', async (req, res) => {
  * @param {Integer} app_id - App ID of the user document
  * @param {String} transcript_doc - Type of the document
  */
-router.post('/upload_letterforNameChange', async (req, res) => {
-	const userId = req.query.user_id;
-	console.log("id", userId);
+router.post('/upload_letterforNameChange',middlewares.getUserInfo, async (req, res) => {
+	const userId = req.User.id;
 	let image;
 	const transcript_name = req.query.transcript_name;
 	const transcript_doc = req.query.hiddentype;
@@ -2504,8 +2501,8 @@ router.post('/upload_letterforNameChange', async (req, res) => {
  * @param {String} transcript_doc - Type of the document
  * @param {String} transcript_name - DocumentType name of the user document
  */
-router.post('/upload_letterforNameChange', async (req, res) => {
-	const userId = req.query.user_id;
+router.post('/upload_letterforNameChange',middlewares.getUserInfo, async (req, res) => {
+	const userId = req.User.id;
 	let image;
 	const transcript_name = req.query.transcript_name;
 	const transcript_doc = req.query.hiddentype;
@@ -2629,9 +2626,9 @@ router.post('/upload_letterforNameChange', async (req, res) => {
  * Save and Update the Data of user for Letter for name change letter by its userId.
  * @param {String} formData - By using form-data
  */
-router.post('/saveLetterNameChangeData', async (req, res) => {
+router.post('/saveLetterNameChangeData',middlewares.getUserInfo, async (req, res) => {
 	try {
-		const userId = req.body.user_id;
+		const userId = req.User.id;
 
 		const user = await models.Letterfor_NameChange.findOne({
 			where: {
@@ -2691,7 +2688,7 @@ router.post('/saveLetterNameChangeData', async (req, res) => {
  * @param {String} formData - By using form-data and params are doc_id,name,college,specialization,division,duration,yearOfpassing,education,user_id
  */
 
-router.post('/saveInstructionalData', upload.none(), async (req, res) => {
+router.post('/saveInstructionalData',middlewares.getUserInfo, upload.none(), async (req, res) => {
 	try {
 		const doc_id = req.body.idCtrl;
 		const name = req.body.name;
@@ -2702,10 +2699,9 @@ router.post('/saveInstructionalData', upload.none(), async (req, res) => {
 		const duration = req.body.duration;
 		const yearOfpassing = req.body.yearOfpassing;
 		const education = req.body.education
-		const user_id = req.body.user_id;
+		const user_id = req.User.id;
 		const faculty = course.split(' of ')[1];
 		const type = req.body.type;
-		console.log("formData", req.body);
 		const user = await models.letter_details.findOne({
 			where: {
 				id: doc_id
@@ -2991,9 +2987,9 @@ router.delete('/deleteDocument', async (req, res) => {
  * @param {String} info_type - Type of the Form document
  * @param {Integer} userId - userId of the Form document
  */
-router.delete('/deleteInfo', async (req, res) => {
+router.delete('/deleteInfo',middlewares.getUserInfo, async (req, res) => {
 	try {
-		const userId = req.query.id;
+		const userId = req.User.id;
 		const info_type = req.query.type;
 		if (info_type == 'Instructional') {
 			try {
@@ -3072,8 +3068,8 @@ router.delete('/deleteInfo', async (req, res) => {
 /**
  * Fetched all the documents on ngonit
  */
-router.get('/getUploadeddocument_student', async function (req, res) {
-	var user_id = req.query.user_id;
+router.get('/getUploadeddocument_student',middlewares.getUserInfo,async function (req, res) {
+	var user_id = req.User.id;
 	// var type = 'transcript';
 	var app_id = null;
 	var DocumentData = [];
@@ -3230,8 +3226,7 @@ router.get('/getUploadeddocument_student', async function (req, res) {
  * checkstepper route for students. Throws to the tab where the student has to filled its required details
  */
 router.get('/checkstepper', middlewares.getUserInfo, async function (req, res) {
-	console.log('((((((((((((((((((((((', req)
-	var user_id = req.query.user_id;
+	var user_id = req.User.id;
 	var app_id = req.query.app_id;
 	if (app_id == 'null') { app_id = null };
 	var obj = {};
@@ -3369,8 +3364,8 @@ router.get('/checkstepper', middlewares.getUserInfo, async function (req, res) {
 /**
  * checkstepper route for students. Throws to the tab where the student has to filled its required details, for 2nd step
  */
-router.get('/checkstepper_inner', async function (req, res) {
-	var user_id = req.query.user_id;
+router.get('/checkstepper_inner',middlewares.getUserInfo, async function (req, res) {
+	var user_id = req.User.id;
 	// var app_id  = req.query.app_id ? null  : null;
 	var app_id = req.query.app_id;
 	if (app_id == 'null') {
@@ -3562,14 +3557,14 @@ router.get('/captcha', function (req, res) {
 	});
 
 });
+
 /**
  * Add the Payment Issue Details.
- * @param {Integer} user_id - User ID of the user
  * @param {String} data - All data get from stundet
  */
-router.post('/savePaymentIssueData', async (req, res) => {
+router.post('/savePaymentIssueData',middlewares.getUserInfo, async (req, res) => {
 	try {
-		var user_id = req.query.user_id;
+		var user_id = req.User.id;
 		var values = req.query.data;
 		var type = 'paymentIssue'
 		var dir = constant.FILE_LOCATION + "public/upload/" + type + '/' + user_id;
@@ -3625,10 +3620,12 @@ router.post('/savePaymentIssueData', async (req, res) => {
 	}
 })
 
-/** Get Route of user Payment Issue Details */
-router.get('/getPaymentIssueData', async (req, res) => {
+/**
+ * Get Route of user Payment Issue Details.
+ */
+router.get('/getPaymentIssueData',middlewares.getUserInfo, async (req, res) => {
 	try {
-		const userId = req.query.user_id;
+		const userId = req.User.id;
 		const user = await models.paymenterror_details.findAll({
 			where: {
 				user_id: userId,
@@ -3650,10 +3647,10 @@ router.get('/getPaymentIssueData', async (req, res) => {
 	}
 })
 
-router.get('/getMyApplicationData', async (req, res) => {
+router.get('/getMyApplicationData',middlewares.getUserInfo, async (req, res) => {
 	console.log('/getMyApplicationData');
 
-	var user_id = req.query.user_id;
+	var user_id = req.User.id;
 	var applicationData = [];
 
 	var applicationDetails = await functions.getApplicationsData(user_id);
@@ -3758,18 +3755,11 @@ router.get('/getMyApplicationData', async (req, res) => {
 	}
 })
 
-router.get('/getEducationalDetails', async (req, res) => {
+router.get('/getEducationalDetails',middlewares.getUserInfo, async (req, res) => {
 	console.log('/getEducationalDetails');
+	user_id = req.User.id;
 
-	user_id = req.query.user_id;
-	app_id = req.query.app_id;
-	if (app_id == 'null') {
-		app_id = null
-	} else {
-		app_id = req.query.app_id
-	}
-
-	var applied_for_details = await functions.getAppliedForDetails(user_id, app_id);
+	var applied_for_details = await functions.getAppliedForDetails(user_id, null)
 
 	if (applied_for_details) {
 		return res.json({
