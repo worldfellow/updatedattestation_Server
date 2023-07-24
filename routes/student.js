@@ -21,9 +21,9 @@ const upload = multer({ dest: 'public/upload/marklist' });
 const tesseract = require("node-tesseract-ocr");
 const middlewares = require('../middleware');
 const config = {
-    lang: "eng",
-    oem: 1,
-    psm: 3
+	lang: "eng",
+	oem: 1,
+	psm: 3
 }
 /* Editor : Prathmesh Pawar
 Route : educationalDetails - check email and password and return token and access to proceed ahead to student.
@@ -146,8 +146,8 @@ router.post('/register', async (req, res) => {
 	var values = req.query.values;
 	var password = values.password;
 	var hashPassword = functions.generateHashPassword(password);
-	register = await functions.registerUser(values,hashPassword);
-	if(register){
+	register = await functions.registerUser(values, hashPassword);
+	if (register) {
 		let data = "Student registered with email id " + values.email
 		let activity = "Registration";
 		// functions.activitylog(userId, appId, activity, data, req);
@@ -158,16 +158,22 @@ router.post('/register', async (req, res) => {
 /* Author : Prathmesh Pawar
 Route : educationalDetails - create & update educational details of step 1.
 Paramater : formdata and user_id of student */
-router.post('/educationalDetails',middlewares.getUserInfo, async (req, res) => {
+router.post('/educationalDetails', middlewares.getUserInfo, async (req, res) => {
 	console.log("/educationalDetails");
 
 	var user_id = req.body.user_id;
 	var degree = req.body.degree;
+	app_id = req.body.app_id;
+	if (app_id == 'null' || app_id == null || app_id == undefined || app_id == '') {
+		app_id = null
+	} else {
+		app_id = req.query.app_id
+	}
 
-	var applied_for_details = await functions.getAppliedForDetails(user_id, null);
+	var applied_for_details = await functions.getAppliedForDetails(user_id, app_id);
 
 	if (applied_for_details) {
-		var updatedAppliedDetails = await functions.getUpdatedEducationalDetails(user_id, req.body.formdata ,degree);
+		var updatedAppliedDetails = await functions.getUpdatedEducationalDetails(user_id, req.body.formdata, degree);
 		if (updatedAppliedDetails) {
 			res.json({
 				status: 200,
@@ -176,7 +182,7 @@ router.post('/educationalDetails',middlewares.getUserInfo, async (req, res) => {
 		}
 	}
 	else {
-		var createdAppliedDetails = await functions.getCreateEducationalDetails(user_id, req.body.formdata ,degree);
+		var createdAppliedDetails = await functions.getCreateEducationalDetails(user_id, req.body.formdata, degree);
 		if (createdAppliedDetails) {
 			res.json({
 				status: 200,
@@ -287,31 +293,31 @@ router.post('/updateAllInstitute', async (req, res) => {
 		var instituteDetails = await functions.getInstituteData(institute_id);
 
 		if (instituteDetails) {
-		var updateInstitute = await functions.getUpdateInstitution(formData, emailArr, user_id, type, app_id, anotherEmailArr, anotherEmail, institute_id);
+			var updateInstitute = await functions.getUpdateInstitution(formData, emailArr, user_id, type, app_id, anotherEmailArr, anotherEmail, institute_id);
 
-		if (updateInstitute == true) {
-			if (user_type == 'student') {
+			if (updateInstitute == true) {
+				if (user_type == 'student') {
 					var data = type + ' updated by ' + user_email;
 					var activity = "Update purpose";
 
 					functions.getCreateActivityTracker(user_id, app_id, activity, data);
+				} else {
+					var data = type + ' updated by ' + user_email;
+					var activity = "Update purpose";
+
+					functions.getCreateActivityTracker(user_id, app_id, activity, data);
+				}
+
+				res.json({
+					status: 200,
+					message: type + " data updated Successfully!"
+				})
 			} else {
-					var data = type + ' updated by ' + user_email;
-					var activity = "Update purpose";
-
-					functions.getCreateActivityTracker(user_id, app_id, activity, data);
+				res.json({
+					status: 400,
+					message: type + " data failed to update!"
+				})
 			}
-
-			res.json({
-				status: 200,
-				message: type + " data updated Successfully!"
-			})
-		} else {
-			res.json({
-				status: 400,
-				message: type + " data failed to update!"
-			})
-		}
 		} else {
 			res.json({
 				status: 400,
@@ -391,6 +397,11 @@ router.get('/getInstituteData', async (req, res) => {
 
 	var purpose_name = req.query.purpose_name;
 	var app_id = req.query.app_id;
+	if (app_id == 'null' || app_id == null || app_id == undefined || app_id == '') {
+		app_id = null
+	} else {
+		app_id = req.query.app_id
+	}
 	var user_id = req.query.user_id;
 	var institute_id = req.query.institute_id;
 	var status;
@@ -438,7 +449,7 @@ router.get('/getInstituteData', async (req, res) => {
 	} else {
 		console.log(' inside else')
 		//get all institute data
-		var getInstituteData = await functions.getInstituteDataAll(user_id, null);
+		var getInstituteData = await functions.getInstituteDataAll(user_id, app_id);
 		if (getInstituteData.length > 0) {
 			status = 'Not Applied';
 
@@ -542,6 +553,11 @@ router.get('/getHrdInfo', async (req, res) => {
 	let encounteredFaculties = {};
 	var faculty_types = req.query.faculty_type;
 	var app_id = req.query.app_id;
+	if (app_id == 'null') {
+		app_id = null
+	} else {
+		app_id = req.query.app_id
+	}
 
 	var user = await functions.getUserDetails(user_id);
 
@@ -559,7 +575,7 @@ router.get('/getHrdInfo', async (req, res) => {
 			data.push({
 				faculty: item.faculty,
 				colleges: item.collegeId,
-				pattern: item.pattern,
+				pattern: item.patteren,
 				type: item.education_type + ' of ' + item.faculty,
 				fullName: user[0].name + ' ' + user[0].surname,
 				degree: degree_type,
@@ -597,6 +613,11 @@ router.post('/updateAllHrd', async (req, res) => {
 	var anotherEmailArr;
 	var anotherEmail;
 	var app_id = req.body.app_id;
+	if (app_id == 'null' || app_id == null || app_id == undefined || app_id == '') {
+		app_id = null
+	} else {
+		app_id = req.query.app_id
+	}
 	var user_type = req.body.user_type;
 	var admin_id = req.body.admin_id;
 	var admin_email = req.body.admin_email;
@@ -649,7 +670,7 @@ router.post('/updateAllHrd', async (req, res) => {
 				var createInstitute = await functions.getCreateHrdInstitute(user_id, purpose_name, emailArr, anotherEmailArr, anotherEmail, app_id);
 
 				if (createInstitute) {
-					var createActivityTrackerAdd = await functions.getCreateActivityTrackerAdd(user_id, user_email, formData.course_name, app_id);
+					var createActivityTrackerAdd = await functions.getCreateActivityTrackerAdd(user_id, admin_email, formData.course_name, app_id);
 
 					res.json({
 						status: 200,
@@ -672,9 +693,9 @@ router.post('/updateAllHrd', async (req, res) => {
 		var updateHrd = await functions.getUpdateHrd(user_id, formData, degree_type, secondlastSem, lastSem, hrd_id, app_id);
 		console.log('updateHrd', updateHrd);
 
-		if (updateHrd.length == true) {
+		if (updateHrd == true) {
 			if (user_type == 'student') {
-				var createActivityTrackerUpdate = await functions.getCreateActivityTrackerUpdate(user_id, user_email, formData.course_name, app_id);
+				var createActivityTrackerUpdate = await functions.getCreateActivityTrackerUpdate(user_id, admin_email, formData.course_name, app_id);
 			} else {
 				var createActivityTrackerUpdate = await functions.getCreateActivityTrackerUpdate(admin_id, admin_email, formData.course_name, app_id);
 			}
@@ -704,7 +725,11 @@ router.get('/getHrdData', async (req, res) => {
 	console.log('/hrd_id', hrd_id);
 	var purpose_name = req.query.purpose_name;
 	var app_id = req.query.app_id;
-	console.log('/app_id', app_id);
+	if (app_id == 'null' || app_id == null || app_id == undefined || app_id == '') {
+		app_id = null
+	} else {
+		app_id = req.query.app_id
+	}
 
 	if (purpose_name) {
 		var hrdDetails = await functions.getHrdDetailsSingle(user_id, app_id, hrd_id);
@@ -756,8 +781,15 @@ router.get('/preViewApplication', async (req, res) => {
 	var preViewApplication = [];
 	var extension;
 
+	var app_id = req.body.app_id;
+	if (app_id == 'null' || app_id == null || app_id == undefined || app_id == '') {
+		app_id = null
+	} else {
+		app_id = req.query.app_id
+	}
+
 	//educational details
-	var applied_for_details = await functions.getAppliedForDetails(user_id, null);
+	var applied_for_details = await functions.getAppliedForDetails(user_id, app_id);
 
 	educationalDetails.push({
 		educationalDetails: applied_for_details.educationalDetails,
@@ -770,7 +802,7 @@ router.get('/preViewApplication', async (req, res) => {
 	})
 
 	//college data
-	var getApplied = await functions.getAppliedDetails(user_id, null);
+	var getApplied = await functions.getAppliedDetails(user_id, app_id);
 
 	getApplied.forEach(async function (userDetails) {
 		let collegeId = userDetails.collegeId;
@@ -800,108 +832,122 @@ router.get('/preViewApplication', async (req, res) => {
 	})
 
 	//transcript
-	var getTranscripts = await functions.getUserTrascripts(user_id, null);
+	if (applied_for_details.educationalDetails == true) {
+		var getTranscripts = await functions.getUserTrascripts(user_id, app_id);
 
-	getTranscripts.forEach(function (transcripts) {
-		extension = transcripts.file_name.split('.').pop();
+		getTranscripts.forEach(function (transcripts) {
+			extension = transcripts.file_name.split('.').pop();
 
-		transcriptsData.push({
-			name: transcripts.name,
-			filePath: constant.BASE_URL + "/api/upload/transcript/" + user_id + "/" + transcripts.file_name,
-			extension: extension,
+			transcriptsData.push({
+				name: transcripts.name,
+				filePath: constant.BASE_URL + "/api/upload/transcript/" + user_id + "/" + transcripts.file_name,
+				extension: extension,
+			})
 		})
-	})
+	}
 
 	//instructional
-	var getInstructional = await functions.getUserInstructional(user_id, null);
+	if (applied_for_details.instructionalField == true) {
+		var getInstructional = await functions.getUserInstructionalAndAffiliation(user_id, app_id, 'instructional');
 
-	getInstructional.forEach(function (instructional) {
+		getInstructional.forEach(function (instructional) {
 
-		instructionalData.push({
-			name: instructional.studentName,
-			course: instructional.courseName,
-			college: instructional.collegeName,
-			specialization: instructional.specialization,
-			duration: instructional.duration,
-			division: instructional.division,
-			yearofpassing: instructional.yearofpassing,
-			education_type: instructional.education_type,
+			instructionalData.push({
+				name: instructional.studentName,
+				course: instructional.courseName,
+				college: instructional.collegeName,
+				specialization: instructional.specialization,
+				duration: instructional.duration,
+				division: instructional.division,
+				yearofpassing: instructional.yearofpassing,
+				education_type: instructional.education_type,
+			})
 		})
-	})
+	}
 
 	//curriculum
-	var getCurriculum = await functions.getUserCurriculum(user_id, null);
+	if (applied_for_details.curriculum == true) {
+		var getCurriculum = await functions.getUserCurriculum(user_id, app_id);
 
-	getCurriculum.forEach(function (curriculum) {
-		extension = curriculum.file_name.split('.').pop();
+		getCurriculum.forEach(function (curriculum) {
+			extension = curriculum.file_name.split('.').pop();
 
-		curriculumData.push({
-			name: curriculum.name,
-			filePath: constant.BASE_URL + "/api/upload/curriculum/" + user_id + "/" + curriculum.file_name,
-			extension: extension,
+			curriculumData.push({
+				name: curriculum.name,
+				filePath: constant.BASE_URL + "/api/upload/curriculum/" + user_id + "/" + curriculum.file_name,
+				extension: extension,
+			})
 		})
-	})
+	}
 
 	//gradetoper
-	var getGradtoper = await functions.getUserGradtoper(user_id, null);
+	if (applied_for_details.gradToPer == true) {
+		var getGradtoper = await functions.getUserGradtoper(user_id, app_id);
 
-	getGradtoper.forEach(function (gradtoper) {
-		extension = gradtoper.file_name.split('.').pop();
+		getGradtoper.forEach(function (gradtoper) {
+			extension = gradtoper.file_name.split('.').pop();
 
-		gradtoperData.push({
-			name: gradtoper.name,
-			filePath: constant.BASE_URL + "/api/upload/gradeToPercentLetter/" + user_id + "/" + gradtoper.file_name,
-			extension: extension,
+			gradtoperData.push({
+				name: gradtoper.name,
+				filePath: constant.BASE_URL + "/api/upload/gradeToPercentLetter/" + user_id + "/" + gradtoper.file_name,
+				extension: extension,
+			})
 		})
-	})
+	}
 
 	//affiliation
-	var getAffiliation = await functions.getUserAffiliation(user_id, null);
+	if (applied_for_details.affiliation == true) {
+		var getAffiliation = await functions.getUserInstructionalAndAffiliation(user_id, app_id, 'affiliation');
 
-	getAffiliation.forEach(function (affiliation) {
+		getAffiliation.forEach(function (affiliation) {
 
-		affiliationData.push({
-			name: affiliation.studentName,
-			course: affiliation.courseName,
-			college: affiliation.collegeName,
-			specialization: affiliation.specialization,
-			duration: affiliation.duration,
-			division: affiliation.division,
-			yearofpassing: affiliation.yearofpassing,
-			education_type: affiliation.education_type,
+			affiliationData.push({
+				name: affiliation.studentName,
+				course: affiliation.courseName,
+				college: affiliation.collegeName,
+				specialization: affiliation.specialization,
+				duration: affiliation.duration,
+				division: affiliation.division,
+				yearofpassing: affiliation.yearofpassing,
+				education_type: affiliation.education_type,
+			})
 		})
-	})
+	}
 
 	//competency
-	var getCompetency = await functions.getUserCompetency(user_id, null);
+	if (applied_for_details.CompetencyLetter == true) {
+		var getCompetency = await functions.getUserCompetency(user_id, app_id);
 
-	getCompetency.forEach(function (competency) {
-		extension = competency.file_name.split('.').pop();
+		getCompetency.forEach(function (competency) {
+			extension = competency.file_name.split('.').pop();
 
-		competencyData.push({
-			name: competency.name,
-			filePath: constant.BASE_URL + "/api/upload/CompetencyLetter/" + user_id + "/" + competency.file_name,
-			extension: extension,
+			competencyData.push({
+				name: competency.name,
+				filePath: constant.BASE_URL + "/api/upload/CompetencyLetter/" + user_id + "/" + competency.file_name,
+				extension: extension,
+			})
 		})
-	})
+	}
 
 	//letter for name change
-	var getLetterfornamechange = await functions.getUserLetterfornamechange(user_id, null);
+	if (applied_for_details.LetterforNameChange == true) {
+		var getLetterfornamechange = await functions.getUserLetterfornamechange(user_id, app_id);
 
-	extension = getLetterfornamechange[0].file_name.split('.').pop();
+		extension = getLetterfornamechange.file_name.split('.').pop();
 
-	letterfornamechangeData.push({
-		name: getLetterfornamechange[0].name,
-		filePath: constant.BASE_URL + "/api/upload/NameChangeLetter/" + user_id + "/" + getLetterfornamechange[0].file_name,
-		extension: extension,
-		firstnameaspermarksheet: getLetterfornamechange[0].firstnameaspermarksheet,
-		fathersnameaspermarksheet: getLetterfornamechange[0].fathersnameaspermarksheet,
-		mothersnameaspermarksheet: getLetterfornamechange[0].mothersnameaspermarksheet,
-		lastnameaspermarksheet: getLetterfornamechange[0].lastnameaspermarksheet,
-		firstnameasperpassport: getLetterfornamechange[0].firstnameasperpassport,
-		fathersnameasperpassport: getLetterfornamechange[0].fathersnameasperpassport,
-		lastnameasperpassport: getLetterfornamechange[0].lastnameasperpassport,
-	})
+		letterfornamechangeData.push({
+			name: getLetterfornamechange.name,
+			filePath: constant.BASE_URL + "/api/upload/NameChangeLetter/" + user_id + "/" + getLetterfornamechange.file_name,
+			extension: extension,
+			firstnameaspermarksheet: getLetterfornamechange.firstnameaspermarksheet,
+			fathersnameaspermarksheet: getLetterfornamechange.fathersnameaspermarksheet,
+			mothersnameaspermarksheet: getLetterfornamechange.mothersnameaspermarksheet,
+			lastnameaspermarksheet: getLetterfornamechange.lastnameaspermarksheet,
+			firstnameasperpassport: getLetterfornamechange.firstnameasperpassport,
+			fathersnameasperpassport: getLetterfornamechange.fathersnameasperpassport,
+			lastnameasperpassport: getLetterfornamechange.lastnameasperpassport,
+		})
+	}
 
 	preViewApplication.push({
 		collegeData: collegeData,
@@ -915,8 +961,6 @@ router.get('/preViewApplication', async (req, res) => {
 		instructionalData: instructionalData,
 		affiliationData: affiliationData,
 	})
-
-	console.log('preViewApplication--============================----', preViewApplication);
 
 	if (preViewApplication.length > 0) {
 		res.json({
@@ -1060,137 +1104,137 @@ router.post('/ScanData', async (req, res) => {
 		var collegeid = req.query.collegeid;
 		var pattern = req.query.pattern;
 		var faculty = req.query.faculty;
-		var dir = constant.FILE_LOCATION + "public/upload/" + type +'/' + user_id;
+		var dir = constant.FILE_LOCATION + "public/upload/" + type + '/' + user_id;
 		var image;
-		var coursedata= [];
+		var coursedata = [];
 		var collegedata = [];
-			if (!fs.existsSync(dir)) {
-				fs.mkdirSync(dir);
+		if (!fs.existsSync(dir)) {
+			fs.mkdirSync(dir);
+		}
+		var storage = multer.diskStorage({
+			destination: function (req, file, callback) {
+				callback(null, constant.FILE_LOCATION + "public/upload/" + type + '/' + user_id);
+			},
+			filename: function (req, file, callback) {
+				var extension = path.extname(file.originalname)
+				var randomString = functions.generateRandomString(10, 'alphabetic')
+				var newFileName = randomString.concat(extension);
+				image = newFileName;
+				callback(null, newFileName);
 			}
-			var storage = multer.diskStorage({
-				destination: function(req, file, callback) {
-					callback(null, constant.FILE_LOCATION + "public/upload/" + type +'/' + user_id);
-				},
-				filename: function(req, file, callback) {
-					var extension = path.extname(file.originalname)
-					var randomString = functions.generateRandomString(10,'alphabetic')
-					var newFileName = randomString.concat(extension);
-					image = newFileName;
-					callback(null, newFileName);
-				}
-			});
+		});
 
-			var upload = multer({
-				storage: storage,
-			}).single('file');
-			upload(req, res,async function (err, data) {
-				imageLocationToCallClient = image;
-					if(type == 'marklist'){
-						var data = tesseract.recognize(constant.FILE_LOCATION  + 'public/upload/' + type+'/'+ user_id +  '/' +   image,config).then(async (text_data) => {
-							// if(text_data){
-							var getCollege = await functions.getCollegeList();
-							var getCourse = await functions.getProgramList();
-							var getApplied = await functions.getAppliedFor(user_id,'');
-							var str = text_data.replace(/(\r\n|\n|\r)/gm, "");
-							var text = str.replace('&', 'and');
-							var collegeName;
-							var courseName;
-							var courseCheck;
-							var pattern;
-							var whichduration = [];
-							var data = [];
-							getCollege.forEach(function (college) {
-								if (text.includes(college.name)) {
-									collegeName =  college.name
-									collegedata.push(college)
-								}
-							})
-							if(text.includes('semester') || text.includes('Semester') ){
-								pattern = 'Semester'
-								if(text.includes('X')){
-									whichduration.push({name: 'Semester 10', value: 'Semester'})
-								}
-								if(text.includes('IX')){
-									whichduration.push({name: 'Semester 9', value: 'Semester'})
-								}
-								if(text.includes('VIII')){
-									whichduration.push({name: 'Semester 8', value: 'Semester'})
-								}
-								if(text.includes('VII')){
-									whichduration.push({name: 'Semester 7', value: 'Semester'})
-								}
-								if(text.includes('VI')){
-									whichduration.push({name: 'Semester 6', value: 'Semester'})
-								}
+		var upload = multer({
+			storage: storage,
+		}).single('file');
+		upload(req, res, async function (err, data) {
+			imageLocationToCallClient = image;
+			if (type == 'marklist') {
+				var data = tesseract.recognize(constant.FILE_LOCATION + 'public/upload/' + type + '/' + user_id + '/' + image, config).then(async (text_data) => {
+					// if(text_data){
+					var getCollege = await functions.getCollegeList();
+					var getCourse = await functions.getProgramList();
+					var getApplied = await functions.getAppliedFor(user_id, '');
+					var str = text_data.replace(/(\r\n|\n|\r)/gm, "");
+					var text = str.replace('&', 'and');
+					var collegeName;
+					var courseName;
+					var courseCheck;
+					var pattern;
+					var whichduration = [];
+					var data = [];
+					getCollege.forEach(function (college) {
+						if (text.includes(college.name)) {
+							collegeName = college.name
+							collegedata.push(college)
+						}
+					})
+					if (text.includes('semester') || text.includes('Semester')) {
+						pattern = 'Semester'
+						if (text.includes('X')) {
+							whichduration.push({ name: 'Semester 10', value: 'Semester' })
+						}
+						if (text.includes('IX')) {
+							whichduration.push({ name: 'Semester 9', value: 'Semester' })
+						}
+						if (text.includes('VIII')) {
+							whichduration.push({ name: 'Semester 8', value: 'Semester' })
+						}
+						if (text.includes('VII')) {
+							whichduration.push({ name: 'Semester 7', value: 'Semester' })
+						}
+						if (text.includes('VI')) {
+							whichduration.push({ name: 'Semester 6', value: 'Semester' })
+						}
 
-								
-								if(text.includes('IV')){
-									whichduration.push({name: 'Semester 4', value: 'Semester'})
-								}
 
-								if(text.includes('V')){
-									whichduration.push({name: 'Semester 5', value: 'Semester'})
-								}
-							
-							
-							
-								if(text.includes('III')){
-									whichduration.push({name: 'Semester 3', value: 'Semester'})
-								}
-								
-								if(text.includes('II')){
-									whichduration.push({name: 'Semester 2', value: 'Semester'})
-								}
-								
-								if(text.includes('I')){
-									whichduration.push({name: 'Semester 1', value: 'Semester'})
-								}
-							
-								
-							}else{
-								pattern = 'Annual'
-								if(text.includes('F.Y')){
-									whichduration = 'First Year'
-								}
-								else if(text.includes('S.Y')){
-									whichduration = 'Second Year'
-								}
-								else if(text.includes('T.Y')){
-									whichduration = 'Third Year'
-								}
-							}
-							getCourse.forEach(function (course) {
-								if (text.includes(course.short_name) || text.includes(course.full_name)) {
-									courseName =  course.full_name
-									courseCheck = course.degree
-									coursedata.push(course)
-								}else{
-								}
-							})
-							// if (getApplied.applied_for.includes(courseCheck)){
-								console.log('whichduration ',whichduration)
-								var uploadDocuments = await functions.uploadDocuments(pattern,collegeid,education_type,faculty,user_id,type,imageLocationToCallClient);
-								data.push(collegedata,coursedata,whichduration,uploadDocuments.id);
-								res.json({
-									data : data,
-									status : 200
-								})
-							// }else{
-							// 	var uploadDocuments = await functions.uploadDocuments(pattern,collegeid,education_type,faculty,user_id,type,imageLocationToCallClient);
-							// 	res.json({
-							// 		status : 401
-							// 	})
-							// }
-							
-						}).catch((error) => {console.log('**********error.message***************', error.message)});
-					}else{
-						var uploadDocuments = await functions.uploadDocuments(pattern,collegeid,education_type,faculty,user_id,type,imageLocationToCallClient);
-						res.json({
-							status : 200
-						})
+						if (text.includes('IV')) {
+							whichduration.push({ name: 'Semester 4', value: 'Semester' })
+						}
+
+						if (text.includes('V')) {
+							whichduration.push({ name: 'Semester 5', value: 'Semester' })
+						}
+
+
+
+						if (text.includes('III')) {
+							whichduration.push({ name: 'Semester 3', value: 'Semester' })
+						}
+
+						if (text.includes('II')) {
+							whichduration.push({ name: 'Semester 2', value: 'Semester' })
+						}
+
+						if (text.includes('I')) {
+							whichduration.push({ name: 'Semester 1', value: 'Semester' })
+						}
+
+
+					} else {
+						pattern = 'Annual'
+						if (text.includes('F.Y')) {
+							whichduration = 'First Year'
+						}
+						else if (text.includes('S.Y')) {
+							whichduration = 'Second Year'
+						}
+						else if (text.includes('T.Y')) {
+							whichduration = 'Third Year'
+						}
 					}
-				
-			});
+					getCourse.forEach(function (course) {
+						if (text.includes(course.short_name) || text.includes(course.full_name)) {
+							courseName = course.full_name
+							courseCheck = course.degree
+							coursedata.push(course)
+						} else {
+						}
+					})
+					// if (getApplied.applied_for.includes(courseCheck)){
+					console.log('whichduration ', whichduration)
+					var uploadDocuments = await functions.uploadDocuments(pattern, collegeid, education_type, faculty, user_id, type, imageLocationToCallClient);
+					data.push(collegedata, coursedata, whichduration, uploadDocuments.id);
+					res.json({
+						data: data,
+						status: 200
+					})
+					// }else{
+					// 	var uploadDocuments = await functions.uploadDocuments(pattern,collegeid,education_type,faculty,user_id,type,imageLocationToCallClient);
+					// 	res.json({
+					// 		status : 401
+					// 	})
+					// }
+
+				}).catch((error) => { console.log('**********error.message***************', error.message) });
+			} else {
+				var uploadDocuments = await functions.uploadDocuments(pattern, collegeid, education_type, faculty, user_id, type, imageLocationToCallClient);
+				res.json({
+					status: 200
+				})
+			}
+
+		});
 	} catch (err) {
 		console.error(err);
 		return res.status(500).json({
@@ -1601,18 +1645,18 @@ router.post('/upload_gradeToPercentLetter', async (req, res) => {
  * @
  */
 router.post('/saveUserMarkList', async (req, res) => {
-	var documentid =  req.body.documentid;
-	var app_id =  req.body.app_id;
-	var user_id =  req.body.user_id;
-	var type =  req.body.value;
-	var data =  req.body.data;
-		var updateDocuments = await functions.updateDocuments(documentid,data,type);
-		if(updateDocuments){
-			res.json({status : 200})
-		}else{
-			res.json({status : 400})
-		}
-	
+	var documentid = req.body.documentid;
+	var app_id = req.body.app_id;
+	var user_id = req.body.user_id;
+	var type = req.body.value;
+	var data = req.body.data;
+	var updateDocuments = await functions.updateDocuments(documentid, data, type);
+	if (updateDocuments) {
+		res.json({ status: 200 })
+	} else {
+		res.json({ status: 400 })
+	}
+
 	// try {
 	// 	let image;
 	// 	const file = req.file
@@ -3028,7 +3072,7 @@ router.delete('/deleteInfo', async (req, res) => {
 /**
  * Fetched all the documents on ngonit
  */
-router.get('/getUploadeddocument_student',async function(req,res){
+router.get('/getUploadeddocument_student', async function (req, res) {
 	var user_id = req.query.user_id;
 	// var type = 'transcript';
 	var app_id = null;
@@ -3040,437 +3084,437 @@ router.get('/getUploadeddocument_student',async function(req,res){
 	var curriculumData = [];
 	var gradtoperData = [];
 	var unique_college = [];
-	var Applied = await functions.getAppliedFor(user_id,app_id);
-	if(Applied){
+	var Applied = await functions.getAppliedFor(user_id, app_id);
+	if (Applied) {
 		var uniqueData = await functions.getDistinctData(user_id);
 		const uniqueValues = uniqueData.map((item) => item.dataValues.uniqueValues);
-		for(var i = 0 ; i < uniqueValues.length ; i++){
-		  college = await functions.getCollegeDetails_student(uniqueValues[i]);
-		  transcriptDisplay.push({'coursename' : college[0].coursename ,'college' : college[0].college  , 'collegeid' : college[0].collegeid,'faculty' : college[0].faculty ,'education_type' :  college[0].education_type ,'pattern' : college[0].pattern});
+		for (var i = 0; i < uniqueValues.length; i++) {
+			college = await functions.getCollegeDetails_student(uniqueValues[i]);
+			transcriptDisplay.push({ 'coursename': college[0].coursename, 'college': college[0].college, 'collegeid': college[0].collegeid, 'faculty': college[0].faculty, 'education_type': college[0].education_type, 'pattern': college[0].pattern });
 		}
-	var marksheet = await functions.getDocumentFuntion(user_id,app_id,'marklist');
-	if(marksheet.length > 0){
-		for(var i= 0 ; i< marksheet.length ; i++){
-			college = await functions.getCollegeName(marksheet[i].collegeId);
-			marksheetData.push({
-				'name' : marksheet[i].name,
-				'CollegeName' : college ? college.name : 'null',
-				'filePath' : constant.FILE_LOCATION  + 'public/upload/' + 'marklist' + '/' + user_id +  '/' +   marksheet[i].file_name,
-				'fileName' : marksheet[i].file_name,
-				'extension' : marksheet[i].file_name.split('.').pop(),
-				'id' : marksheet[i].id,
-				'user_id' : marksheet[i].user_id,
-				'app_id' : marksheet[i].app_id,
-				'upload_step' : marksheet[i].upload_step,
-				'lock_transcript' : marksheet[i].lock_transcript
-			})
-		}
-		var uniqueData = await functions.getCollegeName_unique(user_id);
-		const uniqueValues = uniqueData.map((item) => item.dataValues.uniqueValues);
-		for(var i = 0 ; i < uniqueValues.length ; i++){
-		  college = await functions.getCollegeDetails_unique(uniqueValues[i]);
-		  unique_college.push(college)
-		}
-	
-	}
-	if(Applied.educationalDetails == true){
-		var transcript = await functions.getDocumentFuntion(user_id,app_id,'transcript');
-		if(transcript){
-			if(transcript.length > 0){
-				for(var i= 0 ; i< transcript.length ; i++){
-					college = await functions.getCollegeName(transcript[i].collegeId);
-					transcriptData.push({
-						'name' : transcript[i].name,
-						'CollegeName' : college ? college.name : 'null',
-						'filePath' : constant.FILE_LOCATION  + 'public/upload/' + 'transcript' + '/' + user_id +  '/' +   transcript[i].file_name,
-						'fileName' : transcript[i].file_name,
-						'extension' : transcript[i].file_name.split('.').pop(),
-						'id' : transcript[i].id,
-						'user_id' : transcript[i].user_id,
-						'app_id' : transcript[i].app_id,
-						'upload_step' : transcript[i].upload_step,
-						'lock_transcript' : transcript[i].lock_transcript
-					})
-				}
-			};
-		}
-	}
-	if(Applied.curriculum == true){
-		var curriculum = await functions.getDocumentFuntion(user_id,app_id,'curriculum');
-		if(curriculum.length > 0){
-			for(var i= 0 ; i< curriculum.length ; i++){
-				college = await functions.getCollegeName(curriculum[i].collegeId);
-				curriculumData.push({
-					'name' : curriculum[i].name,
-					'CollegeName' : college ? college.name : 'null',
-					'filePath' : constant.FILE_LOCATION  + 'public/upload/' + 'curriculum' + '/' + user_id +  '/' +   curriculum[i].file_name,
-					'fileName' : curriculum[i].file_name,
-					'extension' : curriculum[i].file_name.split('.').pop(),
-					'id' : curriculum[i].id,
-					'user_id' : curriculum[i].user_id,
-					'app_id' : curriculum[i].app_id,
-					'upload_step' : curriculum[i].upload_step,
-					'lock_transcript' : curriculum[i].lock_transcript
-				})
-			}
-		}
-	}
-	if(Applied.instructionalField == true){
-		
-	}
-	if(Applied.gradToPer == true){
-		var gradtoper = await functions.getDocumentFuntion(user_id,app_id,'GradeToPercentageLetter');
-		if(gradtoper.length > 0){
-			for(var i= 0 ; i< gradtoper.length ; i++){
-				college = await functions.getCollegeName(gradtoper[i].collegeId);
-				gradtoperData.push({
-					'name' : gradtoper[i].name,
-					'CollegeName' : college ? college.name : 'null',
-					'filePath' : constant.FILE_LOCATION  + 'public/upload/' + 'gradtoper' + '/' + user_id +  '/' +   gradtoper[i].file_name,
-					'fileName' : gradtoper[i].file_name,
-					'extension' : gradtoper[i].file_name.split('.').pop(),
-					'id' : gradtoper[i].id,
-					'user_id' : gradtoper[i].user_id,
-					'app_id' : gradtoper[i].app_id,
-					'upload_step' : gradtoper[i].upload_step,
-					'lock_transcript' : gradtoper[i].lock_transcript
-				})
-			}
-		}
-	}
-	if(Applied.affiliation == true){
-		
-	}
-	if(Applied.CompetencyLetter == true){
-		
-	}
-	if(Applied.LetterforNameChange == true){
-		
-	}
-	var extra = await functions.getDocumentFuntion(user_id,app_id,'extra');
-	if(extra){
-		if(extra.length > 0){
-			for(var i= 0 ; i< extra.length ; i++){
-				college = await functions.getCollegeName(extra[i].collegeId);
-				extraData.push({
-					'name' : extra[i].name,
-					'filePath' : constant.FILE_LOCATION  + 'public/upload/' + 'extra' + '/' + user_id +  '/' +   extra[i].file_name,
-					'fileName' : extra[i].file_name,
-					'extension' : extra[i].file_name.split('.').pop(),
-					'id' : extra[i].id,
-					'user_id' : extra[i].user_id,
-					'app_id' : extra[i].app_id,
-					'upload_step' : extra[i].upload_step,
-					'lock_transcript' : extra[i].lock_transcript
+		var marksheet = await functions.getDocumentFuntion(user_id, app_id, 'marklist');
+		if (marksheet.length > 0) {
+			for (var i = 0; i < marksheet.length; i++) {
+				college = await functions.getCollegeName(marksheet[i].collegeId);
+				marksheetData.push({
+					'name': marksheet[i].name,
+					'CollegeName': college ? college.name : 'null',
+					'filePath': constant.FILE_LOCATION + 'public/upload/' + 'marklist' + '/' + user_id + '/' + marksheet[i].file_name,
+					'fileName': marksheet[i].file_name,
+					'extension': marksheet[i].file_name.split('.').pop(),
+					'id': marksheet[i].id,
+					'user_id': marksheet[i].user_id,
+					'app_id': marksheet[i].app_id,
+					'upload_step': marksheet[i].upload_step,
+					'lock_transcript': marksheet[i].lock_transcript
 				})
 			}
 			var uniqueData = await functions.getCollegeName_unique(user_id);
 			const uniqueValues = uniqueData.map((item) => item.dataValues.uniqueValues);
-			console.log(uniqueValues);
-			for(var i = 0 ; i < uniqueValues.length ; i++){
-			  college = await functions.getCollegeDetails_unique(uniqueValues[i]);
-			  unique_college.push(college)
+			for (var i = 0; i < uniqueValues.length; i++) {
+				college = await functions.getCollegeDetails_unique(uniqueValues[i]);
+				unique_college.push(college)
 			}
-		
+
 		}
-	}
-	
-	DocumentData.push(marksheetData,transcriptData,transcriptDisplay,unique_college,extraData,curriculumData,gradtoperData)
-	res.json({status : 200,data : DocumentData});
-	}else{
-		res.json({status : 400});
+		if (Applied.educationalDetails == true) {
+			var transcript = await functions.getDocumentFuntion(user_id, app_id, 'transcript');
+			if (transcript) {
+				if (transcript.length > 0) {
+					for (var i = 0; i < transcript.length; i++) {
+						college = await functions.getCollegeName(transcript[i].collegeId);
+						transcriptData.push({
+							'name': transcript[i].name,
+							'CollegeName': college ? college.name : 'null',
+							'filePath': constant.FILE_LOCATION + 'public/upload/' + 'transcript' + '/' + user_id + '/' + transcript[i].file_name,
+							'fileName': transcript[i].file_name,
+							'extension': transcript[i].file_name.split('.').pop(),
+							'id': transcript[i].id,
+							'user_id': transcript[i].user_id,
+							'app_id': transcript[i].app_id,
+							'upload_step': transcript[i].upload_step,
+							'lock_transcript': transcript[i].lock_transcript
+						})
+					}
+				};
+			}
+		}
+		if (Applied.curriculum == true) {
+			var curriculum = await functions.getDocumentFuntion(user_id, app_id, 'curriculum');
+			if (curriculum.length > 0) {
+				for (var i = 0; i < curriculum.length; i++) {
+					college = await functions.getCollegeName(curriculum[i].collegeId);
+					curriculumData.push({
+						'name': curriculum[i].name,
+						'CollegeName': college ? college.name : 'null',
+						'filePath': constant.FILE_LOCATION + 'public/upload/' + 'curriculum' + '/' + user_id + '/' + curriculum[i].file_name,
+						'fileName': curriculum[i].file_name,
+						'extension': curriculum[i].file_name.split('.').pop(),
+						'id': curriculum[i].id,
+						'user_id': curriculum[i].user_id,
+						'app_id': curriculum[i].app_id,
+						'upload_step': curriculum[i].upload_step,
+						'lock_transcript': curriculum[i].lock_transcript
+					})
+				}
+			}
+		}
+		if (Applied.instructionalField == true) {
+
+		}
+		if (Applied.gradToPer == true) {
+			var gradtoper = await functions.getDocumentFuntion(user_id, app_id, 'GradeToPercentageLetter');
+			if (gradtoper.length > 0) {
+				for (var i = 0; i < gradtoper.length; i++) {
+					college = await functions.getCollegeName(gradtoper[i].collegeId);
+					gradtoperData.push({
+						'name': gradtoper[i].name,
+						'CollegeName': college ? college.name : 'null',
+						'filePath': constant.FILE_LOCATION + 'public/upload/' + 'gradtoper' + '/' + user_id + '/' + gradtoper[i].file_name,
+						'fileName': gradtoper[i].file_name,
+						'extension': gradtoper[i].file_name.split('.').pop(),
+						'id': gradtoper[i].id,
+						'user_id': gradtoper[i].user_id,
+						'app_id': gradtoper[i].app_id,
+						'upload_step': gradtoper[i].upload_step,
+						'lock_transcript': gradtoper[i].lock_transcript
+					})
+				}
+			}
+		}
+		if (Applied.affiliation == true) {
+
+		}
+		if (Applied.CompetencyLetter == true) {
+
+		}
+		if (Applied.LetterforNameChange == true) {
+
+		}
+		var extra = await functions.getDocumentFuntion(user_id, app_id, 'extra');
+		if (extra) {
+			if (extra.length > 0) {
+				for (var i = 0; i < extra.length; i++) {
+					college = await functions.getCollegeName(extra[i].collegeId);
+					extraData.push({
+						'name': extra[i].name,
+						'filePath': constant.FILE_LOCATION + 'public/upload/' + 'extra' + '/' + user_id + '/' + extra[i].file_name,
+						'fileName': extra[i].file_name,
+						'extension': extra[i].file_name.split('.').pop(),
+						'id': extra[i].id,
+						'user_id': extra[i].user_id,
+						'app_id': extra[i].app_id,
+						'upload_step': extra[i].upload_step,
+						'lock_transcript': extra[i].lock_transcript
+					})
+				}
+				var uniqueData = await functions.getCollegeName_unique(user_id);
+				const uniqueValues = uniqueData.map((item) => item.dataValues.uniqueValues);
+				console.log(uniqueValues);
+				for (var i = 0; i < uniqueValues.length; i++) {
+					college = await functions.getCollegeDetails_unique(uniqueValues[i]);
+					unique_college.push(college)
+				}
+
+			}
+		}
+
+		DocumentData.push(marksheetData, transcriptData, transcriptDisplay, unique_college, extraData, curriculumData, gradtoperData)
+		res.json({ status: 200, data: DocumentData });
+	} else {
+		res.json({ status: 400 });
 	}
 })
 
 /**
  * checkstepper route for students. Throws to the tab where the student has to filled its required details
  */
-router.get('/checkstepper', middlewares.getUserInfo, async function(req,res){
-	console.log('((((((((((((((((((((((',req)
+router.get('/checkstepper', middlewares.getUserInfo, async function (req, res) {
+	console.log('((((((((((((((((((((((', req)
 	var user_id = req.query.user_id;
-	var app_id  = req.query.app_id;
-	if(app_id == 'null'){app_id = null};
+	var app_id = req.query.app_id;
+	if (app_id == 'null') { app_id = null };
 	var obj = {};
 	var obj_inner = {};
 	var count = 0;
 	var marksheets = 0;
 	var transcript = 0;
 	obj['tab1'] = false,
-	obj['tab2'] = false,
-	obj['tab3'] = false
+		obj['tab2'] = false,
+		obj['tab3'] = false
 
 	obj_inner['tab1'] = false,
-	obj_inner['tab2'] = false,
-	obj_inner['tab3'] = false
+		obj_inner['tab2'] = false,
+		obj_inner['tab3'] = false
 
-	var appliedFor = await functions.getAppliedForDetails(user_id,app_id);
-	marksheets = await functions.getDocumentFuntion(user_id,app_id,'marklist');
+	var appliedFor = await functions.getAppliedForDetails(user_id, app_id);
+	marksheets = await functions.getDocumentFuntion(user_id, app_id, 'marklist');
 	getDistinctData = await functions.getDistinctData(user_id);
 	const uniqueValues = getDistinctData.map((item) => item.dataValues.uniqueValues);
-	for(var i= 0 ; i < uniqueValues.length ; i++){
+	for (var i = 0; i < uniqueValues.length; i++) {
 		degree = uniqueValues[i].split('_')[0];
 		faculty = uniqueValues[i].split('_')[1];
-		if(appliedFor.educationalDetails == true){
-			transcript = await functions.getDocuments_checkstepper(user_id,app_id,'transcript',degree,faculty);
+		if (appliedFor.educationalDetails == true) {
+			transcript = await functions.getDocuments_checkstepper(user_id, app_id, 'transcript', degree, faculty);
 		}
-		if(appliedFor.instructionalField == true){
-			instructional = await functions.getDocuments_checkstepper(user_id,app_id,'instructional',degree,faculty);
+		if (appliedFor.instructionalField == true) {
+			instructional = await functions.getDocuments_checkstepper(user_id, app_id, 'instructional', degree, faculty);
 		}
-		if(appliedFor.curriculum == true){
-			curriculum = await functions.getDocuments_checkstepper(user_id,app_id,'curriculum',degree,faculty);
+		if (appliedFor.curriculum == true) {
+			curriculum = await functions.getDocuments_checkstepper(user_id, app_id, 'curriculum', degree, faculty);
 		}
-		if(appliedFor.gradToPer == true){
-			gradToPer = await functions.getDocuments_checkstepper(user_id,app_id,'GradeToPercentageLetter',degree,faculty);
+		if (appliedFor.gradToPer == true) {
+			gradToPer = await functions.getDocuments_checkstepper(user_id, app_id, 'GradeToPercentageLetter', degree, faculty);
 		}
-		if(appliedFor.affiliation == true){
-			affiliation = await functions.getDocuments_checkstepper(user_id,app_id,'affiliation',degree,faculty);
+		if (appliedFor.affiliation == true) {
+			affiliation = await functions.getDocuments_checkstepper(user_id, app_id, 'affiliation', degree, faculty);
 		}
-		if(appliedFor.CompetencyLetter == true){
+		if (appliedFor.CompetencyLetter == true) {
 		}
-		if(appliedFor.LetterforNameChange == true){
+		if (appliedFor.LetterforNameChange == true) {
 		}
 	}
 
-	if(appliedFor){
+	if (appliedFor) {
 		require('async').series([
 			function (callback) {
-				if(appliedFor){
-					if((appliedFor.isphd != null) && (appliedFor.instructionalField == true || appliedFor.curriculum == true ||appliedFor.educationalDetails == true ||appliedFor.gradToPer == true ||appliedFor.affiliation == true ||appliedFor.CompetencyLetter == true||appliedFor.LetterforNameChange == true)){
+				if (appliedFor) {
+					if ((appliedFor.isphd != null) && (appliedFor.instructionalField == true || appliedFor.curriculum == true || appliedFor.educationalDetails == true || appliedFor.gradToPer == true || appliedFor.affiliation == true || appliedFor.CompetencyLetter == true || appliedFor.LetterforNameChange == true)) {
 						obj['tab1'] = true;
 						count = count + 1;
 						callback(null, appliedFor);
-					}else{
+					} else {
 						// if applied for details (1st step) is not completely filled. Stops to the first step.
-								obj['tab1'] = false
-								callback(null, appliedFor);
+						obj['tab1'] = false
+						callback(null, appliedFor);
 					}
-				}else{
+				} else {
 					obj['tab1'] = false
 					callback(null, appliedFor);
 				}
-				
-				
+
+
 			},
 			function (callback) {
-				if(appliedFor.educationalDetails == true){
-					if(transcript.length >=  uniqueValues.length){transcriptFlag = true}else{transcriptFlag = false}
-				}else{
-						transcriptFlag = true
+				if (appliedFor.educationalDetails == true) {
+					if (transcript.length >= uniqueValues.length) { transcriptFlag = true } else { transcriptFlag = false }
+				} else {
+					transcriptFlag = true
 				}
 
-				if(appliedFor.instructionalField == true){
-					if(instructional.length >=  uniqueValues.length){instructionalFieldFlag = true}else{instructionalFieldFlag = false}
-				}else{
+				if (appliedFor.instructionalField == true) {
+					if (instructional.length >= uniqueValues.length) { instructionalFieldFlag = true } else { instructionalFieldFlag = false }
+				} else {
 					instructionalFieldFlag = true
 				}
 
-				if(appliedFor.curriculum == true){
-					if(curriculum.length >=  uniqueValues.length){curriculumFlag = true}else{curriculumFlag = false}
-				}else{
+				if (appliedFor.curriculum == true) {
+					if (curriculum.length >= uniqueValues.length) { curriculumFlag = true } else { curriculumFlag = false }
+				} else {
 					curriculumFlag = true
 				}
 
-				if(appliedFor.gradToPer == true){
-					if(gradToPer.length >=  uniqueValues.length){gradFlag = true}else{gradFlag = false}
-				}else{
+				if (appliedFor.gradToPer == true) {
+					if (gradToPer.length >= uniqueValues.length) { gradFlag = true } else { gradFlag = false }
+				} else {
 					gradFlag = true
 				}
 
-				if(appliedFor.affiliation == true){
-					if(affiliation.length >=  uniqueValues.length){affiliationFlag = true}else{affiliationFlag = false}
-				}else{
+				if (appliedFor.affiliation == true) {
+					if (affiliation.length >= uniqueValues.length) { affiliationFlag = true } else { affiliationFlag = false }
+				} else {
 					affiliationFlag = true
 				}
 
-				if(appliedFor.CompetencyLetter == true){
+				if (appliedFor.CompetencyLetter == true) {
 					// if(transcript.length >=  uniqueValues.length){transcriptFlag = true}else{transcriptFlag = false}
 					competencyFlag = true
-				}else{
+				} else {
 					competencyFlag = true
 				}
 
-				if(appliedFor.LetterforNameChange == true){
+				if (appliedFor.LetterforNameChange == true) {
 					// if(transcript.length >=  uniqueValues.length){transcriptFlag = true}else{transcriptFlag = false}
 					LetterforNameChange = true
-				}else{
+				} else {
 					LetterforNameChange = true
 				}
 
-				if(transcriptFlag == true && instructionalFieldFlag == true && curriculumFlag == true && gradFlag == true && affiliationFlag == true && competencyFlag == true && LetterforNameChange == true){
+				if (transcriptFlag == true && instructionalFieldFlag == true && curriculumFlag == true && gradFlag == true && affiliationFlag == true && competencyFlag == true && LetterforNameChange == true) {
 					obj['tab2'] = true;
 					count = count + 1;
 					callback(null, appliedFor);
-				}else{
+				} else {
 					obj['tab2'] = false
 					callback(null, appliedFor);
 				}
 			},
-			function (callback) {	
+			function (callback) {
 				obj['tab3'] = false
 				callback(null, appliedFor);
 			},
 		],
 			function (err, result) {
-				console.log('*********** obj ***********' ,obj);
+				console.log('*********** obj ***********', obj);
 				res.json({
-							status: 200,
-							message: 'Sending Tab Status',
-							data: obj,
-						});
+					status: 200,
+					message: 'Sending Tab Status',
+					data: obj,
+				});
 			});
-	}else{
+	} else {
 
 	}
 })
 /**
  * checkstepper route for students. Throws to the tab where the student has to filled its required details, for 2nd step
  */
-router.get('/checkstepper_inner',async function(req,res){
+router.get('/checkstepper_inner', async function (req, res) {
 	var user_id = req.query.user_id;
 	// var app_id  = req.query.app_id ? null  : null;
-	var app_id  = req.query.app_id	;
-	if(app_id == 'null'){
+	var app_id = req.query.app_id;
+	if (app_id == 'null') {
 		app_id = null
 	}
-	var data =[];
+	var data = [];
 	var obj = {};
 	var obj_inner = {};
 	var count = 0;
-	var marksheets=0;
-	var transcript =0;
+	var marksheets = 0;
+	var transcript = 0;
 	var faculty;
 	var degree;
 	var educationalDetails = true;
 	obj_inner['tab1'] = false,
-	obj_inner['tab2'] = false,
-	obj_inner['tab3'] = false,
-	obj_inner['tab4'] = false,
-	obj_inner['tab5'] = false,
-	obj_inner['tab6'] = false,
-	obj_inner['tab7'] = false
+		obj_inner['tab2'] = false,
+		obj_inner['tab3'] = false,
+		obj_inner['tab4'] = false,
+		obj_inner['tab5'] = false,
+		obj_inner['tab6'] = false,
+		obj_inner['tab7'] = false
 
-	var appliedFor = await functions.getAppliedForDetails(user_id,app_id);
-	marksheets = await functions.getDocuments_checkstepper(user_id,app_id,'marklist','','');
+	var appliedFor = await functions.getAppliedForDetails(user_id, app_id);
+	marksheets = await functions.getDocuments_checkstepper(user_id, app_id, 'marklist', '', '');
 	getDistinctData = await functions.getDistinctData(user_id);
 	const uniqueValues = getDistinctData.map((item) => item.dataValues.uniqueValues);
-	
-	for(var i= 0 ; i < uniqueValues.length ; i++){
+
+	for (var i = 0; i < uniqueValues.length; i++) {
 		degree = uniqueValues[i].split('_')[0];
 		faculty = uniqueValues[i].split('_')[1];
-		if(appliedFor.educationalDetails == true){
-			transcript = await functions.getDocuments_checkstepper(user_id,app_id,'transcript',degree,faculty);
+		if (appliedFor.educationalDetails == true) {
+			transcript = await functions.getDocuments_checkstepper(user_id, app_id, 'transcript', degree, faculty);
 		}
-		if(appliedFor.instructionalField == true){
-			instructional = await functions.getDocuments_checkstepper(user_id,app_id,'instructional',degree,faculty);
+		if (appliedFor.instructionalField == true) {
+			instructional = await functions.getDocuments_checkstepper(user_id, app_id, 'instructional', degree, faculty);
 		}
-		if(appliedFor.curriculum == true){
-			curriculum = await functions.getDocuments_checkstepper(user_id,app_id,'curriculum',degree,faculty);
+		if (appliedFor.curriculum == true) {
+			curriculum = await functions.getDocuments_checkstepper(user_id, app_id, 'curriculum', degree, faculty);
 		}
-		if(appliedFor.gradToPer == true){
-			gradToPer = await functions.getDocuments_checkstepper(user_id,app_id,'GradeToPercentageLetter',degree,faculty);
+		if (appliedFor.gradToPer == true) {
+			gradToPer = await functions.getDocuments_checkstepper(user_id, app_id, 'GradeToPercentageLetter', degree, faculty);
 		}
-		if(appliedFor.affiliation == true){
-			affiliation = await functions.getDocuments_checkstepper(user_id,app_id,'affiliation',degree,faculty);
+		if (appliedFor.affiliation == true) {
+			affiliation = await functions.getDocuments_checkstepper(user_id, app_id, 'affiliation', degree, faculty);
 		}
-		if(appliedFor.CompetencyLetter == true){
+		if (appliedFor.CompetencyLetter == true) {
 		}
-		if(appliedFor.LetterforNameChange == true){
+		if (appliedFor.LetterforNameChange == true) {
 		}
 	}
-	
-	if(appliedFor){
+
+	if (appliedFor) {
 		require('async').series([
 			function (callback) {
 				// for marksheets
-				if(marksheets.length > 0){
+				if (marksheets.length > 0) {
 					obj_inner['tab1'] = true;
 					count = count + 1;
 					callback(null, appliedFor);
-				}else{
+				} else {
 					obj_inner['tab1'] = false;
 					callback(null, appliedFor);
 				}
 			},
 			function (callback) {
-					// for transcripts
-					if(appliedFor.educationalDetails == true){
-							if(transcript.length > 0){
-								obj_inner['tab2'] = true;
-								count = count + 1;
-								callback(null, appliedFor);
-							}else{
-								obj_inner['tab2'] = false;
-								callback(null, appliedFor);
-							}
-					}else{
+				// for transcripts
+				if (appliedFor.educationalDetails == true) {
+					if (transcript.length > 0) {
 						obj_inner['tab2'] = true;
 						count = count + 1;
 						callback(null, appliedFor);
+					} else {
+						obj_inner['tab2'] = false;
+						callback(null, appliedFor);
 					}
+				} else {
+					obj_inner['tab2'] = true;
+					count = count + 1;
+					callback(null, appliedFor);
+				}
 			},
 			function (callback) {
 				// Instructional Details
-				if(appliedFor.instructionalField == true){
-						if(instructional.length > 0){
-							obj_inner['tab3'] = true;
-							count = count + 1;
-							callback(null, appliedFor);
-						}else{
-							obj_inner['tab3'] = false
-							callback(null, appliedFor);
-						}
-				}else{
+				if (appliedFor.instructionalField == true) {
+					if (instructional.length > 0) {
+						obj_inner['tab3'] = true;
+						count = count + 1;
+						callback(null, appliedFor);
+					} else {
+						obj_inner['tab3'] = false
+						callback(null, appliedFor);
+					}
+				} else {
 					obj_inner['tab3'] = false
 					callback(null, appliedFor);
 				}
 			},
 			function (callback) {
 				// Affiliation details
-				if(appliedFor.affiliation == true){
-					if(affiliation.length > 0){
+				if (appliedFor.affiliation == true) {
+					if (affiliation.length > 0) {
 						obj_inner['tab4'] = true;
 						count = count + 1;
 						callback(null, appliedFor);
-					}else{
+					} else {
 						obj_inner['tab4'] = false
 						callback(null, appliedFor);
 					}
-			}else{
-				obj_inner['tab4'] = false
-				callback(null, appliedFor);
-			}
+				} else {
+					obj_inner['tab4'] = false
+					callback(null, appliedFor);
+				}
 			},
 			function (callback) {
 				//Curriculum
-				if(appliedFor.curriculum == true){
-						if(curriculum.length > 0){
-							obj_inner['tab5'] = true;
-							count = count + 1;
-							callback(null, appliedFor);
-						}else{
-							obj_inner['tab5'] = false
-							callback(null, appliedFor);
-						}
-				}else{
+				if (appliedFor.curriculum == true) {
+					if (curriculum.length > 0) {
+						obj_inner['tab5'] = true;
+						count = count + 1;
+						callback(null, appliedFor);
+					} else {
+						obj_inner['tab5'] = false
+						callback(null, appliedFor);
+					}
+				} else {
 					obj_inner['tab5'] = false
 					callback(null, appliedFor);
 				}
 			},
 			function (callback) {
 				// GradeToPercentageLetter
-				if(appliedFor.gradToPer == true){
-					if(gradToPer.length > 0){
+				if (appliedFor.gradToPer == true) {
+					if (gradToPer.length > 0) {
 						obj_inner['tab6'] = true;
 						count = count + 1;
 						callback(null, appliedFor);
-					}else{
+					} else {
 						obj_inner['tab6'] = false
 						callback(null, appliedFor);
 					}
-			}else{
-				obj_inner['tab6'] = false
-				callback(null, appliedFor);
-			}
+				} else {
+					obj_inner['tab6'] = false
+					callback(null, appliedFor);
+				}
 			},
 			function (callback) {
 				obj_inner['tab7'] = false
@@ -3478,14 +3522,14 @@ router.get('/checkstepper_inner',async function(req,res){
 			}
 		],
 			function (err, result) {
-				console.log('*********** obj_inner ***********' ,obj_inner);
-						res.json({
-							status: 200,
-							message: 'Sending Tab Status',
-							data: obj_inner,
-						});
+				console.log('*********** obj_inner ***********', obj_inner);
+				res.json({
+					status: 200,
+					message: 'Sending Tab Status',
+					data: obj_inner,
+				});
 			});
-	}else{
+	} else {
 
 	}
 })
@@ -3493,12 +3537,12 @@ router.get('/checkstepper_inner',async function(req,res){
 /**
  *  Country Details
  */
-router.get('/getCountry', async function(req,res){
-	var country  = await functions.getCountry();
-	if(country){
-		res.json({status : 200 , data : country})
-	}else{
-		res.json({status : 400})
+router.get('/getCountry', async function (req, res) {
+	var country = await functions.getCountry();
+	if (country) {
+		res.json({ status: 200, data: country })
+	} else {
+		res.json({ status: 400 })
 	}
 })
 
@@ -3527,10 +3571,10 @@ router.post('/savePaymentIssueData', async (req, res) => {
 	try {
 		var user_id = req.query.user_id;
 		var values = req.query.data;
-		var type ='paymentIssue'
+		var type = 'paymentIssue'
 		var dir = constant.FILE_LOCATION + "public/upload/" + type + '/' + user_id;
 		var image;
-		var Date= moment(values.paymentdateCtrl).format('DD/MM/YYYY');
+		var Date = moment(values.paymentdateCtrl).format('DD/MM/YYYY');
 
 		if (!fs.existsSync(dir)) {
 			fs.mkdirSync(dir);
@@ -3540,7 +3584,7 @@ router.post('/savePaymentIssueData', async (req, res) => {
 				callback(null, constant.FILE_LOCATION + "public/upload/" + type + '/' + user_id);
 			},
 			filename: function (req, file, callback) {
-				console.log('file.originalname' ,file.originalname)
+				console.log('file.originalname', file.originalname)
 				var extension = path.extname(file.originalname)
 				var randomString = functions.generateRandomString(10, 'alphabetic')
 				var newFileName = randomString.concat(extension);
@@ -3556,7 +3600,7 @@ router.post('/savePaymentIssueData', async (req, res) => {
 			imageLocationToCallClient = image;
 			const userCreated = await models.paymenterror_details.create({
 				user_id: user_id,
-				file_name : imageLocationToCallClient,
+				file_name: imageLocationToCallClient,
 				email: values.emailCtrl,
 				transaction_id: values.transactionCtrl,
 				date: Date,
@@ -3566,9 +3610,9 @@ router.post('/savePaymentIssueData', async (req, res) => {
 				note: values.noteCtrl,
 				name: 'Payment Not Reflecting',
 			});
-			
-			if(userCreated) {
-				res.json({status : 200})
+
+			if (userCreated) {
+				res.json({ status: 200 })
 			}
 		});
 	} catch (err) {
@@ -3591,7 +3635,7 @@ router.get('/getPaymentIssueData', async (req, res) => {
 			}
 		})
 		if (user) {
-			console.log("user",user);
+			console.log("user", user);
 			res.json({
 				status: 200,
 				data: user
@@ -3605,4 +3649,138 @@ router.get('/getPaymentIssueData', async (req, res) => {
 		});
 	}
 })
+
+router.get('/getMyApplicationData', async (req, res) => {
+	console.log('/getMyApplicationData');
+
+	var user_id = req.query.user_id;
+	var applicationData = [];
+
+	var applicationDetails = await functions.getApplicationsData(user_id);
+
+	if (applicationDetails.length > 0) {
+		for (let application of applicationDetails) {
+			var data = await models.Application.getMyApplicationData(application.id);
+
+			//marksheets
+			var marksheetErrata = await functions.getErrataInMarksheets(application.user_id, application.id, 1);
+
+			if (marksheetErrata.length > 0) {
+				var marksheetsErrata = true;
+			}
+
+			//transcripts
+			var trascriptErrata = await functions.getErrataInTranscripts(application.user_id, application.id, 1);
+
+			if (trascriptErrata.length > 0) {
+				var transcriptsErrata = true;
+			}
+
+			//instructional
+			var instructionalErrata = await functions.getErrataInInstructionalAndAffiliation(application.user_id, application.id, 1, 'instructional');
+			if (instructionalErrata.length > 0) {
+				var instructionalsErrata = true;
+			}
+
+			//curriculum
+			var curriculumErrata = await functions.getErrataInCurriculums(application.user_id, application.id, 1);
+
+			if (curriculumErrata.length > 0) {
+				var curriculumsErrata = true;
+			}
+
+			//gradtoper
+			var gradetoperErrata = await functions.getErrataInGradtoper(application.user_id, application.id, 1);
+
+			if (gradetoperErrata.length > 0) {
+				var gradetopersErrata = true;
+			}
+
+			//affiliation
+			var affiliationErrata = await functions.getErrataInInstructionalAndAffiliation(application.user_id, application.id, 1, 'affiliation');
+
+			if (affiliationErrata.length > 0) {
+				var affiliationsErrata = true;
+			}
+
+			//competency
+			var competencyErrata = await functions.getErrataInCompetency(application.user_id, application.id, 1);
+
+			if (competencyErrata.length > 0) {
+				var competencysErrata = true;
+			}
+
+			//letter for name change
+			var letterfornamechangeErrata = await functions.getErrataInLetterForNameChange(application.user_id, application.id, 1);
+
+			if (letterfornamechangeErrata.length > 0) {
+				var letterfornamechangesErrata = true;
+			}
+
+			//name change proof
+			var namechangeproofErrata = await functions.getErrataInNameChangeProof(application.user_id, application.id, 1);
+
+			if (namechangeproofErrata.length > 0) {
+				var namechangeproofsErrata = true;
+			}
+
+			applicationData.push({
+				id: data[0].id,
+				tracker: data[0].tracker,
+				status: data[0].status,
+				created_at: data[0].created_at ? moment(new Date(data[0].created_at)).format("DD-MM-YYYY") : '',
+				type: data[0].type,
+				email: data[0].email + ' ' + data[0].otherEmail,
+				refno: 'MU-' + data[0].refno,
+				wesemail: data[0].wesemail,
+				marksheetsErrata: marksheetsErrata ? marksheetsErrata : null,
+				transcriptsErrata: transcriptsErrata ? transcriptsErrata : null,
+				instructionalsErrata: instructionalsErrata ? instructionalsErrata : null,
+				curriculumsErrata: curriculumsErrata ? curriculumsErrata : null,
+				gradetopersErrata: gradetopersErrata ? gradetopersErrata : null,
+				affiliationsErrata: affiliationsErrata ? affiliationsErrata : null,
+				competencysErrata: competencysErrata ? competencysErrata : null,
+				letterfornamechangesErrata: letterfornamechangesErrata ? letterfornamechangesErrata : null,
+				namechangeproofsErrata: namechangeproofsErrata ? namechangeproofsErrata : null,
+			})
+		}
+
+		if (applicationData.length > 0) {
+			return res.json({
+				status: 200,
+				data: applicationData,
+			})
+		} else {
+			return res.json({
+				status: 400
+			})
+		}
+	}
+})
+
+router.get('/getEducationalDetails', async (req, res) => {
+	console.log('/getEducationalDetails');
+
+	user_id = req.query.user_id;
+	app_id = req.query.app_id;
+	if (app_id == 'null') {
+		app_id = null
+	} else {
+		app_id = req.query.app_id
+	}
+
+	var applied_for_details = await functions.getAppliedForDetails(user_id, app_id);
+
+	if (applied_for_details) {
+		return res.json({
+			status: 200,
+			data: applied_for_details
+		})
+	} else {
+		return res.json({
+			status: 400
+		})
+	}
+})
+
 module.exports = router;

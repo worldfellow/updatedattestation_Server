@@ -14,7 +14,8 @@ var letterDetails = sequelize.define("letter_details", {
     education_type: DataTypes.STRING(255),
     faculty : DataTypes.STRING(255),
     type : DataTypes.STRING(255),
-    app_id : DataTypes.INTEGER
+    app_id : DataTypes.INTEGER,
+    lock_transcript : DataTypes.BOOLEAN(),
  });
 
  letterDetails.belongsTo(sequelize.models.Application, {foreignKey: 'app_id'});

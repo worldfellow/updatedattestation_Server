@@ -19,8 +19,10 @@ const e = require('express');
 const { pattern } = require('pdfkit');
 const { log } = require('console');
 var json2xls = require('json2xls');
-const { promisify } = require('util');  
+const { promisify } = require('util');
 const unlinkAsync = promisify(fs.unlink);
+var fn = require('./signfn');
+const pdf = require('pdf-parse');
 
 router.post('/updateOtp', async (req, res) => {
     console.log('/updateOtp');
@@ -643,7 +645,7 @@ router.get('/getDocumentsData', async (req, res) => {
     //instructional
     if (applied_for_details.instructionalField == true) {
         console.log('inideeeeeeeeeeeeeeeeee');
-        var getInstructional = await functions.getUserInstructional(student_id, student_app_id);
+        var getInstructional = await functions.getUserInstructionalAndAffiliation(student_id, student_app_id, 'instructional');
         console.log('::::::::::::::::', getInstructional);
         console.log('::::::::::::::::', getInstructional.length);
 
@@ -705,7 +707,7 @@ router.get('/getDocumentsData', async (req, res) => {
 
     //affiliation
     if (applied_for_details.affiliation == true) {
-        var getAffiliation = await functions.getUserAffiliation(student_id, student_app_id);
+        var getAffiliation = await functions.getUserInstructionalAndAffiliation(student_id, student_app_id,'affiliation');
 
         getAffiliation.forEach(function (affiliation) {
 
@@ -963,7 +965,7 @@ router.get('/getApplicationData', async (req, res) => {
         const purpose = req.query.purpose_search
         const students = [];
         const count = await functions.getApplicationCount(tracker, status, app_id, name, email, globalSearch);
-console.log("count",count);
+        console.log("count", count);
         const user = await models.Application.getUserApplications(tracker, status, app_id, name, email, globalSearch, purpose, limit, offset);
         if (user) {
             for (const student of user) {
@@ -1009,7 +1011,7 @@ console.log("count",count);
     }
 });
 
-router.get('/test', async (req,res)=>{
+router.get('/test', async (req, res) => {
     const tracker = req.query.tracker;
     const status = req.query.status;
     const app_id = req.query.app_id;
@@ -1018,22 +1020,22 @@ router.get('/test', async (req,res)=>{
     const globalSearch = req.query.globalSearch;
     const limits = req.query.limit;
     const offsets = req.query.offset;
-    let students=[];
+    let students = [];
     const count = await functions.getApplicationCount(tracker, status, app_id, name, email, globalSearch);
-    console.log("data",count);
- 
-    const user = await functions.getApplicationData(tracker, status, app_id, name, email, globalSearch,limits,offsets); 
+    console.log("data", count);
+
+    const user = await functions.getApplicationData(tracker, status, app_id, name, email, globalSearch, limits, offsets);
     if (user) {
         for (const student of user['rows']) {
-                console.log("student.id", student.id); 
-                const col = await functions.check(student.id); 
- 
-                    //   const collegeName = result[0].dataValues.college_Name;
-                    //   console.log(collegeName);
-                   
-                    for (i = 0; i < col.length; i++) {
-               
-                  console.log("col[i].collegeNames",col[i].dataValues.collegeNames);
+            console.log("student.id", student.id);
+            const col = await functions.check(student.id);
+
+            //   const collegeName = result[0].dataValues.college_Name;
+            //   console.log(collegeName);
+
+            for (i = 0; i < col.length; i++) {
+
+                console.log("col[i].collegeNames", col[i].dataValues.collegeNames);
                 students.push({
                     id: student.id,
                     name: student['User.name'],
@@ -1053,19 +1055,19 @@ router.get('/test', async (req,res)=>{
                     type: student['Institution_detail.type'],
                     notes: student.notes,
                     approved_by: student.approved_by,
-                      collegeConfirmation : student.collegeConfirmation,
+                    collegeConfirmation: student.collegeConfirmation,
                     application_date: moment(new Date(student.created_at)).format("DD/MM/YYYY")
                 });
             }
-            };
-        }
-        return res.json({
-            status: 200,
-            message: 'Students retrieved successfully',
-            data: students,
-            count: count
-        });
-    
+        };
+    }
+    return res.json({
+        status: 200,
+        message: 'Students retrieved successfully',
+        data: students,
+        count: count
+    });
+
 })
 
 /** Reject Application Route from Pending and verified Tab with activity Tracker*/
@@ -1075,7 +1077,7 @@ router.post('/rejectApplications', async (req, res) => {
         const appId = req.body.app_id;
         const adminEmail = req.body.admin_email;
         const type = req.body.type;
-        const tracker = type === 'pending' ? 'apply' : type === 'verified' ? 'verified' : undefined; 
+        const tracker = type === 'pending' ? 'apply' : type === 'verified' ? 'verified' : undefined;
 
         const user = await functions.getUser(userId);
 
@@ -1133,11 +1135,11 @@ router.post('/verifiedApplication', async (req, res) => {
 
         const user = await functions.getUser(userId);
 
-        if(user) {
+        if (user) {
 
             const application = await functions.getApplication(appId);
 
-            if(application) {
+            if (application) {
                 const updatedApplication = await application.update({
                     tracker: 'verified',
                     status: 'accept'
@@ -1368,9 +1370,9 @@ router.get('/getDownloadExcel', async (req, res) => {
     }
 
     var xls = json2xls(applicationData);
-    var file_location = constant.FILE_LOCATION + "/public/Excel/" + type + ".xlsx";
+    var file_location = constant.FILE_LOCATION + "public/Excel/" + type + ".xlsx";
     fs.writeFileSync(file_location, xls, 'binary');
-    var filepath = constant.FILE_LOCATION + "/public/Excel/" + type + ".xlsx";
+    var filepath = constant.FILE_LOCATION + "public/Excel/" + type + ".xlsx";
 
     if (filepath) {
         res.json({
@@ -1483,7 +1485,7 @@ router.post('/resendWesApplication', async (req, res) => {
                 }
                 const applicationUpdated = await application.update({
                     tracker: 'verified',
-                    status : 'accept'
+                    status: 'accept'
                 });
                 if (applicationUpdated) {
                     return res.json({
@@ -1527,24 +1529,24 @@ router.post('/updateNotes', async (req, res) => {
     var type = req.body.type;
     var admin_email = req.body.admin_email;
 
-    var updateNotes = await functions.getUpdateUserNotes(notes_data, app_id,type);
+    var updateNotes = await functions.getUpdateUserNotes(notes_data, app_id, type);
     if (updateNotes.length == true) {
         var data = "Note of application " + app_id + " is updated by " + admin_email;
         var activity = "Note Updated";
 
-            functions.getCreateActivityTracker(user_id, app_id, activity, data);
+        functions.getCreateActivityTracker(user_id, app_id, activity, data);
 
-            res.json({
-                status: 200,
-                message: "Notes Saved Successfully!",
-            })
-        } else {
-            res.json({
-                status: 400,
-                message: "Failed to save notes",
-            })
-        }
-   
+        res.json({
+            status: 200,
+            message: "Notes Saved Successfully!",
+        })
+    } else {
+        res.json({
+            status: 400,
+            message: "Failed to save notes",
+        })
+    }
+
 })
 
 router.get('/getRolesData', async (req, res) => {
@@ -1700,6 +1702,494 @@ router.post('/getUpdateRoles', async (req, res) => {
         res.json({
             status: 400,
             message: "Something went wrong!",
+        })
+    }
+})
+
+router.get('/verifyApplication', async (req, res) => {
+    console.log('/verifyApplication');
+
+    var app_id = req.query.app_id;
+    console.log('app_id', app_id);
+    var transcriptsLength;
+    var marksheetsLength;
+    var transcripts = [];
+    var marksheets = [];
+
+    var applicationDetails = await functions.getApplicationDetails(app_id);
+    console.log('applicationDetails', applicationDetails);
+
+    if (applicationDetails) {
+        var user_id = applicationDetails.user_id;
+        console.log('user_id', user_id);
+
+        const data = await models.User.getStudentInfo(app_id);
+        console.log('data$$$$$$$$$$$$$$$$$$$$$', JSON.stringify(data));
+        console.log('data{{{{{{{{{{{{{{{{{{{{{', data[0].educationalDetails);
+
+        if (data) {
+            console.log('inside dataaaaaaaaaaa');
+            if (!fs.existsSync(constant.FILE_LOCATION + "public/signedpdf/" + user_id + "/")) {
+                console.log('Path not found');
+                fs.mkdirSync(constant.FILE_LOCATION + "public/signedpdf/" + user_id + "/", { recursive: true });
+            } else {
+                console.log('Path already exist');
+            }
+
+            const tasks = [applicationDetails.id];
+
+            const promises = tasks.map(task => {
+                return new Promise(async (resolve, reject) => {
+                    // Perform task asynchronously
+                    // You can replace the console.log statement with your task processing logic
+                    console.log("Currently Busy Processing Task " + task);
+                    resolve({ task });
+
+                    if (data[0].educationalDetails == true) {
+                        console.log('inside educationalDetails');
+
+                        //transcripts
+                        var transcriptsDetails = await functions.getTranscriptsDetails(app_id, '%transcripts');
+                        console.log('#################', JSON.stringify(transcriptsDetails));
+                        console.log('#################', transcriptsDetails.length);
+
+                        if (transcriptsDetails.length > 0) {
+                            transcriptsDetails.forEach(user_transcript => {
+                                var app_idArr = user_transcript.app_id.split(',');
+                                app_idArr.forEach(transcript_appId => {
+                                    if (transcript_appId == app_id) {
+                                        transcripts.push(user_transcript);
+                                        console.log('@@@@@@@@@@@@@@@@@', JSON.stringify(transcripts));
+                                    }
+                                })
+                            })
+                            console.log('!!!!!!!!!!!!!!!!!', transcripts.length);
+
+                            transcriptsLength = transcripts.length;
+                            console.log('!!!!---------!!!!', transcriptsLength);
+
+                            transcripts.forEach(async transcript => {
+                                var doc_name = transcript.name.split(' ').join('_');
+                                console.log('-------------------', doc_name);
+
+                                var signed_path = constant.FILE_LOCATION + 'public/signedpdf/' + user_id + '/';
+                                console.log('^^^^^^^^^^^^^^^^^^^^', signed_path);
+
+                                var file_name = doc_name + "_" + path.parse(transcript.file_name).name;
+                                console.log('~~~~~~~~~~~~~~~~~', file_name);
+
+                                var file_path = constant.FILE_LOCATION + 'public/upload/transcript/' + user_id + '/' + transcript.file_name;
+                                console.log('$$$$$$$$$$$$$$$$$$$', file_path);
+
+                                var category = "Transcript";
+
+                                if (fs.existsSync(file_path)) {
+                                    var extension = transcript.file_name.split('.').pop();
+                                    console.log('````````````````````', extension);
+                                    var numOfpages;
+
+                                    if (extension == 'pdf') {
+                                        console.log('inside pdf');
+                                        const signingProcess = async () => {
+                                            try {
+                                                var folderName = file_name.split(" ").join("_");
+                                                outputDirectory = constant.FILE_LOCATION + 'public/upload/transcript/' + user_id + '/' + folderName + '/';
+                                                console.log('_______________________', outputDirectory);
+
+                                                fn.pdfToImageConversion(path.parse(transcript.file_name).name, user_id, file_path, outputDirectory);
+
+                                                let bufferData = fs.readFileSync(file_path);
+                                                console.log('========================', bufferData);
+                                                const data = await pdf(bufferData);
+                                                numOfpages = data.numOfpages;
+                                                console.log('nummmmmmmmmmmmmmm', numOfpages);
+
+                                                outputDirectory = constant.FILE_LOCATION + "public/upload/transcript/" + user_id + "/signed_" + folderName + "/";
+                                                console.log('_______________________', outputDirectory);
+
+                                                if (!fs.existsSync(outputDirectory)) {
+                                                    fs.mkdirSync(outputDirectory);
+                                                }
+
+                                                async function processFiles() {
+                                                    try {
+                                                        const fileArray = [];
+                                                        for (let i = 1; i <= numOfpages; i++) {
+                                                            let j = "";
+                                                            if (numOfpages >= 100) {
+                                                                if (parseInt(i / 100) > 0) {
+                                                                    j = i;
+                                                                } else if (parseInt(i / 10) > 0) {
+                                                                    j = "0" + i;
+                                                                } else {
+                                                                    j = "00" + i;
+                                                                }
+                                                            } else if (numOfpages >= 10) {
+                                                                if (parseInt(i / 10) > 0) {
+                                                                    j = i;
+                                                                } else {
+                                                                    j = "0" + i;
+                                                                }
+                                                            } else if (numOfpages >= 1) {
+                                                                j = i;
+                                                            }
+
+                                                            console.log("fileName == " + file_name);
+                                                            const filePath = constant.FILE_LOCATION + "public/upload/transcript/" + user_id + "/" + folderName + "/" + path.parse(transcript.file_name).name + "-" + j + ".jpg";
+                                                            console.log(filePath);
+                                                            const fileName = file_name + "-" + j + ".jpg";
+                                                            console.log("file_name == " + file_name);
+
+                                                            const index = await new Promise((resolve, reject) => {
+                                                                fn.signingDocuments(path.parse(fileName).name, application.user_id, app_id, filePath, doc_name, category, outputDirectory, j, function (err, index) {
+                                                                    if (err) {
+                                                                        reject(err);
+                                                                    } else {
+                                                                        resolve(index);
+                                                                    }
+                                                                });
+                                                            });
+
+                                                            fileArray.push({
+                                                                index: index,
+                                                                fileName: signed_outputDirectory + doc_name + "_" + fileName + "-" + index + ".pdf"
+                                                            });
+                                                        }
+
+                                                        console.log('fileArray == ' + JSON.stringify(fileArray));
+                                                        return fileArray;
+                                                    } catch (error) {
+                                                        console.error(error);
+                                                        throw error;
+                                                    }
+                                                }
+
+                                                const result = await processFiles();
+                                                console.log("result == " + result);
+
+                                                var fileString = fn.sortArrayConvertString(result);
+                                                console.log("fileString == " + fileString);
+
+                                                outputDirectory = signed_path;
+                                                fn.mergeDocuments(app_id, application.user_id, doc_name, path.parse(transcript.file_name).name, outputDirectory, fileString, async function (err) {
+                                                    if (err) {
+                                                        return res.json({
+                                                            status: 400,
+                                                            message: "Files cannot merge"
+                                                        })
+                                                    } else {
+                                                        var fileName = doc_name + "_" + path.parse(transcript.file_name).name + ".pdf";
+
+                                                        var emailDocsDetails = await functions.getEmailDocsDetails(transcript.id, app_id, fileName);
+                                                        console.log('&&&&&&&&&&&&&&&&&&&&&&', JSON.stringify(emailDocsDetails));
+                                                        console.log('&&&&&&&&&&&&&&&&&&&&&&', emailDocsDetails.length);
+
+                                                        if (emailDocsDetails.length > 0) {
+
+                                                        } else {
+                                                            console.log('inside emaildocs elase');
+
+                                                            var createEmailDocs = await functions.getCreateEmailDocs(transcript.id, app_id, doc_name, fileName, category);
+                                                            console.log('***********************', JSON.stringify(createEmailDocs));
+                                                        }
+                                                    }
+                                                })
+                                            } catch (error) {
+                                                console.error(error);
+                                            }
+                                        };
+                                        signingProcess().catch((error) => {
+                                            console.error(error);
+                                        });
+                                    } else {
+                                        var fileName = file_name + '.pdf'
+                                        outputDirectory = signed_path;
+                                        console.log('_______________________', outputDirectory);
+                                        console.log('inside others2222222', file_path);
+
+                                        fn.signingDocuments(path.parse(transcript.file_name).name, user_id, app_id, file_path, doc_name, category, outputDirectory, '', async function (err, index) {
+                                            if (err) {
+                                                res.json({
+                                                    status: 400,
+                                                    message: err
+                                                })
+                                            } else {
+                                                console.log('----------------->', fileName);
+
+                                                var emailDocsDetails = await functions.getEmailDocsDetails(transcript.id, app_id, fileName);
+                                                console.log('&&&&&&&&&&&&&&&&&&&&&&', JSON.stringify(emailDocsDetails));
+                                                console.log('&&&&&&&&&&&&&&&&&&&&&&', emailDocsDetails.length);
+
+                                                if (emailDocsDetails.length > 0) {
+
+                                                } else {
+                                                    console.log('inside emaildocs elase');
+
+                                                    var createEmailDocs = await functions.getCreateEmailDocs(transcript.id, app_id, doc_name, fileName);
+                                                    console.log('***********************', JSON.stringify(createEmailDocs));
+
+                                                }
+                                            }
+                                        })
+                                    }
+                                } else {
+                                    // res.json({
+                                    //     status: 400,
+                                    //     message: transcript.name + " not found"
+                                    // })
+                                }
+                            })
+                        } else {
+                            res.json({
+                                status: 400,
+                                message: "Transcripts not found"
+                            })
+                        }
+
+                        //marksheets
+                        var marksheetDetails = await functions.getAppliedDetails(user_id, app_id);
+                        console.log('+++++++++++++++++++++++++', marksheetDetails);
+                        console.log('+++++++++++++++++++++++++', marksheetDetails.length);
+
+                        if (marksheetDetails.length > 0) {
+                            marksheetDetails.forEach(user_marklist => {
+                                var app_idArr = user_marklist.app_id.split(',');
+                                app_idArr.forEach(marklist_appId => {
+                                    if (marklist_appId == app_id) {
+                                        marksheets.push(user_marklist);
+                                    }
+                                })
+                            })
+                            console.log('@@@@@@@@@@@@@@@@@', JSON.stringify(marksheets));
+
+                            console.log('!!!!!!!!!!!!!!!!!', marksheets.length);
+
+                            marksheetsLength = marksheets.length;
+
+                            console.log('!!!!---------!!!!', marksheetsLength);
+
+                            marksheets.forEach(async marksheet => {
+                                console.log('QQQQQQQQQQQQQQQ', marksheet.name);
+                                var doc_name = marksheet.name.split(' ').join('_');
+                                console.log('-------------------', doc_name);
+
+                                var signed_path = constant.FILE_LOCATION + 'public/signedpdf/' + user_id + '/';
+                                console.log('^^^^^^^^^^^^^^^^^^^^', signed_path);
+
+                                var file_name = doc_name + "_" + path.parse(marksheet.file_name).name;
+                                console.log('~~~~~~~~~~~~~~~~~', file_name);
+
+                                var file_path = constant.FILE_LOCATION + 'public/upload/marklist/' + user_id + '/' + marksheet.file_name;
+                                console.log('$$$$$$$$$$$$$$$$$$$', file_path);
+
+                                var category = "Marklist";
+
+                                if (fs.existsSync(file_path)) {
+                                    var extension = marksheet.file_name.split('.').pop();
+                                    console.log('````````````````````', extension);
+                                    var numOfpages;
+
+                                    if (extension == 'pdf') {
+                                        const signingProcess = async () => {
+                                            try {
+                                                var folderName = file_name.split(' ').join('_');
+                                                console.log("folderName == " + folderName);
+
+                                                outputDirectory = constant.FILE_LOCATION + "public/upload/marklist/" + user_id + "/" + folderName + "/";
+
+                                                fn.pdfToImageConversion(marksheet.file_name, user_id, file_path, outputDirectory);
+
+                                                let bufferData = fs.readFileSync(file_path);
+                                                console.log('========================', bufferData);
+                                                const data = await pdf(bufferData);
+                                                numOfpages = data.numOfpages;
+                                                console.log('nummmmmmmmmmmmmmm', numOfpages);
+
+                                                outputDirectory = constant.FILE_LOCATION + "public/upload/transcript/" + user_id + "/signed_" + folderName + "/";
+                                                console.log('_______________________', outputDirectory);
+
+                                                if (!fs.existsSync(outputDirectory)) {
+                                                    fs.mkdirSync(outputDirectory);
+                                                }
+
+                                                async function processFiles() {
+                                                    var fileArray = [];
+                                                    try {
+                                                        for (let i = 0; i <= numOfpages; i++) {
+                                                            let j = "";
+                                                            if (numOfpages >= 100) {
+                                                                console.log('::::::::::::::', parseInt(i / 100));
+                                                                if (parseInt(i / 100) > 0) {
+                                                                    j = i;
+                                                                } else if (parseInt(i / 10) > 0) {
+                                                                    j = '0' + i;
+                                                                } else {
+                                                                    j = '00' + i;
+                                                                }
+                                                            } else if (numOfpages >= 10) {
+                                                                if (parseInt(i / 10) > 0) {
+                                                                    j = i;
+                                                                } else {
+                                                                    j = '0' + i;
+                                                                }
+                                                            } else if (numOfpages >= 1) {
+                                                                j = i;
+                                                            }
+
+                                                            console.log('JJJJJJJJJJJJJJJJJJJJJJ', j);
+
+                                                            console.log('~~~~~~~~~~~~~~~~~', file_name);
+
+                                                            var filePath = constant.FILE_LOCATION + 'public/upload/transcript/' + user_id + '/' + folderName + '-' + j + '.jpg';
+                                                            console.log('::::::::::::::::::::::::::', filePath);
+                                                            var fileName = file_name + '-' + j + '.jpg';
+                                                            console.log('~~~~~~~~~~~~~~~~~', fileName);
+
+                                                            const index = await new Promise((resolve, reject) => {
+                                                                fn.signingDocuments(path.parse(fileName).name, user_id, filePath, doc_name, category, outputDirectory, j, function (err, index) {
+                                                                    if (err) {
+                                                                        reject(err);
+                                                                    } else {
+                                                                        resolve(index);
+                                                                    }
+                                                                })
+                                                            });
+
+                                                            fileArray.push({
+                                                                index: index,
+                                                                fileName: signed_outputDirectory + doc_name + '_' + fileName + '-' + index + '.pdf',
+                                                            })
+                                                        }
+
+                                                        console.log('||||||||||||||||||||||||', fileArray);
+                                                        return fileArray;
+                                                    } catch (error) {
+                                                        console.error(error);
+                                                        throw error;
+                                                    }
+                                                }
+
+                                                const result = await processFiles();
+                                                console.log('{{{{{{{{{{{{{{{{', result);
+
+                                                var fileString = fn.sortArrayConvertString(result);
+                                                console.log('}}}}}}}}}}}}}}}}}}', fileString);
+
+                                                outputDirectory = signed_path;
+
+                                                fn.mergeDocuments(app_id, user_id, doc_name, path.parse(marksheet.file_name).name, outputDirectory, fileString, async function (err) {
+                                                    if (err) {
+                                                        return res.json({
+                                                            status: 400,
+                                                            message: "Files cannot merge"
+                                                        })
+                                                    } else {
+                                                        var fileName = doc_name + "_" + path.parse(marksheet.file_name).name + ".pdf";
+
+                                                        var emailDocsDetails = await functions.getEmailDocsDetails(marksheet.id, app_id, fileName);
+                                                        console.log('&&&&&&&&&&&&&&&&&&&&&&', JSON.stringify(emailDocsDetails));
+                                                        console.log('&&&&&&&&&&&&&&&&&&&&&&', emailDocsDetails.length);
+
+                                                        if (emailDocsDetails.length > 0) {
+
+                                                        } else {
+                                                            console.log('inside emaildocs elase');
+
+                                                            var createEmailDocs = await functions.getCreateEmailDocs(marksheet.id, app_id, doc_name, fileName, category);
+                                                            console.log('***********************', JSON.stringify(createEmailDocs));
+                                                        }
+                                                    }
+                                                })
+                                            } catch (error) {
+                                                console.log('errrrrrrrooorrrrrrrrr', error);
+                                            }
+                                        };
+                                        signingProcess().catch((error) => {
+                                            console.error('eeeeeeeeeeeeee', error);
+                                        })
+                                    } else {
+                                        var fileName = file_name + '.pdf'
+                                        outputDirectory = signed_path;
+                                        console.log('_______________________', outputDirectory);
+                                        console.log('inside others2222222', file_path);
+
+                                        fn.signingDocuments(path.parse(marksheet.file_name).name, user_id, app_id, file_path, doc_name, category, outputDirectory, '', async function (err, index) {
+                                            if (err) {
+                                                res.json({
+                                                    status: 400,
+                                                    message: err
+                                                })
+                                            } else {
+                                                console.log('----------------->', fileName);
+
+                                                var emailDocsDetails = await functions.getEmailDocsDetails(marksheet.id, app_id, fileName);
+                                                console.log('&&&&&&&&&&&&&&&&&&&&&&', JSON.stringify(emailDocsDetails));
+                                                console.log('&&&&&&&&&&&&&&&&&&&&&&', emailDocsDetails.length);
+
+                                                if (emailDocsDetails.length > 0) {
+
+                                                } else {
+                                                    console.log('inside emaildocs elase');
+
+                                                    var createEmailDocs = await functions.getCreateEmailDocs(marksheet.id, app_id, doc_name, fileName);
+                                                    console.log('***********************', JSON.stringify(createEmailDocs));
+
+                                                }
+                                            }
+                                        })
+                                    }
+                                } else {
+                                    res.json({
+                                        status: 400,
+                                        message: marksheet.name + " not found"
+                                    })
+                                }
+                            })
+                        } else {
+                            res.json({
+                                status: 400,
+                                message: "Marksheets not found"
+                            })
+                        }
+                    }
+                    if (data[0].instructionalField == true) {
+                        console.log('inside instructionalField');
+                    }
+                    if (data[0].LetterforNameChange == true) {
+                        console.log('inside LetterforNameChange');
+                    }
+                    if (data[0].affiliation == true) {
+                        console.log('inside affiliation');
+                    }
+                    if (data[0].curriculum == true) {
+                        console.log('inside curriculum');
+                    }
+                    if (data[0].gradToPer == true) {
+                        console.log('inside gradToPer');
+                    }
+                    if (data[0].CompetencyLetter == true) {
+                        console.log('inside CompetencyLetter');
+                    }
+                });
+            });
+
+            Promise.all(promises)
+                .then(results => {
+                    // All tasks completed successfully
+                    console.log(results);
+                    // Continue with any remaining code
+                })
+                .catch(error => {
+                    // Error occurred during task execution
+                    console.error(error);
+                    // Handle the error as needed
+                });
+
+        }
+    } else {
+        res.json({
+            status: 400,
+            message: "Application not found"
         })
     }
 })

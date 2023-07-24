@@ -95,9 +95,13 @@ Application.getEmailedCount = async (appId,name,email,globalSearch)=> {
     });
   }
 
-
- 
- 
+  Application.getMyApplicationData = function (app_id) {
+    var query = `SELECT app.id, app.tracker, app.status, app.created_at, GROUP_CONCAT(ins.type) as type, GROUP_CONCAT(ins.email) as email,GROUP_CONCAT(ins.otherEmail) as otherEmail, GROUP_CONCAT(ins.refno) as refno,GROUP_CONCAT(ins.emailAsWes) as wesemail
+    FROM institution_details AS ins
+    LEFT JOIN application AS app ON ins.app_id = app.id
+    WHERE app.id  = ${app_id}`
+    return sequelize.query(query, { type: sequelize.QueryTypes.SELECT });
+  }
 
   Application.associate = (models) => {
     Application.belongsTo(models.User, { foreignKey: 'user_id' }); 

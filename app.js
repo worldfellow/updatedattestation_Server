@@ -234,6 +234,8 @@ var unprotected = [
   '/api/student/getletterDetails', 
   '/api/student/getInstructionalForms',
   '/api/student/getAppliedUserDetail',
+  '/api/student/getEducationalDetails',
+  '/api/student/getMyApplicationData',
 
   //new admin
   '/api/admin/updateOtp',
@@ -267,8 +269,8 @@ var unprotected = [
   '/api/admin/getUpdateSubAdmin',
   '/api/admin/getUpdateRoles',
   '/api/admin/test',
-  '/api/admin/resendWesApplication'
-  
+  '/api/admin/resendWesApplication',
+  '/api/admin/verifyApplication',
 ];
 app.use(checkjwt({
   secret: cfg.jwtSecret

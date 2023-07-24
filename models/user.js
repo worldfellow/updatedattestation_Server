@@ -208,17 +208,13 @@ module.exports = function (sequelize, DataTypes) {
   }
 
   //new query
-  User.getStudentManagment = function (student_id) {
-    console.log('yyyyyyyyyyyyyyy', student_id);
-    var user_data = ''
-    if (student_id != undefined && student_id != null && student_id != '' && student_id != 'null') {
-      user_data = " and  u.id = " + student_id
-    }
-    var query = "SELECT u.id, u.name, u.surname, u.email, date(u.created_at) as created_at, u.current_location, u.user_status, u.mobile, u.mobile_country_code, u.gender, u.what_mobile, u.what_mobile_country_code, apl.current_year, apl.diplomaHolder, apl.applied_for, apl.app_id, apl.educationalDetails, apl.instructionalField, apl.curriculum, apl.gradToPer, apl.affiliation, apl.CompetencyLetter, apl.LetterforNameChange from `user` as u JOIN applied_for_details as apl on apl.user_id = u.id WHERE u.user_type like '%student%'"
-    query += user_data
+  User.getStudentInfo = function (app_id) {
+    console.log('yyyyyyyyyyyyyyy', app_id);
+    var query = `SELECT u.id, u.name, u.surname, u.email, date(u.created_at) as created_at, u.current_location, u.user_status, u.mobile, u.mobile_country_code, u.gender, u.what_mobile, u.what_mobile_country_code, apl.current_year, apl.diplomaHolder, apl.applied_for, apl.app_id, apl.educationalDetails, apl.instructionalField, apl.curriculum, apl.gradToPer, apl.affiliation, apl.CompetencyLetter, apl.LetterforNameChange from user as u JOIN applied_for_details as apl on apl.user_id = u.id WHERE apl.app_id = ${app_id}`
     return sequelize.query(query, { type: sequelize.QueryTypes.SELECT });
   }
 
+  //new
   User.getStudentDetails = function (user_id, limit, offset, name, email, user_type, globalSearch) {
     let LimitOffset;
     let userType = "AND u.user_type like '%" + user_type + "%'";
