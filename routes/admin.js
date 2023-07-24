@@ -1544,12 +1544,7 @@ router.post('/updateNotes', async (req, res) => {
                 message: "Failed to save notes",
             })
         }
-    } else {
-        res.json({
-            status: 400,
-            message: "Something went wrong",
-        })
-    }
+   
 })
 
 router.get('/getRolesData', async (req, res) => {
