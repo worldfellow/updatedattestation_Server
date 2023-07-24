@@ -7,7 +7,7 @@ module.exports = function(sequelize, DataTypes) {
     education_type : DataTypes.STRING(30),
     collegeId :  DataTypes.STRING(30),
     faculty :  DataTypes.STRING(30),
-    patteren: {
+    pattern: {
       type: DataTypes.ENUM('Annual', 'Semester'),
       allowNull: true,
       defaultValue: null

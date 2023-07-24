@@ -12,10 +12,8 @@ module.exports = function(sequelize, DataTypes) {
     user_id : DataTypes.INTEGER,
     name : DataTypes.STRING,
     amount : DataTypes.STRING(100),
-    note : DataTypes.STRING(100)
-
-   
-
+    note : DataTypes.STRING(100),
+    tracker: DataTypes.ENUM('Resolved', 'Reject', 'Inprocess'),
   });
 
 

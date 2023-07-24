@@ -189,6 +189,13 @@ var unprotected = [
   '/api/auth/getUserDataByEmail',
   '/api/admin/generateHrdLetter',
   '/api/cron/improvementFeedback',
+  '/api/student/register',
+  '/api/student/checkstepper_inner',
+  '/api/student/checkstepper',
+  '/api/student/getCountry',
+  '/api/student/captcha',
+  '/api/student/savePaymentIssueData',
+  '/api/student/getPaymentIssueData',  
 
   //new students
   '/api/student/login',

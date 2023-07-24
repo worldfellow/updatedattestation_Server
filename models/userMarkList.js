@@ -6,7 +6,7 @@ module.exports = function(sequelize, DataTypes) {
   	file_name: DataTypes.TEXT,
     type: DataTypes.STRING(30),
     faculty: DataTypes.STRING(30),
-    patteren: DataTypes.STRING(30),
+    pattern: DataTypes.STRING(30),
     lock_marklist: {
       type: DataTypes.BOOLEAN(),
       allowNull: false,

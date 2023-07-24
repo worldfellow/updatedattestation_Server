@@ -17,7 +17,7 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: false,
       defaultValue: 'default'
     },
-    patteren: {
+    pattern: {
       type: DataTypes.ENUM('Annual', 'Semester'),
       allowNull: true,
       defaultValue: null
@@ -36,7 +36,7 @@ module.exports = function(sequelize, DataTypes) {
         query += " uUpload.education_type, uUpload.app_id, uUpload.lock_transcript,";
         query += " uUpload.user_marklist_id,uUpload.created_at,uUpload.updated_at, ";
         query += " user.id as usermarklist_id,user.name as usermarklist_name,";
-        query += " user.user_id as usermarklist_user_id,user.type,user.faculty,user.patteren,";
+        query += " user.user_id as usermarklist_user_id,user.type,user.faculty,user.pattern,";
         query += " user.file_name as usermarklist_file_name,user.lock_marklist as user_lock_marklist,";
         query += " user.collegeId,user.created_at as usermarklist_created_at,";
         query += " user.updated_at as usermarklist_updated_at From UserMarklist_Upload as uUpload ";
@@ -51,7 +51,7 @@ module.exports = function(sequelize, DataTypes) {
     var query = '';
    if(userMarklistId !=undefined || userMarklistId!=''){
     query += " SELECT uUpload.id,uUpload.user_id,uUpload.name,uUpload.file_name,uUpload.education_type,uUpload.lock_transcript,uUpload.user_marklist_id,uUpload.created_at,uUpload.updated_at, ";
-    query += " user.id as usermarklist_id,user.name as usermarklist_name,user.user_id as usermarklist_user_id,user.type,user.faculty,user.patteren,user.file_name as usermarklist_file_name,user.lock_marklist as user_lock_marklist,user.collegeId,user.created_at as usermarklist_created_at,user.updated_at as usermarklist_updated_at ";
+    query += " user.id as usermarklist_id,user.name as usermarklist_name,user.user_id as usermarklist_user_id,user.type,user.faculty,user.pattern,user.file_name as usermarklist_file_name,user.lock_marklist as user_lock_marklist,user.collegeId,user.created_at as usermarklist_created_at,user.updated_at as usermarklist_updated_at ";
     query += " From UserMarklist_Upload as uUpload RIGHT JOIN userMarkList as user on user.id = uUpload.user_marklist_id where user.user_id="+userMarklistId;
     query += " AND (user.type='Bachelors' OR uUpload.education_type='Bachelors') ";
   }
@@ -63,7 +63,7 @@ module.exports = function(sequelize, DataTypes) {
     var query = '';
    if(userMarklistId !=undefined || userMarklistId!=''){
     query += " SELECT uUpload.id,uUpload.user_id,uUpload.name,uUpload.file_name,uUpload.education_type,uUpload.lock_transcript,uUpload.user_marklist_id,uUpload.created_at,uUpload.updated_at, ";
-    query += " user.id as usermarklist_id,user.name as usermarklist_name,user.user_id as usermarklist_user_id,user.type,user.faculty,user.patteren,user.file_name as usermarklist_file_name,user.lock_marklist as user_lock_marklist,user.collegeId,user.created_at as usermarklist_created_at,user.updated_at as usermarklist_updated_at ";
+    query += " user.id as usermarklist_id,user.name as usermarklist_name,user.user_id as usermarklist_user_id,user.type,user.faculty,user.pattern,user.file_name as usermarklist_file_name,user.lock_marklist as user_lock_marklist,user.collegeId,user.created_at as usermarklist_created_at,user.updated_at as usermarklist_updated_at ";
     query += " From UserMarklist_Upload as uUpload RIGHT JOIN userMarkList as user on user.id = uUpload.user_marklist_id where user.user_id="+userMarklistId;
     query += " AND (user.type='Masters' OR uUpload.education_type='Masters') ";
   }
@@ -75,7 +75,7 @@ module.exports = function(sequelize, DataTypes) {
     var query = '';
    if(userMarklistId !=undefined || userMarklistId!=''){
     query += " SELECT uUpload.id,uUpload.user_id,uUpload.name,uUpload.file_name,uUpload.education_type,uUpload.lock_transcript,uUpload.user_marklist_id,uUpload.created_at,uUpload.updated_at, ";
-    query += " user.id as usermarklist_id,user.name as usermarklist_name,user.user_id as usermarklist_user_id,user.type,user.faculty,user.patteren,user.file_name as usermarklist_file_name,user.lock_marklist as user_lock_marklist,user.collegeId,user.created_at as usermarklist_created_at,user.updated_at as usermarklist_updated_at ";
+    query += " user.id as usermarklist_id,user.name as usermarklist_name,user.user_id as usermarklist_user_id,user.type,user.faculty,user.pattern,user.file_name as usermarklist_file_name,user.lock_marklist as user_lock_marklist,user.collegeId,user.created_at as usermarklist_created_at,user.updated_at as usermarklist_updated_at ";
     query += " From UserMarklist_Upload as uUpload RIGHT JOIN userMarkList as user on user.id = uUpload.user_marklist_id where user.user_id="+userMarklistId;
     query += " AND (user.type='PhD' OR uUpload.education_type='PhD') ";
   }
@@ -87,7 +87,7 @@ module.exports = function(sequelize, DataTypes) {
     var query = '';
      if((userMarklistId !=undefined || userMarklistId!='undefined') && (collegeId !=undefined || collegeId !='undefined')){
         query += " SELECT uUpload.id,uUpload.user_id,uUpload.name,uUpload.file_name,uUpload.education_type,uUpload.lock_transcript,uUpload.user_marklist_id,uUpload.created_at,uUpload.updated_at, ";
-        query += " user.id as usermarklist_id,user.name as usermarklist_name,user.user_id as usermarklist_user_id,user.type,user.faculty,user.patteren,user.file_name as usermarklist_file_name,user.lock_marklist as user_lock_marklist,user.collegeId,user.created_at as usermarklist_created_at,user.updated_at as usermarklist_updated_at, ";
+        query += " user.id as usermarklist_id,user.name as usermarklist_name,user.user_id as usermarklist_user_id,user.type,user.faculty,user.pattern,user.file_name as usermarklist_file_name,user.lock_marklist as user_lock_marklist,user.collegeId,user.created_at as usermarklist_created_at,user.updated_at as usermarklist_updated_at, ";
         query += " uUpload.app_id From UserMarklist_Upload as uUpload RIGHT JOIN userMarkList as user on user.id = uUpload.user_marklist_id where user.user_id="+userMarklistId;
         query += " AND user.collegeId="+collegeId;
       }
@@ -98,7 +98,7 @@ module.exports = function(sequelize, DataTypes) {
     var query = '';
      if((userMarklistId !=undefined || userMarklistId!='undefined')){
         query += " SELECT uUpload.id,uUpload.user_id,uUpload.name,uUpload.file_name,uUpload.education_type,uUpload.lock_transcript,uUpload.user_marklist_id,uUpload.created_at,uUpload.updated_at, ";
-        query += " user.id as usermarklist_id,user.name as usermarklist_name,user.user_id as usermarklist_user_id,user.type,user.faculty,user.patteren,user.file_name as usermarklist_file_name, ";
+        query += " user.id as usermarklist_id,user.name as usermarklist_name,user.user_id as usermarklist_user_id,user.type,user.faculty,user.pattern,user.file_name as usermarklist_file_name, ";
         query += " user.lock_marklist as user_lock_marklist,user.collegeId,user.created_at as usermarklist_created_at,user.updated_at as usermarklist_updated_at, ";
         query += " uUpload.app_id From UserMarklist_Upload as uUpload RIGHT JOIN userMarkList as user on user.id = uUpload.user_marklist_id where user.user_id="+userMarklistId;
       }

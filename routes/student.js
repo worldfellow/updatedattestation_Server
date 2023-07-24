@@ -19,10 +19,11 @@ const e = require('express');
 const { pattern } = require('pdfkit');
 const upload = multer({ dest: 'public/upload/marklist' });
 const tesseract = require("node-tesseract-ocr");
+const middlewares = require('../middleware');
 const config = {
-	lang: "eng",
-	oem: 1,
-	psm: 3
+    lang: "eng",
+    oem: 1,
+    psm: 3
 }
 /* Editor : Prathmesh Pawar
 Route : educationalDetails - check email and password and return token and access to proceed ahead to student.
@@ -141,18 +142,32 @@ router.post('/login', async (req, res) => {
 	}
 })
 
+router.post('/register', async (req, res) => {
+	var values = req.query.values;
+	var password = values.password;
+	var hashPassword = functions.generateHashPassword(password);
+	register = await functions.registerUser(values,hashPassword);
+	if(register){
+		let data = "Student registered with email id " + values.email
+		let activity = "Registration";
+		// functions.activitylog(userId, appId, activity, data, req);
+	}
+})
+
+
 /* Author : Prathmesh Pawar
 Route : educationalDetails - create & update educational details of step 1.
 Paramater : formdata and user_id of student */
-router.post('/educationalDetails', async (req, res) => {
+router.post('/educationalDetails',middlewares.getUserInfo, async (req, res) => {
 	console.log("/educationalDetails");
 
 	var user_id = req.body.user_id;
+	var degree = req.body.degree;
 
-	var applied_for_details = await functions.getAppliedForDetails(user_id);
+	var applied_for_details = await functions.getAppliedForDetails(user_id, null);
 
 	if (applied_for_details) {
-		var updatedAppliedDetails = await functions.getUpdatedEducationalDetails(user_id, req.body.formdata);
+		var updatedAppliedDetails = await functions.getUpdatedEducationalDetails(user_id, req.body.formdata ,degree);
 		if (updatedAppliedDetails) {
 			res.json({
 				status: 200,
@@ -161,7 +176,7 @@ router.post('/educationalDetails', async (req, res) => {
 		}
 	}
 	else {
-		var createdAppliedDetails = await functions.getCreateEducationalDetails(user_id, req.body.formdata);
+		var createdAppliedDetails = await functions.getCreateEducationalDetails(user_id, req.body.formdata ,degree);
 		if (createdAppliedDetails) {
 			res.json({
 				status: 200,
@@ -203,8 +218,7 @@ router.post('/updateAllInstitute', async (req, res) => {
 	console.log('/updateAllInstitute');
 
 	var formData = req.body.formData;
-	console.log('MMMMMMMMMMMMMMMMMMM', formData);
-	var email = req.body.formData.allEmail;
+	var email = req.body.formData.emails;
 	var emailArr;
 	var anotherEmailArr;
 	var anotherEmail;
@@ -212,17 +226,13 @@ router.post('/updateAllInstitute', async (req, res) => {
 	var amount;
 	var app_id = req.body.app_id;
 	var type = req.body.type;
-	console.log('++++++++++++', email);
 	var institute_id = req.body.institute_id;
 	var function_type = req.body.function_type;
 	var admin_id = req.body.admin_id;
 	var user_email = req.body.user_email;
 	var user_type = req.body.user_type;
-	console.log('iiiiiiiiiiii', user_id);
-	console.log('aaaaaaaaaaaa', app_id);
 
 	var applied = await functions.getEducationalDetailsCount(user_id, app_id);
-	console.log('sssssssss', applied);
 
 	const counts = Object.values(JSON.parse(JSON.stringify(applied))).filter((value) => {
 		return value == true;
@@ -239,14 +249,11 @@ router.post('/updateAllInstitute', async (req, res) => {
 	}
 
 	if (email) {
-		console.log('<<<<<<<<<<<<<<<<<<<<<<<<');
 		emailArr = email.split(',');
 		if (emailArr.length > 1) {
 			anotherEmailArr = emailArr.shift();
 			anotherEmail = emailArr.toString();
 		} else {
-			console.log('@@@@@@@@@@@@@@@@@@@@');
-
 			anotherEmailArr = email;
 			anotherEmail = null;
 		}
@@ -255,10 +262,6 @@ router.post('/updateAllInstitute', async (req, res) => {
 		anotherEmailArr = null;
 		anotherEmail = null;
 	}
-
-	console.log('=========================================================', emailArr);
-	console.log('=========================================================', anotherEmailArr);
-	console.log('=========================================================', anotherEmail);
 
 	//create purpose data
 	if (function_type == 'add') {
@@ -284,31 +287,31 @@ router.post('/updateAllInstitute', async (req, res) => {
 		var instituteDetails = await functions.getInstituteData(institute_id);
 
 		if (instituteDetails) {
-			var updateInstitute = await functions.getUpdateInstitution(formData, emailArr, user_id, type, app_id, anotherEmailArr, anotherEmail, institute_id);
+		var updateInstitute = await functions.getUpdateInstitution(formData, emailArr, user_id, type, app_id, anotherEmailArr, anotherEmail, institute_id);
 
-			if (updateInstitute == true) {
-				if (user_type == 'student') {
+		if (updateInstitute == true) {
+			if (user_type == 'student') {
 					var data = type + ' updated by ' + user_email;
 					var activity = "Update purpose";
 
 					functions.getCreateActivityTracker(user_id, app_id, activity, data);
-				} else {
-					var data = type + ' updated by ' + user_email;
-					var activity = "Update purpose";
-
-					functions.getCreateActivityTracker(user_id, app_id, activity, data);
-				}
-
-				res.json({
-					status: 200,
-					message: type + " data updated Successfully!"
-				})
 			} else {
-				res.json({
-					status: 400,
-					message: type + " data failed to update!"
-				})
+					var data = type + ' updated by ' + user_email;
+					var activity = "Update purpose";
+
+					functions.getCreateActivityTracker(user_id, app_id, activity, data);
 			}
+
+			res.json({
+				status: 200,
+				message: type + " data updated Successfully!"
+			})
+		} else {
+			res.json({
+				status: 400,
+				message: type + " data failed to update!"
+			})
+		}
 		} else {
 			res.json({
 				status: 400,
@@ -1046,7 +1049,7 @@ router.get('/getCollegeList', async (req, res) => {
 	}
 })
 /**
- * Fetch Details such as college course patteren and upload documents.
+ * Fetch Details such as college course pattern and upload documents.
  */
 router.post('/ScanData', async (req, res) => {
 	try {
@@ -1055,117 +1058,139 @@ router.post('/ScanData', async (req, res) => {
 		var type = req.query.value;
 		var education_type = req.query.education_type;
 		var collegeid = req.query.collegeid;
-		var patteren = req.query.patteren;
+		var pattern = req.query.pattern;
 		var faculty = req.query.faculty;
-		var dir = constant.FILE_LOCATION + "public/upload/" + type + '/' + user_id;
+		var dir = constant.FILE_LOCATION + "public/upload/" + type +'/' + user_id;
 		var image;
-		if (!fs.existsSync(dir)) {
-			fs.mkdirSync(dir);
-		}
-		var storage = multer.diskStorage({
-			destination: function (req, file, callback) {
-				callback(null, constant.FILE_LOCATION + "public/upload/" + type + '/' + user_id);
-			},
-			filename: function (req, file, callback) {
-				var extension = path.extname(file.originalname)
-				var randomString = functions.generateRandomString(10, 'alphabetic')
-				var newFileName = randomString.concat(extension);
-				image = newFileName;
-				callback(null, newFileName);
+		var coursedata= [];
+		var collegedata = [];
+			if (!fs.existsSync(dir)) {
+				fs.mkdirSync(dir);
 			}
-		});
-
-		var upload = multer({
-			storage: storage,
-		}).single('file');
-		upload(req, res, async function (err, data) {
-			imageLocationToCallClient = image;
-			var uploadDocuments = await functions.uploadDocuments(patteren, collegeid, education_type, faculty, user_id, type, imageLocationToCallClient);
-			if (uploadDocuments) {
-				if (type == 'marklist') {
-					var data = tesseract.recognize(constant.FILE_LOCATION + 'public/upload/' + type + '/' + user_id + '/' + image, config).then(async (text_data) => {
-						// if(text_data){
-						var getCollege = await functions.getCollegeList();
-						var getCourse = await functions.getProgramList();
-						var str = text_data.replace(/(\r\n|\n|\r)/gm, "");
-						var text = str.replace('&', 'and');
-						var collegeName;
-						var courseName;
-						var patteren;
-						var whichduration;
-						var data = [];
-						getCollege.forEach(function (college) {
-							if (text.includes(college.name)) {
-								collegeName = college.name
-							}
-						})
-						if (text.includes('semester') || text.includes('Semester')) {
-							patteren = 'Semester'
-							if (text.includes('I')) {
-								whichduration = 'Semester 1'
-							}
-							if (text.includes('II')) {
-								whichduration = 'Semester 2'
-							}
-							if (text.includes('III')) {
-								whichduration = 'Semester 3'
-							}
-							if (text.includes('IV')) {
-								whichduration = 'Semester 4'
-							}
-							if (text.includes('V')) {
-								whichduration = 'Semester 5'
-							}
-							if (text.includes('VI')) {
-								whichduration = 'Semester 6'
-							}
-							if (text.includes('VII')) {
-								whichduration = 'Semester 7'
-							}
-							if (text.includes('VIII')) {
-								whichduration = 'Semester 8'
-							}
-							if (text.includes('IX')) {
-								whichduration = 'Semester 9'
-							}
-							if (text.includes('X')) {
-								whichduration = 'Semester 10'
-							}
-						} else {
-							patteren = 'Annual'
-							if (text.includes('F.Y')) {
-								whichduration = 'First Year'
-							}
-							else if (text.includes('S.Y')) {
-								whichduration = 'Second Year'
-							}
-							else if (text.includes('T.Y')) {
-								whichduration = 'Third Year'
-							}
-						}
-						getCourse.forEach(function (course) {
-							if (text.includes(course.short_name)) {
-								courseName = course.full_name
-							}
-						})
-						data.push(collegeName, courseName, whichduration, uploadDocuments.id);
-						res.json({
-							data: data,
-							status: 200
-						})
-					}).catch((error) => { console.log('**********error.message***************', error.message) });
-				} else {
-					res.json({
-						status: 200
-					})
+			var storage = multer.diskStorage({
+				destination: function(req, file, callback) {
+					callback(null, constant.FILE_LOCATION + "public/upload/" + type +'/' + user_id);
+				},
+				filename: function(req, file, callback) {
+					var extension = path.extname(file.originalname)
+					var randomString = functions.generateRandomString(10,'alphabetic')
+					var newFileName = randomString.concat(extension);
+					image = newFileName;
+					callback(null, newFileName);
 				}
-			} else {
+			});
 
-				res.json({
-					status: 400
-				})
-			}
-		});
+			var upload = multer({
+				storage: storage,
+			}).single('file');
+			upload(req, res,async function (err, data) {
+				imageLocationToCallClient = image;
+					if(type == 'marklist'){
+						var data = tesseract.recognize(constant.FILE_LOCATION  + 'public/upload/' + type+'/'+ user_id +  '/' +   image,config).then(async (text_data) => {
+							// if(text_data){
+							var getCollege = await functions.getCollegeList();
+							var getCourse = await functions.getProgramList();
+							var getApplied = await functions.getAppliedFor(user_id,'');
+							var str = text_data.replace(/(\r\n|\n|\r)/gm, "");
+							var text = str.replace('&', 'and');
+							var collegeName;
+							var courseName;
+							var courseCheck;
+							var pattern;
+							var whichduration = [];
+							var data = [];
+							getCollege.forEach(function (college) {
+								if (text.includes(college.name)) {
+									collegeName =  college.name
+									collegedata.push(college)
+								}
+							})
+							if(text.includes('semester') || text.includes('Semester') ){
+								pattern = 'Semester'
+								if(text.includes('X')){
+									whichduration.push({name: 'Semester 10', value: 'Semester'})
+								}
+								if(text.includes('IX')){
+									whichduration.push({name: 'Semester 9', value: 'Semester'})
+								}
+								if(text.includes('VIII')){
+									whichduration.push({name: 'Semester 8', value: 'Semester'})
+								}
+								if(text.includes('VII')){
+									whichduration.push({name: 'Semester 7', value: 'Semester'})
+								}
+								if(text.includes('VI')){
+									whichduration.push({name: 'Semester 6', value: 'Semester'})
+								}
+
+								
+								if(text.includes('IV')){
+									whichduration.push({name: 'Semester 4', value: 'Semester'})
+								}
+
+								if(text.includes('V')){
+									whichduration.push({name: 'Semester 5', value: 'Semester'})
+								}
+							
+							
+							
+								if(text.includes('III')){
+									whichduration.push({name: 'Semester 3', value: 'Semester'})
+								}
+								
+								if(text.includes('II')){
+									whichduration.push({name: 'Semester 2', value: 'Semester'})
+								}
+								
+								if(text.includes('I')){
+									whichduration.push({name: 'Semester 1', value: 'Semester'})
+								}
+							
+								
+							}else{
+								pattern = 'Annual'
+								if(text.includes('F.Y')){
+									whichduration = 'First Year'
+								}
+								else if(text.includes('S.Y')){
+									whichduration = 'Second Year'
+								}
+								else if(text.includes('T.Y')){
+									whichduration = 'Third Year'
+								}
+							}
+							getCourse.forEach(function (course) {
+								if (text.includes(course.short_name) || text.includes(course.full_name)) {
+									courseName =  course.full_name
+									courseCheck = course.degree
+									coursedata.push(course)
+								}else{
+								}
+							})
+							// if (getApplied.applied_for.includes(courseCheck)){
+								console.log('whichduration ',whichduration)
+								var uploadDocuments = await functions.uploadDocuments(pattern,collegeid,education_type,faculty,user_id,type,imageLocationToCallClient);
+								data.push(collegedata,coursedata,whichduration,uploadDocuments.id);
+								res.json({
+									data : data,
+									status : 200
+								})
+							// }else{
+							// 	var uploadDocuments = await functions.uploadDocuments(pattern,collegeid,education_type,faculty,user_id,type,imageLocationToCallClient);
+							// 	res.json({
+							// 		status : 401
+							// 	})
+							// }
+							
+						}).catch((error) => {console.log('**********error.message***************', error.message)});
+					}else{
+						var uploadDocuments = await functions.uploadDocuments(pattern,collegeid,education_type,faculty,user_id,type,imageLocationToCallClient);
+						res.json({
+							status : 200
+						})
+					}
+				
+			});
 	} catch (err) {
 		console.error(err);
 		return res.status(500).json({
@@ -1371,7 +1396,6 @@ router.get('/getAppliedUserDetail', async (req, res) => {
 			});
 		}
 	} catch (error) {
-		console.error("Error in getAppliedUserDetail", error);
 		return res.status(500).json({
 			status: 500,
 			message: "Internal Server Error"
@@ -1576,155 +1600,168 @@ router.post('/upload_gradeToPercentLetter', async (req, res) => {
 /**
  * @
  */
-router.post('/saveUserMarkList', upload.single('file'), async (req, res) => {
-	try {
-		let image;
-		const file = req.file
-		const userId = req.body.user_id
-		const extension = path.extname(file.originalname)
-		const randomString = functions.generateRandomString(10, 'alphabetic')
-		const newFileName = randomString.concat(extension);
-		image = newFileName;
-		const doc_id = req.query.doc_id;
-		const app_id = (req.query.app_id) ? req.query.app_id : null;
-		const collegeId = req.body.college;
-		const degree = req.body.degree;
-		const semYear = req.body.semYearValue;
-		const semYearValue = req.body.semYear
-		const courseName = req.body.faculty;
-		const name = degree + "_" + courseName + "_" + semYearValue;
-
-		uploadValue = true;
-		ValueUpdateData(uploadValue)
-		async function ValueUpdateData(uploadValue) {
-			if (uploadValue == true) {
-				var fileStatus = false;
-				const marklistUpload = await models.UserMarklist_Upload.findAll({
-					where: {
-						user_id: userId
-					}
-				})
-				if (marklistUpload) {
-					if (marklistUpload.length > 0) {
-						marklistUpload.forEach(function (marklistData) {
-							if (marklistData) {
-								if (marklistData.file_name == image) {
-									fileStatus = true;
-								}
-							}
-						})
-					}
-					if (fileStatus == true) {
-						res.json({
-							status: 200,
-							message: `File already exist. please upload another file!!!..`,
-						})
-					} else {
-						if (doc_id != undefined && doc_id != null && doc_id != '') {
-							const marksheet_data = await models.UserMarklist_Upload.findOne({
-								where: {
-									user_id: userId,
-									id: doc_id
-								}
-							})
-							if (marksheet_data) {
-								const userdata = await marksheet_data.update({
-									file_name: image,
-									lock_transcript: false,
-									upload_step: "changed"
-								})
-								if (userdata) {
-									return res.json({
-										status: 200,
-										message: `Upload Completed.`,
-										data: userdata
-									});
-								} else {
-									return res.json({
-										status: 400,
-										message: `Error occured in uploading document.`
-									});
-								}
-
-							}
-						} else {
-							if (app_id == null) {
-								const userMarklist = await models.UserMarklist_Upload.create({
-									name: degree + "_" + courseName + "_" + semYear,
-									user_id: userId,
-									file_name: image,
-									lock_transcript: false,
-									collegeId: collegeId,
-									education_type: degree,
-									pattern: semYear,
-									faculty: courseName,
-									upload_step: "default"
-								})
-								if (userMarklist) {
-									return res.json({
-										status: 200,
-										message: `Upload Completed.`,
-										data: userMarklist
-									});
-								} else {
-									return res.json({
-										status: 400,
-										message: `Error occured in uploading document.`
-									});
-								}
-							} else {
-								const userMarklist = await models.UserMarklist_Upload.create({
-									name: degree + "_" + courseName + "_" + semYear,
-									user_id: userId,
-									file_name: image,
-									lock_transcript: false,
-									collegeId: collegeId,
-									education_type: degree,
-									pattern: semYear,
-									faculty: courseName,
-									upload_step: "default"
-								})
-								if (userMarklist) {
-									return res.json({
-										status: 200,
-										message: `Upload Completed.`,
-										data: userMarklist
-									});
-								} else {
-									return res.json({
-										status: 400,
-										message: `Error occured in uploading document.`
-									});
-								}
-							}
-						}
-					}
-				}
-			} else if (uploadValue == false) {
-				fs.unlink(constant.FILE_LOCATION + 'public/upload/marklist/' + userId + '/' + image, function (err) {
-					if (err) {
-						return res.json({
-							status: 400,
-							message: `Error occured in uploading document.`
-						});
-					} else {
-						return res.json({
-							status: 401,
-							message: 'You have uploaded the Password Protected Document. Please Upload correct document.'
-						});
-					}
-				});
-			}
+router.post('/saveUserMarkList', async (req, res) => {
+	var documentid =  req.body.documentid;
+	var app_id =  req.body.app_id;
+	var user_id =  req.body.user_id;
+	var type =  req.body.value;
+	var data =  req.body.data;
+		var updateDocuments = await functions.updateDocuments(documentid,data,type);
+		if(updateDocuments){
+			res.json({status : 200})
+		}else{
+			res.json({status : 400})
 		}
+	
+	// try {
+	// 	let image;
+	// 	const file = req.file
+	// 	const userId = req.body.user_id
+	// 	const extension = path.extname(file.originalname)
+	// 	const randomString = functions.generateRandomString(10, 'alphabetic')
+	// 	const newFileName = randomString.concat(extension);
+	// 	image = newFileName;
+	// 	const doc_id = req.query.doc_id;
+	// 	const app_id = (req.query.app_id) ? req.query.app_id : null;
+	// 	const collegeId = req.body.college;
+	// 	const degree = req.body.degree;
+	// 	const semYear = req.body.semYearValue;
+	// 	const semYearValue = req.body.semYear
+	// 	const courseName = req.body.faculty;
+	// 	const name = degree + "_" + courseName + "_" + semYearValue;
 
-	} catch (err) {
-		console.error(err);
-		return res.status(500).json({
-			status: 500,
-			message: `Internal server error.`,
-			error: err.message
-		});
-	}
+	// 	uploadValue = true;
+	// 	ValueUpdateData(uploadValue)
+	// 	async function ValueUpdateData(uploadValue) {
+	// 		if (uploadValue == true) {
+	// 			var fileStatus = false;
+	// 			const marklistUpload = await models.UserMarklist_Upload.findAll({
+	// 				where: {
+	// 					user_id: userId
+	// 				}
+	// 			})
+	// 			if (marklistUpload) {
+	// 				if (marklistUpload.length > 0) {
+	// 					marklistUpload.forEach(function (marklistData) {
+	// 						if (marklistData) {
+	// 							if (marklistData.file_name == image) {
+	// 								fileStatus = true;
+	// 							}
+	// 						}
+	// 					})
+	// 				}
+	// 				if (fileStatus == true) {
+	// 					res.json({
+	// 						status: 200,
+	// 						message: `File already exist. please upload another file!!!..`,
+	// 					})
+	// 				} else {
+	// 					if (doc_id != undefined && doc_id != null && doc_id != '') {
+	// 						const marksheet_data = await models.UserMarklist_Upload.findOne({
+	// 							where: {
+	// 								user_id: userId,
+	// 								id: doc_id
+	// 							}
+	// 						})
+	// 						if (marksheet_data) {
+	// 							const userdata = await marksheet_data.update({
+	// 								file_name: image,
+	// 								lock_transcript: false,
+	// 								upload_step: "changed"
+	// 							})
+	// 							if (userdata) {
+	// 								return res.json({
+	// 									status: 200,
+	// 									message: `Upload Completed.`,
+	// 									data: userdata
+	// 								});
+	// 							} else {
+	// 								return res.json({
+	// 									status: 400,
+	// 									message: `Error occured in uploading document.`
+	// 								});
+	// 							}
+
+	// 						}
+	// 					} else {
+	// 						if (app_id == null) {
+	// 							const userMarklist = await models.UserMarklist_Upload.create({
+	// 								name: degree + "_" + courseName + "_" + semYear,
+	// 								user_id: userId,
+	// 								file_name: image,
+	// 								lock_transcript: false,
+	// 								collegeId: collegeId,
+	// 								education_type: degree,
+	// 								pattern: semYear,
+	// 								faculty: courseName,
+	// 								upload_step: "default"
+	// 							})
+	// 							if (userMarklist) {
+	// 								return res.json({
+	// 									status: 200,
+	// 									message: `Upload Completed.`,
+	// 									data: userMarklist
+	// 								});
+	// 							} else {
+	// 								return res.json({
+	// 									status: 400,
+	// 									message: `Error occured in uploading document.`
+	// 								});
+	// 							}
+	// 						} else {
+	// 							const userMarklist = await models.UserMarklist_Upload.create({
+	// 								name: degree + "_" + courseName + "_" + semYear,
+	// 								user_id: userId,
+	// 								file_name: image,
+	// 								lock_transcript: false,
+	// 								collegeId: collegeId,
+	// 								education_type: degree,
+	// 								pattern: semYear,
+	// 								faculty: courseName,
+	// 								upload_step: "default"
+	// 							})
+	// 							if (userMarklist) {
+	// 								return res.json({
+	// 									status: 200,
+	// 									message: `Upload Completed.`,
+	// 									data: userMarklist
+	// 								});
+	// 							} else {
+	// 								return res.json({
+	// 									status: 400,
+	// 									message: `Error occured in uploading document.`
+	// 								});
+	// 							}
+	// 						}
+	// 					}
+	// 				}
+	// 			}
+	// 		} else if (uploadValue == false) {
+	// 			fs.unlink(constant.FILE_LOCATION + 'public/upload/marklist/' + userId + '/' + image, function (err) {
+	// 				if (err) {
+	// 					return res.json({
+	// 						status: 400,
+	// 						message: `Error occured in uploading document.`
+	// 					});
+	// 				} else {
+	// 					return res.json({
+	// 						status: 401,
+	// 						message: 'You have uploaded the Password Protected Document. Please Upload correct document.'
+	// 					});
+	// 				}
+	// 			});
+	// 		}
+	// 	}
+	// 	var 
+
+	// } catch (err) {
+	// 	console.error(err);
+	// 	return res.status(500).json({
+	// 		status: 500,
+	// 		message: `Internal server error.`,
+	// 		error: err.message
+	// 	});
+	// }
 })
 
 /**
@@ -2991,7 +3028,7 @@ router.delete('/deleteInfo', async (req, res) => {
 /**
  * Fetched all the documents on ngonit
  */
-router.get('/getUploadeddocument_student', async function (req, res) {
+router.get('/getUploadeddocument_student',async function(req,res){
 	var user_id = req.query.user_id;
 	// var type = 'transcript';
 	var app_id = null;
@@ -3003,142 +3040,569 @@ router.get('/getUploadeddocument_student', async function (req, res) {
 	var curriculumData = [];
 	var gradtoperData = [];
 	var unique_college = [];
-	var Applied = await functions.getAppliedFor(user_id, app_id);
-	var uniqueData = await functions.getDistinctData(user_id);
-	const uniqueValues = uniqueData.map((item) => item.dataValues.uniqueValues);
-	for (var i = 0; i < uniqueValues.length; i++) {
-		college = await functions.getCollegeDetails_student(uniqueValues[i]);
-		transcriptDisplay.push({ 'coursename': college[0].coursename, 'college': college[0].college, 'collegeid': college[0].collegeid, 'faculty': college[0].faculty, 'education_type': college[0].education_type, 'patteren': college[0].patteren });
-	}
-	var marksheet = await functions.getDocumentFuntion(user_id, app_id, 'marklist');
-	if (marksheet.length > 0) {
-		for (var i = 0; i < marksheet.length; i++) {
+	var Applied = await functions.getAppliedFor(user_id,app_id);
+	if(Applied){
+		var uniqueData = await functions.getDistinctData(user_id);
+		const uniqueValues = uniqueData.map((item) => item.dataValues.uniqueValues);
+		for(var i = 0 ; i < uniqueValues.length ; i++){
+		  college = await functions.getCollegeDetails_student(uniqueValues[i]);
+		  transcriptDisplay.push({'coursename' : college[0].coursename ,'college' : college[0].college  , 'collegeid' : college[0].collegeid,'faculty' : college[0].faculty ,'education_type' :  college[0].education_type ,'pattern' : college[0].pattern});
+		}
+	var marksheet = await functions.getDocumentFuntion(user_id,app_id,'marklist');
+	if(marksheet.length > 0){
+		for(var i= 0 ; i< marksheet.length ; i++){
 			college = await functions.getCollegeName(marksheet[i].collegeId);
 			marksheetData.push({
-				'name': marksheet[i].name,
-				'CollegeName': college ? college.name : 'null',
-				'filePath': constant.FILE_LOCATION + 'public/upload/' + 'marklist' + '/' + user_id + '/' + marksheet[i].file_name,
-				'fileName': marksheet[i].file_name,
-				'extension': marksheet[i].file_name.split('.').pop(),
-				'id': marksheet[i].id,
-				'user_id': marksheet[i].user_id,
-				'app_id': marksheet[i].app_id,
-				'upload_step': marksheet[i].upload_step,
-				'lock_transcript': marksheet[i].lock_transcript
+				'name' : marksheet[i].name,
+				'CollegeName' : college ? college.name : 'null',
+				'filePath' : constant.FILE_LOCATION  + 'public/upload/' + 'marklist' + '/' + user_id +  '/' +   marksheet[i].file_name,
+				'fileName' : marksheet[i].file_name,
+				'extension' : marksheet[i].file_name.split('.').pop(),
+				'id' : marksheet[i].id,
+				'user_id' : marksheet[i].user_id,
+				'app_id' : marksheet[i].app_id,
+				'upload_step' : marksheet[i].upload_step,
+				'lock_transcript' : marksheet[i].lock_transcript
 			})
 		}
 		var uniqueData = await functions.getCollegeName_unique(user_id);
 		const uniqueValues = uniqueData.map((item) => item.dataValues.uniqueValues);
-		for (var i = 0; i < uniqueValues.length; i++) {
-			college = await functions.getCollegeDetails_unique(uniqueValues[i]);
-			unique_college.push(college)
+		for(var i = 0 ; i < uniqueValues.length ; i++){
+		  college = await functions.getCollegeDetails_unique(uniqueValues[i]);
+		  unique_college.push(college)
 		}
-
+	
 	}
-	if (Applied.educationalDetails == true) {
-		var transcript = await functions.getDocumentFuntion(user_id, app_id, 'transcript');
-		if (transcript) {
-			if (transcript.length > 0) {
-				for (var i = 0; i < transcript.length; i++) {
+	if(Applied.educationalDetails == true){
+		var transcript = await functions.getDocumentFuntion(user_id,app_id,'transcript');
+		if(transcript){
+			if(transcript.length > 0){
+				for(var i= 0 ; i< transcript.length ; i++){
 					college = await functions.getCollegeName(transcript[i].collegeId);
 					transcriptData.push({
-						'name': transcript[i].name,
-						'CollegeName': college ? college.name : 'null',
-						'filePath': constant.FILE_LOCATION + 'public/upload/' + 'transcript' + '/' + user_id + '/' + transcript[i].file_name,
-						'fileName': transcript[i].file_name,
-						'extension': transcript[i].file_name.split('.').pop(),
-						'id': transcript[i].id,
-						'user_id': transcript[i].user_id,
-						'app_id': transcript[i].app_id,
-						'upload_step': transcript[i].upload_step,
-						'lock_transcript': transcript[i].lock_transcript
+						'name' : transcript[i].name,
+						'CollegeName' : college ? college.name : 'null',
+						'filePath' : constant.FILE_LOCATION  + 'public/upload/' + 'transcript' + '/' + user_id +  '/' +   transcript[i].file_name,
+						'fileName' : transcript[i].file_name,
+						'extension' : transcript[i].file_name.split('.').pop(),
+						'id' : transcript[i].id,
+						'user_id' : transcript[i].user_id,
+						'app_id' : transcript[i].app_id,
+						'upload_step' : transcript[i].upload_step,
+						'lock_transcript' : transcript[i].lock_transcript
 					})
 				}
 			};
 		}
 	}
-	if (Applied.curriculum == true) {
-		var curriculum = await functions.getDocumentFuntion(user_id, app_id, 'curriculum');
-		if (curriculum.length > 0) {
-			for (var i = 0; i < curriculum.length; i++) {
+	if(Applied.curriculum == true){
+		var curriculum = await functions.getDocumentFuntion(user_id,app_id,'curriculum');
+		if(curriculum.length > 0){
+			for(var i= 0 ; i< curriculum.length ; i++){
 				college = await functions.getCollegeName(curriculum[i].collegeId);
 				curriculumData.push({
-					'name': curriculum[i].name,
-					'CollegeName': college ? college.name : 'null',
-					'filePath': constant.FILE_LOCATION + 'public/upload/' + 'curriculum' + '/' + user_id + '/' + curriculum[i].file_name,
-					'fileName': curriculum[i].file_name,
-					'extension': curriculum[i].file_name.split('.').pop(),
-					'id': curriculum[i].id,
-					'user_id': curriculum[i].user_id,
-					'app_id': curriculum[i].app_id,
-					'upload_step': curriculum[i].upload_step,
-					'lock_transcript': curriculum[i].lock_transcript
+					'name' : curriculum[i].name,
+					'CollegeName' : college ? college.name : 'null',
+					'filePath' : constant.FILE_LOCATION  + 'public/upload/' + 'curriculum' + '/' + user_id +  '/' +   curriculum[i].file_name,
+					'fileName' : curriculum[i].file_name,
+					'extension' : curriculum[i].file_name.split('.').pop(),
+					'id' : curriculum[i].id,
+					'user_id' : curriculum[i].user_id,
+					'app_id' : curriculum[i].app_id,
+					'upload_step' : curriculum[i].upload_step,
+					'lock_transcript' : curriculum[i].lock_transcript
 				})
 			}
 		}
 	}
-	if (Applied.instructionalField == true) {
-
+	if(Applied.instructionalField == true){
+		
 	}
-	if (Applied.gradToPer == true) {
-		var gradtoper = await functions.getDocumentFuntion(user_id, app_id, 'GradeToPercentageLetter');
-		if (gradtoper.length > 0) {
-			for (var i = 0; i < gradtoper.length; i++) {
+	if(Applied.gradToPer == true){
+		var gradtoper = await functions.getDocumentFuntion(user_id,app_id,'GradeToPercentageLetter');
+		if(gradtoper.length > 0){
+			for(var i= 0 ; i< gradtoper.length ; i++){
 				college = await functions.getCollegeName(gradtoper[i].collegeId);
 				gradtoperData.push({
-					'name': gradtoper[i].name,
-					'CollegeName': college ? college.name : 'null',
-					'filePath': constant.FILE_LOCATION + 'public/upload/' + 'gradtoper' + '/' + user_id + '/' + gradtoper[i].file_name,
-					'fileName': gradtoper[i].file_name,
-					'extension': gradtoper[i].file_name.split('.').pop(),
-					'id': gradtoper[i].id,
-					'user_id': gradtoper[i].user_id,
-					'app_id': gradtoper[i].app_id,
-					'upload_step': gradtoper[i].upload_step,
-					'lock_transcript': gradtoper[i].lock_transcript
+					'name' : gradtoper[i].name,
+					'CollegeName' : college ? college.name : 'null',
+					'filePath' : constant.FILE_LOCATION  + 'public/upload/' + 'gradtoper' + '/' + user_id +  '/' +   gradtoper[i].file_name,
+					'fileName' : gradtoper[i].file_name,
+					'extension' : gradtoper[i].file_name.split('.').pop(),
+					'id' : gradtoper[i].id,
+					'user_id' : gradtoper[i].user_id,
+					'app_id' : gradtoper[i].app_id,
+					'upload_step' : gradtoper[i].upload_step,
+					'lock_transcript' : gradtoper[i].lock_transcript
 				})
 			}
 		}
 	}
-	if (Applied.affiliation == true) {
-
+	if(Applied.affiliation == true){
+		
 	}
-	if (Applied.CompetencyLetter == true) {
-
+	if(Applied.CompetencyLetter == true){
+		
 	}
-	if (Applied.LetterforNameChange == true) {
-
+	if(Applied.LetterforNameChange == true){
+		
 	}
-	var extra = await functions.getDocumentFuntion(user_id, app_id, 'extra');
-	if (extra) {
-		if (extra.length > 0) {
-			for (var i = 0; i < extra.length; i++) {
+	var extra = await functions.getDocumentFuntion(user_id,app_id,'extra');
+	if(extra){
+		if(extra.length > 0){
+			for(var i= 0 ; i< extra.length ; i++){
 				college = await functions.getCollegeName(extra[i].collegeId);
 				extraData.push({
-					'name': extra[i].name,
-					'filePath': constant.FILE_LOCATION + 'public/upload/' + 'extra' + '/' + user_id + '/' + extra[i].file_name,
-					'fileName': extra[i].file_name,
-					'extension': extra[i].file_name.split('.').pop(),
-					'id': extra[i].id,
-					'user_id': extra[i].user_id,
-					'app_id': extra[i].app_id,
-					'upload_step': extra[i].upload_step,
-					'lock_transcript': extra[i].lock_transcript
+					'name' : extra[i].name,
+					'filePath' : constant.FILE_LOCATION  + 'public/upload/' + 'extra' + '/' + user_id +  '/' +   extra[i].file_name,
+					'fileName' : extra[i].file_name,
+					'extension' : extra[i].file_name.split('.').pop(),
+					'id' : extra[i].id,
+					'user_id' : extra[i].user_id,
+					'app_id' : extra[i].app_id,
+					'upload_step' : extra[i].upload_step,
+					'lock_transcript' : extra[i].lock_transcript
 				})
 			}
 			var uniqueData = await functions.getCollegeName_unique(user_id);
 			const uniqueValues = uniqueData.map((item) => item.dataValues.uniqueValues);
 			console.log(uniqueValues);
-			for (var i = 0; i < uniqueValues.length; i++) {
-				college = await functions.getCollegeDetails_unique(uniqueValues[i]);
-				unique_college.push(college)
+			for(var i = 0 ; i < uniqueValues.length ; i++){
+			  college = await functions.getCollegeDetails_unique(uniqueValues[i]);
+			  unique_college.push(college)
 			}
-
+		
 		}
 	}
-	DocumentData.push(marksheetData, transcriptData, transcriptDisplay, unique_college, extraData, curriculumData, gradtoperData)
-	res.json({ status: 200, data: DocumentData });
-
+	
+	DocumentData.push(marksheetData,transcriptData,transcriptDisplay,unique_college,extraData,curriculumData,gradtoperData)
+	res.json({status : 200,data : DocumentData});
+	}else{
+		res.json({status : 400});
+	}
 })
 
+/**
+ * checkstepper route for students. Throws to the tab where the student has to filled its required details
+ */
+router.get('/checkstepper', middlewares.getUserInfo, async function(req,res){
+	console.log('((((((((((((((((((((((',req)
+	var user_id = req.query.user_id;
+	var app_id  = req.query.app_id;
+	if(app_id == 'null'){app_id = null};
+	var obj = {};
+	var obj_inner = {};
+	var count = 0;
+	var marksheets = 0;
+	var transcript = 0;
+	obj['tab1'] = false,
+	obj['tab2'] = false,
+	obj['tab3'] = false
+
+	obj_inner['tab1'] = false,
+	obj_inner['tab2'] = false,
+	obj_inner['tab3'] = false
+
+	var appliedFor = await functions.getAppliedForDetails(user_id,app_id);
+	marksheets = await functions.getDocumentFuntion(user_id,app_id,'marklist');
+	getDistinctData = await functions.getDistinctData(user_id);
+	const uniqueValues = getDistinctData.map((item) => item.dataValues.uniqueValues);
+	for(var i= 0 ; i < uniqueValues.length ; i++){
+		degree = uniqueValues[i].split('_')[0];
+		faculty = uniqueValues[i].split('_')[1];
+		if(appliedFor.educationalDetails == true){
+			transcript = await functions.getDocuments_checkstepper(user_id,app_id,'transcript',degree,faculty);
+		}
+		if(appliedFor.instructionalField == true){
+			instructional = await functions.getDocuments_checkstepper(user_id,app_id,'instructional',degree,faculty);
+		}
+		if(appliedFor.curriculum == true){
+			curriculum = await functions.getDocuments_checkstepper(user_id,app_id,'curriculum',degree,faculty);
+		}
+		if(appliedFor.gradToPer == true){
+			gradToPer = await functions.getDocuments_checkstepper(user_id,app_id,'GradeToPercentageLetter',degree,faculty);
+		}
+		if(appliedFor.affiliation == true){
+			affiliation = await functions.getDocuments_checkstepper(user_id,app_id,'affiliation',degree,faculty);
+		}
+		if(appliedFor.CompetencyLetter == true){
+		}
+		if(appliedFor.LetterforNameChange == true){
+		}
+	}
+
+	if(appliedFor){
+		require('async').series([
+			function (callback) {
+				if(appliedFor){
+					if((appliedFor.isphd != null) && (appliedFor.instructionalField == true || appliedFor.curriculum == true ||appliedFor.educationalDetails == true ||appliedFor.gradToPer == true ||appliedFor.affiliation == true ||appliedFor.CompetencyLetter == true||appliedFor.LetterforNameChange == true)){
+						obj['tab1'] = true;
+						count = count + 1;
+						callback(null, appliedFor);
+					}else{
+						// if applied for details (1st step) is not completely filled. Stops to the first step.
+								obj['tab1'] = false
+								callback(null, appliedFor);
+					}
+				}else{
+					obj['tab1'] = false
+					callback(null, appliedFor);
+				}
+				
+				
+			},
+			function (callback) {
+				if(appliedFor.educationalDetails == true){
+					if(transcript.length >=  uniqueValues.length){transcriptFlag = true}else{transcriptFlag = false}
+				}else{
+						transcriptFlag = true
+				}
+
+				if(appliedFor.instructionalField == true){
+					if(instructional.length >=  uniqueValues.length){instructionalFieldFlag = true}else{instructionalFieldFlag = false}
+				}else{
+					instructionalFieldFlag = true
+				}
+
+				if(appliedFor.curriculum == true){
+					if(curriculum.length >=  uniqueValues.length){curriculumFlag = true}else{curriculumFlag = false}
+				}else{
+					curriculumFlag = true
+				}
+
+				if(appliedFor.gradToPer == true){
+					if(gradToPer.length >=  uniqueValues.length){gradFlag = true}else{gradFlag = false}
+				}else{
+					gradFlag = true
+				}
+
+				if(appliedFor.affiliation == true){
+					if(affiliation.length >=  uniqueValues.length){affiliationFlag = true}else{affiliationFlag = false}
+				}else{
+					affiliationFlag = true
+				}
+
+				if(appliedFor.CompetencyLetter == true){
+					// if(transcript.length >=  uniqueValues.length){transcriptFlag = true}else{transcriptFlag = false}
+					competencyFlag = true
+				}else{
+					competencyFlag = true
+				}
+
+				if(appliedFor.LetterforNameChange == true){
+					// if(transcript.length >=  uniqueValues.length){transcriptFlag = true}else{transcriptFlag = false}
+					LetterforNameChange = true
+				}else{
+					LetterforNameChange = true
+				}
+
+				if(transcriptFlag == true && instructionalFieldFlag == true && curriculumFlag == true && gradFlag == true && affiliationFlag == true && competencyFlag == true && LetterforNameChange == true){
+					obj['tab2'] = true;
+					count = count + 1;
+					callback(null, appliedFor);
+				}else{
+					obj['tab2'] = false
+					callback(null, appliedFor);
+				}
+			},
+			function (callback) {	
+				obj['tab3'] = false
+				callback(null, appliedFor);
+			},
+		],
+			function (err, result) {
+				console.log('*********** obj ***********' ,obj);
+				res.json({
+							status: 200,
+							message: 'Sending Tab Status',
+							data: obj,
+						});
+			});
+	}else{
+
+	}
+})
+/**
+ * checkstepper route for students. Throws to the tab where the student has to filled its required details, for 2nd step
+ */
+router.get('/checkstepper_inner',async function(req,res){
+	var user_id = req.query.user_id;
+	// var app_id  = req.query.app_id ? null  : null;
+	var app_id  = req.query.app_id	;
+	if(app_id == 'null'){
+		app_id = null
+	}
+	var data =[];
+	var obj = {};
+	var obj_inner = {};
+	var count = 0;
+	var marksheets=0;
+	var transcript =0;
+	var faculty;
+	var degree;
+	var educationalDetails = true;
+	obj_inner['tab1'] = false,
+	obj_inner['tab2'] = false,
+	obj_inner['tab3'] = false,
+	obj_inner['tab4'] = false,
+	obj_inner['tab5'] = false,
+	obj_inner['tab6'] = false,
+	obj_inner['tab7'] = false
+
+	var appliedFor = await functions.getAppliedForDetails(user_id,app_id);
+	marksheets = await functions.getDocuments_checkstepper(user_id,app_id,'marklist','','');
+	getDistinctData = await functions.getDistinctData(user_id);
+	const uniqueValues = getDistinctData.map((item) => item.dataValues.uniqueValues);
+	
+	for(var i= 0 ; i < uniqueValues.length ; i++){
+		degree = uniqueValues[i].split('_')[0];
+		faculty = uniqueValues[i].split('_')[1];
+		if(appliedFor.educationalDetails == true){
+			transcript = await functions.getDocuments_checkstepper(user_id,app_id,'transcript',degree,faculty);
+		}
+		if(appliedFor.instructionalField == true){
+			instructional = await functions.getDocuments_checkstepper(user_id,app_id,'instructional',degree,faculty);
+		}
+		if(appliedFor.curriculum == true){
+			curriculum = await functions.getDocuments_checkstepper(user_id,app_id,'curriculum',degree,faculty);
+		}
+		if(appliedFor.gradToPer == true){
+			gradToPer = await functions.getDocuments_checkstepper(user_id,app_id,'GradeToPercentageLetter',degree,faculty);
+		}
+		if(appliedFor.affiliation == true){
+			affiliation = await functions.getDocuments_checkstepper(user_id,app_id,'affiliation',degree,faculty);
+		}
+		if(appliedFor.CompetencyLetter == true){
+		}
+		if(appliedFor.LetterforNameChange == true){
+		}
+	}
+	
+	if(appliedFor){
+		require('async').series([
+			function (callback) {
+				// for marksheets
+				if(marksheets.length > 0){
+					obj_inner['tab1'] = true;
+					count = count + 1;
+					callback(null, appliedFor);
+				}else{
+					obj_inner['tab1'] = false;
+					callback(null, appliedFor);
+				}
+			},
+			function (callback) {
+					// for transcripts
+					if(appliedFor.educationalDetails == true){
+							if(transcript.length > 0){
+								obj_inner['tab2'] = true;
+								count = count + 1;
+								callback(null, appliedFor);
+							}else{
+								obj_inner['tab2'] = false;
+								callback(null, appliedFor);
+							}
+					}else{
+						obj_inner['tab2'] = true;
+						count = count + 1;
+						callback(null, appliedFor);
+					}
+			},
+			function (callback) {
+				// Instructional Details
+				if(appliedFor.instructionalField == true){
+						if(instructional.length > 0){
+							obj_inner['tab3'] = true;
+							count = count + 1;
+							callback(null, appliedFor);
+						}else{
+							obj_inner['tab3'] = false
+							callback(null, appliedFor);
+						}
+				}else{
+					obj_inner['tab3'] = false
+					callback(null, appliedFor);
+				}
+			},
+			function (callback) {
+				// Affiliation details
+				if(appliedFor.affiliation == true){
+					if(affiliation.length > 0){
+						obj_inner['tab4'] = true;
+						count = count + 1;
+						callback(null, appliedFor);
+					}else{
+						obj_inner['tab4'] = false
+						callback(null, appliedFor);
+					}
+			}else{
+				obj_inner['tab4'] = false
+				callback(null, appliedFor);
+			}
+			},
+			function (callback) {
+				//Curriculum
+				if(appliedFor.curriculum == true){
+						if(curriculum.length > 0){
+							obj_inner['tab5'] = true;
+							count = count + 1;
+							callback(null, appliedFor);
+						}else{
+							obj_inner['tab5'] = false
+							callback(null, appliedFor);
+						}
+				}else{
+					obj_inner['tab5'] = false
+					callback(null, appliedFor);
+				}
+			},
+			function (callback) {
+				// GradeToPercentageLetter
+				if(appliedFor.gradToPer == true){
+					if(gradToPer.length > 0){
+						obj_inner['tab6'] = true;
+						count = count + 1;
+						callback(null, appliedFor);
+					}else{
+						obj_inner['tab6'] = false
+						callback(null, appliedFor);
+					}
+			}else{
+				obj_inner['tab6'] = false
+				callback(null, appliedFor);
+			}
+			},
+			function (callback) {
+				obj_inner['tab7'] = false
+				callback(null, appliedFor);
+			}
+		],
+			function (err, result) {
+				console.log('*********** obj_inner ***********' ,obj_inner);
+						res.json({
+							status: 200,
+							message: 'Sending Tab Status',
+							data: obj_inner,
+						});
+			});
+	}else{
+
+	}
+})
+
+/**
+ *  Country Details
+ */
+router.get('/getCountry', async function(req,res){
+	var country  = await functions.getCountry();
+	if(country){
+		res.json({status : 200 , data : country})
+	}else{
+		res.json({status : 400})
+	}
+})
+
+/**
+ *  captcha for registration
+ */
+router.get('/captcha', function (req, res) {
+	var captcha = svgCaptcha.create();
+	var data = {
+		captchadata: captcha.data,
+		captchaText: captcha.text
+	}
+	res.send({
+		status: 200,
+		data: data,
+		type: 'svg'
+	});
+
+});
+/**
+ * Add the Payment Issue Details.
+ * @param {Integer} user_id - User ID of the user
+ * @param {String} data - All data get from stundet
+ */
+router.post('/savePaymentIssueData', async (req, res) => {
+	try {
+		var user_id = req.query.user_id;
+		var values = req.query.data;
+		var type ='paymentIssue'
+		var dir = constant.FILE_LOCATION + "public/upload/" + type + '/' + user_id;
+		var image;
+		var Date= moment(values.paymentdateCtrl).format('DD/MM/YYYY');
+
+		if (!fs.existsSync(dir)) {
+			fs.mkdirSync(dir);
+		}
+		var storage = multer.diskStorage({
+			destination: function (req, file, callback) {
+				callback(null, constant.FILE_LOCATION + "public/upload/" + type + '/' + user_id);
+			},
+			filename: function (req, file, callback) {
+				console.log('file.originalname' ,file.originalname)
+				var extension = path.extname(file.originalname)
+				var randomString = functions.generateRandomString(10, 'alphabetic')
+				var newFileName = randomString.concat(extension);
+				image = newFileName;
+				callback(null, newFileName);
+			}
+		});
+
+		var upload = multer({
+			storage: storage,
+		}).single('file');
+		upload(req, res, async function (err, data) {
+			imageLocationToCallClient = image;
+			const userCreated = await models.paymenterror_details.create({
+				user_id: user_id,
+				file_name : imageLocationToCallClient,
+				email: values.emailCtrl,
+				transaction_id: values.transactionCtrl,
+				date: Date,
+				order_id: values.ordeidCtrl,
+				bank_refno: values.bankrefCtrl,
+				amount: values.amountCtrl,
+				note: values.noteCtrl,
+				name: 'Payment Not Reflecting',
+			});
+			
+			if(userCreated) {
+				res.json({status : 200})
+			}
+		});
+	} catch (err) {
+		console.error(err);
+		return res.status(500).json({
+			status: 500,
+			message: `Internal server error.`,
+			error: err.message
+		});
+	}
+})
+
+/** Get Route of user Payment Issue Details */
+router.get('/getPaymentIssueData', async (req, res) => {
+	try {
+		const userId = req.query.user_id;
+		const user = await models.paymenterror_details.findAll({
+			where: {
+				user_id: userId,
+			}
+		})
+		if (user) {
+			console.log("user",user);
+			res.json({
+				status: 200,
+				data: user
+			});
+		}
+	} catch (error) {
+		console.error("Error in getPaymentIssueData", error);
+		return res.status(500).json({
+			status: 500,
+			message: "Internal Server Error"
+		});
+	}
+})
 module.exports = router;

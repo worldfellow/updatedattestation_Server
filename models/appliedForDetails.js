@@ -6,13 +6,15 @@ module.exports = function(sequelize, DataTypes) {
     curriculum : DataTypes.BOOLEAN(),
     educationalDetails : DataTypes.BOOLEAN(),
     gradToPer : DataTypes.BOOLEAN(),
-    current_year : DataTypes.BOOLEAN(),
-    diplomaHolder : DataTypes.BOOLEAN(),
     affiliation : DataTypes.BOOLEAN(),
     CompetencyLetter : DataTypes.BOOLEAN(),
     LetterforNameChange : DataTypes.BOOLEAN(),
+    current_year : DataTypes.BOOLEAN(),
+    diplomaHolder : DataTypes.BOOLEAN(),
+    isphd : DataTypes.BOOLEAN(),
     applied_for : DataTypes.STRING(21),
   });
+
 
 
   appliedForDetails.deleteUserData = function(user_id){
