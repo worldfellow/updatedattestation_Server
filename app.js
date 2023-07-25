@@ -196,6 +196,8 @@ var unprotected = [
   '/api/student/captcha',
   '/api/student/savePaymentIssueData',
   '/api/student/getPaymentIssueData',  
+  '/api/student/getProfileValue',
+  '/api/student/updateProfile',
 
   //new students
   '/api/student/login',

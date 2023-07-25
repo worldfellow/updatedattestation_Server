@@ -3773,4 +3773,89 @@ router.get('/getEducationalDetails',middlewares.getUserInfo, async (req, res) =>
 	}
 })
 
+
+/**getProfilevalue Route to get user profile Data */
+router.get('/getProfileValue', async (req, res) => {
+	try{
+		const userId=req.query.user_id;
+		const view_data={};
+
+		const user = await functions.getUser(userId);
+		if(user){
+			const orders = await functions.getOrders(userId);
+
+			if(orders){
+				if(orders.length > 0){
+					view_data.amount_paid = true;
+				}else{
+					view_data.amount_paid = false;
+				}
+			}
+			view_data.profile = user;
+			return res.json({
+				status:200,
+				data:view_data
+			})
+		}else{
+			return res.json({
+				status:400,
+				message:'User Not found!'
+			})	
+		}
+	}catch(error){
+		console.error("Error in /getProfileValue", error);
+		return res.json({
+			status: 500,
+			message: "Internal Server Error"
+		})
+	} 
+})
+
+/**updateProfile Route to update user profile Data */
+router.post('/updateProfile', async (req, res) => {
+	try{
+		console.log("req.body",req.body.data.username);
+		const userId = req.body.user_id;
+		const username = req.body.data.username;
+		const surname = req.body.data.surname;
+		const gender = req.body.data.gender; 
+		const email = req.body.data.email;  
+		const mobile_country_code = req.body.data.mobile_country_code;
+		const mobile = req.body.data.mobile; 
+		const whatsappCountryCode = req.body.data.whatsappCountryCode || req.body.data.mobile_country_code;
+		const whatsappMobile = req.body.data.whatsappMobile ||  req.body.data.mobile;
+
+		const user = await functions.getUser(userId);
+		if(user){
+			const profileUpdated = await user.update({
+				name: username,
+				surname: surname,
+				gender: gender,
+				email:email,  
+				mobile_country_code: mobile_country_code, 
+				mobile: mobile,
+				what_mobile_country_code: whatsappCountryCode,
+				what_mobile: whatsappMobile,
+			})
+			if(profileUpdated){
+				return res.json({
+					status: 200,
+					message: 'User Profile Successfully Updated !'
+				});
+			}else{
+				return res.json({
+					status: 400,
+					message: 'User Profile Not Updated !'
+				});
+			}
+		}
+	}catch(error){
+		console.error("Error in /getProfileValue", error);
+		return res.json({
+			status: 500,
+			message: "Internal Server Error"
+		})
+	}
+})
+
 module.exports = router;
