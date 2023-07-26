@@ -3775,22 +3775,13 @@ router.get('/getEducationalDetails',middlewares.getUserInfo, async (req, res) =>
 
 
 /**getProfilevalue Route to get user profile Data */
-router.get('/getProfileValue', async (req, res) => {
+router.get('/getProfileValue',middlewares.getUserInfo,async (req, res) => {
 	try{
-		const userId=req.query.user_id;
+		const userId= req.User.id; 
 		const view_data={};
 
 		const user = await functions.getUser(userId);
-		if(user){
-			const orders = await functions.getOrders(userId);
-
-			if(orders){
-				if(orders.length > 0){
-					view_data.amount_paid = true;
-				}else{
-					view_data.amount_paid = false;
-				}
-			}
+		if(user){ 
 			view_data.profile = user;
 			return res.json({
 				status:200,
@@ -3812,10 +3803,10 @@ router.get('/getProfileValue', async (req, res) => {
 })
 
 /**updateProfile Route to update user profile Data */
-router.post('/updateProfile', async (req, res) => {
+router.post('/updateProfile',middlewares.getUserInfo, async (req, res) => {
 	try{
 		console.log("req.body",req.body.data.username);
-		const userId = req.body.user_id;
+		const userId = req.User.id;
 		const username = req.body.data.username;
 		const surname = req.body.data.surname;
 		const gender = req.body.data.gender; 
@@ -3855,6 +3846,45 @@ router.post('/updateProfile', async (req, res) => {
 			status: 500,
 			message: "Internal Server Error"
 		})
+	}
+})
+
+/**ChangePassword Route to change the password of user itself */
+router.post('/changePassword',middlewares.getUserInfo, async(req,res)=>{ 
+	console.log("changePassword");
+	try{
+		const userId = req.User.id;
+		const passwords = req.body.data; 
+
+		const User = await functions.getUser(userId);
+
+		if(User){
+			const passwordUpdated = await User.update({
+				password: passwords
+			});
+			if(passwordUpdated){
+				return res.json({
+					status:200,
+					message:"Password Changed successfully!"
+				})
+			}else{
+				return res.json({
+					status:400,
+					message:"Password Not Changed!"
+				})	
+			}
+		}else{
+			return res.json({
+				status:400,
+				message:"something Went wrong!"
+			})	
+		}
+	}catch(error){
+		console.error("Error in /changePassword", error);
+		return res.json({
+			status: 500,
+			message: "Internal Server Error"
+		})	
 	}
 })
 

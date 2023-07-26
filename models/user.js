@@ -272,7 +272,7 @@ module.exports = function (sequelize, DataTypes) {
     });
   }
 
-  User.hasOne(sequelize.models.Application, { foreignKey: 'user_id' });
+  User.hasOne(sequelize.models.Application);
   User.hasOne(sequelize.models.Institution_details, { foreignKey: 'user_id' });
 
   // User.associate = (models) => {

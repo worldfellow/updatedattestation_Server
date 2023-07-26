@@ -238,6 +238,7 @@ var unprotected = [
   '/api/student/getAppliedUserDetail',
   '/api/student/getEducationalDetails',
   '/api/student/getMyApplicationData',
+  '/api/student/changePassword',
 
   //new admin
   '/api/admin/updateOtp',

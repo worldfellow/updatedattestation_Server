@@ -106,7 +106,7 @@ Application.getEmailedCount = async (appId,name,email,globalSearch)=> {
   Application.associate = (models) => {
     Application.belongsTo(models.User, { foreignKey: 'user_id' }); 
     Application.hasOne(models.Institution_details, { foreignKey: 'id' });
-    Application.hasOne(models.Applied_For_Details,{foreignKey:'id'})
+    Application.hasOne(models.Applied_For_Details,{foreignKey:'app_id'})
     Application.hasOne(models.Emailed_Docs, { foreignKey: 'app_id' }); 
     Application.hasMany(models.UserMarklist_Upload);
   };

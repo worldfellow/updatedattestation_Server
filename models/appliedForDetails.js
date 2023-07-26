@@ -22,7 +22,7 @@ module.exports = function(sequelize, DataTypes) {
     return sequelize.query(query, { type: sequelize.QueryTypes.DELETE});
   }
 
-  appliedForDetails.belongsTo(sequelize.models.Application);
+  appliedForDetails.belongsTo(sequelize.models.Application,{ foreignKey: 'app_id' });
 //   appliedForDetails.associate = (models) => {
 //     appliedForDetails.belongsTo(models.User, {foreignKey: 'user_id'});
 //     appliedForDetails.belongsTo(models.Application, {foreignKey: 'app_id'}); 

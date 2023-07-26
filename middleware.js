@@ -9,26 +9,32 @@ var request = require('request');
 var Sequelize = require("sequelize");
 const Op = Sequelize.Op;
 module.exports = {
-    getUserInfo: function(req, res, next){
-        if (req.headers.authorization) {
-            var token =req.headers.authorization
-            decoded = jwtorig.verify(token, cfg.jwtSecret);
-            req.user_id = decoded.id;
-            models.User.find({
-                where:{
-                    id : req.user_id
+    getUserInfo:async function(req, res, next){ 
+        if (req.headers.authorization) { 
+            try {
+              const token = req.headers.authorization.split(' ')[1];  //remove the bearer 
+              const decoded = jwtorig.verify(token, cfg.jwtSecret); 
+              req.user_id = decoded.id; 
+        
+              const User = await models.User.findOne({
+                where: {
+                  id: req.user_id
                 }
-            }).then(function(User){
-                req.User = User;
-                next();
+              });
+              req.User = User;
+              next();
+            } catch (error) { 
+              console.error("Token verification failed:", error);
+              res.json({ 
+                status:401,
+                error: "Invalid or expired token."
              });
-       
-        }else{
+            }
+          } else {
             req.User = null;
-            req.sendGuardianEmail = false; 
-            //req.User_Guardian = User_Guardian;
+            req.sendGuardianEmail = false;
             req.User_Guardian = null;
             next();
-        }
+          }
       },
 }
