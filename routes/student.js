@@ -3752,6 +3752,10 @@ router.get('/getMyApplicationData',middlewares.getUserInfo, async (req, res) => 
 				status: 400
 			})
 		}
+	}else {
+		return res.json({
+			status: 400
+		})
 	}
 })
 
@@ -3886,6 +3890,10 @@ router.post('/changePassword',middlewares.getUserInfo, async(req,res)=>{
 			message: "Internal Server Error"
 		})	
 	}
+})
+
+router.post('/forgotPasswordSendEmailToUser', (req, res)=>{
+	console.log('/forgotPasswordSendEmailToUser');	
 })
 
 module.exports = router;
