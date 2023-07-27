@@ -2193,5 +2193,33 @@ router.get('/verifyApplication', async (req, res) => {
         })
     }
 })
+/**
+ * To check Wes Details as student uploaded wrong or right .
+ * @param {String} wesno  Wes no of student uploaded
+ * @param {String} email - Wes Email of student uploaded
+ * @param {String} name - Wes Firstname of student uploaded
+ * @param {String} lastName - Wes Lastname of student uploaded
+ */
+router.post('/getWes_details',function(req,res){
+    console.log("/getWes_details");
+	var wesno = req.body.wesno;
+	var email = req.body.email;
+	var firstName = req.body.name;
+	var lastName = req.body.lastname;
+	fn.getWesDetails(wesno,lastName,firstName,email,function(err,data){
+		if(err  == 'Wes Number not found' || err.includes('is not Correct')){
+			return res.json({
+				status : 400,
+				message : err 
+			})
+		}else{
+			return res.json({
+				status : 200,
+				data : data 
+			})
+		}
+		
+		});
+})
 
 module.exports = router;

@@ -2122,3 +2122,44 @@ module.exports.sortArrayConvertString = function(fileArray){
   console.log("sortArrayConvertString fileString == " + fileString);
   return fileString;
 }
+module.exports.getWesDetails = function(wesno,lastName,firstName,email,callback){
+  var data ='';
+  var error='';
+  unirest('POST', constant.urlAuthString)
+  .headers({
+    'Content-Type': 'application/json',
+    'Cookie': '__cfduid=de30535dd8b92c6d12074d60ef2df6cdd1592205580'
+  })
+  .send(JSON.stringify(obj))
+  .end(function (res) { 
+    if (res.error) throw new Error(res.error); 
+    var parsed = JSON.parse(res.raw_body);
+    unirest('GET', 'https://euploads.wes.org/api/v2/applicantinfo/'+wesno)
+    .headers({
+      'Authorization': 'Bearer '+ parsed.token
+    }).end(function (res) {
+      if (res.error) {
+       callback('Wes Number not found','')
+      } else{
+        if( JSON.parse(res['raw_body'])['lastName'].toLowerCase() == lastName.toLowerCase()){
+              data =  JSON.parse(res['raw_body']);
+            }else{
+              error  = 'Last Name is not Correct'
+            }
+
+            if( JSON.parse(res['raw_body'])['firstName'].toLowerCase() == firstName.toLowerCase() ){
+              data =  JSON.parse(res['raw_body']);
+            }else{
+              error  = 'First Name is not Correct'
+            }
+            if( JSON.parse(res['raw_body'])['email'].toLowerCase()==email.toLowerCase()){
+              data =  JSON.parse(res['raw_body']);
+            }else{
+              error  = 'Email ID is not Correct'
+            }
+       callback(error,data)
+      }
+    });
+  });
+ 
+ }

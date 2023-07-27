@@ -179,6 +179,11 @@ module.exports = {
         return models.Institution_details.findAll({ where: { user_id: user_id, app_id: app_id } })
     },
 
+    //get specific institute data 
+    getInstituteData: async (id) => {
+            return models.Institution_details.findOne({ where: { id : id } })
+},
+
     //get single institute data
     getInstituteDataSingle: async (institute_id, purpose_name) => {
         return models.Institution_details.findAll({ where: { id: institute_id, type: purpose_name } })

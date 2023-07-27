@@ -3624,6 +3624,7 @@ router.post('/savePaymentIssueData',middlewares.getUserInfo, async (req, res) =>
  * Get Route of user Payment Issue Details.
  */
 router.get('/getPaymentIssueData',middlewares.getUserInfo, async (req, res) => {
+	var payerror=[];
 	try {
 		const userId = req.User.id;
 		const user = await models.paymenterror_details.findAll({
@@ -3632,14 +3633,30 @@ router.get('/getPaymentIssueData',middlewares.getUserInfo, async (req, res) => {
 			}
 		})
 		if (user) {
-			console.log("user", user);
+			user.forEach(async function (paymenterror) {
+				var extension = paymenterror.file_name.split('.').pop();
+				payerror.push({
+				id: paymenterror.id,
+				name: paymenterror.name,
+				filePath: constant.BASE_URL + "/api/upload/paymentIssue/" + userId + "/" + paymenterror.file_name,
+				extension: extension,
+				fileName: paymenterror.file_name,
+				date:paymenterror.date,
+				transaction_id:paymenterror.transaction_id,
+				bank_refno:paymenterror.bank_refno,
+				tracker:paymenterror.tracker,
+				order_id:paymenterror.order_id,
+				user_id:paymenterror.user_id,
+				amount:paymenterror.amount,
+				note:paymenterror.note,
+			})
+		})
 			res.json({
 				status: 200,
-				data: user
+				data: payerror
 			});
 		}
 	} catch (error) {
-		console.error("Error in getPaymentIssueData", error);
 		return res.status(500).json({
 			status: 500,
 			message: "Internal Server Error"
