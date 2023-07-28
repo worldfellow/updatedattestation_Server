@@ -29,9 +29,9 @@ module.exports = function(sequelize, DataTypes) {
 // }
 
 
-collegeList.associate = (models) => {
-  collegeList.hasMany(sequelize.models.UserMarklist_Upload);
-}
+// collegeList.associate = (models) => {
+//   collegeList.hasMany(sequelize.models.UserMarklist_Upload);
+// }
 
 return collegeList;
 };

@@ -23,6 +23,7 @@ var GradToPerdetails = sequelize.define("GradeToPercentageLetter", {
       allowNull: false,
       defaultValue: 'default'
     },
+    user_id : DataTypes.INTEGER
  });
 
  GradToPerdetails.updateEmailStatus = function(id,status){

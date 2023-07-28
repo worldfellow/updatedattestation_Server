@@ -13,6 +13,7 @@ module.exports = function(sequelize, DataTypes) {
     diplomaHolder : DataTypes.BOOLEAN(),
     isphd : DataTypes.BOOLEAN(),
     applied_for : DataTypes.STRING(21),
+    user_id : DataTypes.INTEGER
   });
 
 

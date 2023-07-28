@@ -27,6 +27,7 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: true,
       defaultValue: null
     },
+    user_id:DataTypes.INTEGER,
   });
 
   UserMarklist_Upload.getMarksheetData = function(userMarklistId){
@@ -117,9 +118,9 @@ module.exports = function(sequelize, DataTypes) {
   // UserMarklist_Upload.hasMany(sequelize.models.Application);
   // UserMarklist_Upload.belongsTo(sequelize.Collage,{foreignKey:'collegeId'}) 
 
-  UserMarklist_Upload.belongsTo(sequelize.models.College, {foreignKey: 'collegeId'});
-  UserMarklist_Upload.belongsTo(sequelize.models.User, {foreignKey: 'user_id'});
-  UserMarklist_Upload.belongsTo(sequelize.models.userMarkList, {foreignKey: 'user_marklist_id'});
+  // UserMarklist_Upload.belongsTo(sequelize.models.College, {foreignKey: 'collegeId'});
+  // UserMarklist_Upload.belongsTo(sequelize.models.User, {foreignKey: 'user_id'});
+  // UserMarklist_Upload.belongsTo(sequelize.models.userMarkList, {foreignKey: 'user_marklist_id'});
   // UserMarklist_Upload.belongsTo(sequelize.models.Application, {foreignKey: 'app_id'});
 
 

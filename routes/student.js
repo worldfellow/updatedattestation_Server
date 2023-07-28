@@ -164,14 +164,13 @@ router.post('/educationalDetails', middlewares.getUserInfo, async (req, res) => 
 	var user_id = req.User.id;
 	var degree = req.body.degree;
 	app_id = req.body.app_id;
-	if (app_id == 'null' || app_id == null || app_id == undefined || app_id == '') {
+	if (app_id == 'null' || app_id == null || app_id == undefined || app_id == 'undefined' || app_id == '') {
 		app_id = null
 	} else {
 		app_id = req.query.app_id
 	}
 
 	var applied_for_details = await functions.getAppliedForDetails(user_id, app_id);
-
 	if (applied_for_details) {
 		var updatedAppliedDetails = await functions.getUpdatedEducationalDetails(user_id, req.body.formdata, degree);
 		if (updatedAppliedDetails) {
@@ -1127,9 +1126,9 @@ router.post('/ScanData',middlewares.getUserInfo, async (req, res) => {
 		}).single('file');
 		upload(req, res, async function (err, data) {
 			imageLocationToCallClient = image;
+			var alldata = [];
 			if (type == 'marklist') {
 				var data = tesseract.recognize(constant.FILE_LOCATION + 'public/upload/' + type + '/' + user_id + '/' + image, config).then(async (text_data) => {
-					// if(text_data){
 					var getCollege = await functions.getCollegeList();
 					var getCourse = await functions.getProgramList();
 					var getApplied = await functions.getAppliedFor(user_id, '');
@@ -1140,7 +1139,7 @@ router.post('/ScanData',middlewares.getUserInfo, async (req, res) => {
 					var courseCheck;
 					var pattern;
 					var whichduration = [];
-					var data = [];
+					
 					getCollege.forEach(function (college) {
 						if (text.includes(college.name)) {
 							collegeName = college.name
@@ -1209,27 +1208,25 @@ router.post('/ScanData',middlewares.getUserInfo, async (req, res) => {
 						} else {
 						}
 					})
-					// if (getApplied.applied_for.includes(courseCheck)){
-					console.log('whichduration ', whichduration)
-					var uploadDocuments = await functions.uploadDocuments(pattern, collegeid, education_type, faculty, user_id, type, imageLocationToCallClient);
-					data.push(collegedata, coursedata, whichduration, uploadDocuments.id);
+					var uploadDocuments;
+					// var uploadDocuments = await functions.uploadDocuments(pattern, collegeid, education_type, faculty, user_id, type, imageLocationToCallClient);
+					alldata.push(collegedata, coursedata, whichduration, null,imageLocationToCallClient);
 					res.json({
-						data: data,
+						data: alldata,
 						status: 200
 					})
-					// }else{
-					// 	var uploadDocuments = await functions.uploadDocuments(pattern,collegeid,education_type,faculty,user_id,type,imageLocationToCallClient);
-					// 	res.json({
-					// 		status : 401
-					// 	})
-					// }
 
 				}).catch((error) => { console.log('**********error.message***************', error.message) });
 			} else {
 				var uploadDocuments = await functions.uploadDocuments(pattern, collegeid, education_type, faculty, user_id, type, imageLocationToCallClient);
-				res.json({
-					status: 200
-				})
+				alldata.push(null, null, null, null);
+				if(uploadDocuments){
+					res.json({
+						status: 200,
+						data: alldata
+					})
+				}else{res.json({status : 400})}
+				
 			}
 
 		});
@@ -1643,167 +1640,16 @@ router.post('/upload_gradeToPercentLetter',middlewares.getUserInfo, async (req, 
  * @
  */
 router.post('/saveUserMarkList',middlewares.getUserInfo, async (req, res) => {
-	var documentid = req.body.documentid;
 	var app_id = req.body.app_id;
 	var user_id = req.User.id;
 	var type = req.body.value;
 	var data = req.body.data;
-	var updateDocuments = await functions.updateDocuments(documentid, data, type);
+	var updateDocuments = await functions.updateDocuments(data, type , user_id);
 	if (updateDocuments) {
 		res.json({ status: 200 })
 	} else {
 		res.json({ status: 400 })
 	}
-
-	// try {
-	// 	let image;
-	// 	const file = req.file
-	// 	const userId = req.body.user_id
-	// 	const extension = path.extname(file.originalname)
-	// 	const randomString = functions.generateRandomString(10, 'alphabetic')
-	// 	const newFileName = randomString.concat(extension);
-	// 	image = newFileName;
-	// 	const doc_id = req.query.doc_id;
-	// 	const app_id = (req.query.app_id) ? req.query.app_id : null;
-	// 	const collegeId = req.body.college;
-	// 	const degree = req.body.degree;
-	// 	const semYear = req.body.semYearValue;
-	// 	const semYearValue = req.body.semYear
-	// 	const courseName = req.body.faculty;
-	// 	const name = degree + "_" + courseName + "_" + semYearValue;
-
-	// 	uploadValue = true;
-	// 	ValueUpdateData(uploadValue)
-	// 	async function ValueUpdateData(uploadValue) {
-	// 		if (uploadValue == true) {
-	// 			var fileStatus = false;
-	// 			const marklistUpload = await models.UserMarklist_Upload.findAll({
-	// 				where: {
-	// 					user_id: userId
-	// 				}
-	// 			})
-	// 			if (marklistUpload) {
-	// 				if (marklistUpload.length > 0) {
-	// 					marklistUpload.forEach(function (marklistData) {
-	// 						if (marklistData) {
-	// 							if (marklistData.file_name == image) {
-	// 								fileStatus = true;
-	// 							}
-	// 						}
-	// 					})
-	// 				}
-	// 				if (fileStatus == true) {
-	// 					res.json({
-	// 						status: 200,
-	// 						message: `File already exist. please upload another file!!!..`,
-	// 					})
-	// 				} else {
-	// 					if (doc_id != undefined && doc_id != null && doc_id != '') {
-	// 						const marksheet_data = await models.UserMarklist_Upload.findOne({
-	// 							where: {
-	// 								user_id: userId,
-	// 								id: doc_id
-	// 							}
-	// 						})
-	// 						if (marksheet_data) {
-	// 							const userdata = await marksheet_data.update({
-	// 								file_name: image,
-	// 								lock_transcript: false,
-	// 								upload_step: "changed"
-	// 							})
-	// 							if (userdata) {
-	// 								return res.json({
-	// 									status: 200,
-	// 									message: `Upload Completed.`,
-	// 									data: userdata
-	// 								});
-	// 							} else {
-	// 								return res.json({
-	// 									status: 400,
-	// 									message: `Error occured in uploading document.`
-	// 								});
-	// 							}
-
-	// 						}
-	// 					} else {
-	// 						if (app_id == null) {
-	// 							const userMarklist = await models.UserMarklist_Upload.create({
-	// 								name: degree + "_" + courseName + "_" + semYear,
-	// 								user_id: userId,
-	// 								file_name: image,
-	// 								lock_transcript: false,
-	// 								collegeId: collegeId,
-	// 								education_type: degree,
-	// 								pattern: semYear,
-	// 								faculty: courseName,
-	// 								upload_step: "default"
-	// 							})
-	// 							if (userMarklist) {
-	// 								return res.json({
-	// 									status: 200,
-	// 									message: `Upload Completed.`,
-	// 									data: userMarklist
-	// 								});
-	// 							} else {
-	// 								return res.json({
-	// 									status: 400,
-	// 									message: `Error occured in uploading document.`
-	// 								});
-	// 							}
-	// 						} else {
-	// 							const userMarklist = await models.UserMarklist_Upload.create({
-	// 								name: degree + "_" + courseName + "_" + semYear,
-	// 								user_id: userId,
-	// 								file_name: image,
-	// 								lock_transcript: false,
-	// 								collegeId: collegeId,
-	// 								education_type: degree,
-	// 								pattern: semYear,
-	// 								faculty: courseName,
-	// 								upload_step: "default"
-	// 							})
-	// 							if (userMarklist) {
-	// 								return res.json({
-	// 									status: 200,
-	// 									message: `Upload Completed.`,
-	// 									data: userMarklist
-	// 								});
-	// 							} else {
-	// 								return res.json({
-	// 									status: 400,
-	// 									message: `Error occured in uploading document.`
-	// 								});
-	// 							}
-	// 						}
-	// 					}
-	// 				}
-	// 			}
-	// 		} else if (uploadValue == false) {
-	// 			fs.unlink(constant.FILE_LOCATION + 'public/upload/marklist/' + userId + '/' + image, function (err) {
-	// 				if (err) {
-	// 					return res.json({
-	// 						status: 400,
-	// 						message: `Error occured in uploading document.`
-	// 					});
-	// 				} else {
-	// 					return res.json({
-	// 						status: 401,
-	// 						message: 'You have uploaded the Password Protected Document. Please Upload correct document.'
-	// 					});
-	// 				}
-	// 			});
-	// 		}
-	// 	}
-	// 	var 
-
-	// } catch (err) {
-	// 	console.error(err);
-	// 	return res.status(500).json({
-	// 		status: 500,
-	// 		message: `Internal server error.`,
-	// 		error: err.message
-	// 	});
-	// }
 })
 
 /**
@@ -2632,7 +2478,8 @@ router.post('/saveLetterNameChangeData',middlewares.getUserInfo, async (req, res
 
 		const user = await models.Letterfor_NameChange.findOne({
 			where: {
-				user_id: userId
+				user_id: userId,
+				id : req.body.data.id
 			}
 		});
 
@@ -3137,7 +2984,7 @@ router.get('/getUploadeddocument_student',middlewares.getUserInfo,async function
 		}
 		if (Applied.curriculum == true) {
 			var curriculum = await functions.getDocumentFuntion(user_id, app_id, 'curriculum');
-			if (curriculum.length > 0) {
+			if ( curriculum && curriculum.length > 0) {
 				for (var i = 0; i < curriculum.length; i++) {
 					college = await functions.getCollegeName(curriculum[i].collegeId);
 					curriculumData.push({
@@ -3160,7 +3007,7 @@ router.get('/getUploadeddocument_student',middlewares.getUserInfo,async function
 		}
 		if (Applied.gradToPer == true) {
 			var gradtoper = await functions.getDocumentFuntion(user_id, app_id, 'GradeToPercentageLetter');
-			if (gradtoper.length > 0) {
+			if ( gradtoper && gradtoper.length > 0) {
 				for (var i = 0; i < gradtoper.length; i++) {
 					college = await functions.getCollegeName(gradtoper[i].collegeId);
 					gradtoperData.push({
@@ -3217,9 +3064,9 @@ router.get('/getUploadeddocument_student',middlewares.getUserInfo,async function
 
 		DocumentData.push(marksheetData, transcriptData, transcriptDisplay, unique_college, extraData, curriculumData, gradtoperData)
 		res.json({ status: 200, data: DocumentData });
-	} else {
-		res.json({ status: 400 });
-	}
+		} else {
+			res.json({ status: 400 });
+		}
 })
 
 /**
@@ -3243,7 +3090,8 @@ router.get('/checkstepper', middlewares.getUserInfo, async function (req, res) {
 		obj_inner['tab3'] = false
 
 	var appliedFor = await functions.getAppliedForDetails(user_id, app_id);
-	marksheets = await functions.getDocumentFuntion(user_id, app_id, 'marklist');
+	if (appliedFor) {
+		marksheets = await functions.getDocumentFuntion(user_id, app_id, 'marklist');
 	getDistinctData = await functions.getDistinctData(user_id);
 	const uniqueValues = getDistinctData.map((item) => item.dataValues.uniqueValues);
 	for (var i = 0; i < uniqueValues.length; i++) {
@@ -3270,8 +3118,7 @@ router.get('/checkstepper', middlewares.getUserInfo, async function (req, res) {
 		}
 	}
 
-	if (appliedFor) {
-		require('async').series([
+	require('async').series([
 			function (callback) {
 				if (appliedFor) {
 					if ((appliedFor.isphd != null) && (appliedFor.instructionalField == true || appliedFor.curriculum == true || appliedFor.educationalDetails == true || appliedFor.gradToPer == true || appliedFor.affiliation == true || appliedFor.CompetencyLetter == true || appliedFor.LetterforNameChange == true)) {
@@ -3292,7 +3139,7 @@ router.get('/checkstepper', middlewares.getUserInfo, async function (req, res) {
 			},
 			function (callback) {
 				if (appliedFor.educationalDetails == true) {
-					if (transcript.length >= uniqueValues.length) { transcriptFlag = true } else { transcriptFlag = false }
+					if (transcript && transcript.length >= uniqueValues.length) { transcriptFlag = true } else { transcriptFlag = false }
 				} else {
 					transcriptFlag = true
 				}
@@ -3304,13 +3151,13 @@ router.get('/checkstepper', middlewares.getUserInfo, async function (req, res) {
 				}
 
 				if (appliedFor.curriculum == true) {
-					if (curriculum.length >= uniqueValues.length) { curriculumFlag = true } else { curriculumFlag = false }
+					if (curriculum && curriculum.length >= uniqueValues.length) { curriculumFlag = true } else { curriculumFlag = false }
 				} else {
 					curriculumFlag = true
 				}
 
 				if (appliedFor.gradToPer == true) {
-					if (gradToPer.length >= uniqueValues.length) { gradFlag = true } else { gradFlag = false }
+					if (gradToPer && gradToPer.length >= uniqueValues.length) { gradFlag = true } else { gradFlag = false }
 				} else {
 					gradFlag = true
 				}
@@ -3357,20 +3204,24 @@ router.get('/checkstepper', middlewares.getUserInfo, async function (req, res) {
 					data: obj,
 				});
 			});
-	} else {
-
+	
 	}
+	else {
+		res.json({
+			status: 400,
+			message: 'Sending Tab Status',
+			data: obj,
+		});
+	}
+
 })
 /**
  * checkstepper route for students. Throws to the tab where the student has to filled its required details, for 2nd step
  */
 router.get('/checkstepper_inner',middlewares.getUserInfo, async function (req, res) {
 	var user_id = req.User.id;
-	// var app_id  = req.query.app_id ? null  : null;
 	var app_id = req.query.app_id;
-	if (app_id == 'null') {
-		app_id = null
-	}
+	if (app_id == 'null') {app_id = null}
 	var data = [];
 	var obj = {};
 	var obj_inner = {};
@@ -3381,43 +3232,43 @@ router.get('/checkstepper_inner',middlewares.getUserInfo, async function (req, r
 	var degree;
 	var educationalDetails = true;
 	obj_inner['tab1'] = false,
-		obj_inner['tab2'] = false,
-		obj_inner['tab3'] = false,
-		obj_inner['tab4'] = false,
-		obj_inner['tab5'] = false,
-		obj_inner['tab6'] = false,
-		obj_inner['tab7'] = false
+	obj_inner['tab2'] = false,
+	obj_inner['tab3'] = false,
+	obj_inner['tab4'] = false,
+	obj_inner['tab5'] = false,
+	obj_inner['tab6'] = false,
+	obj_inner['tab7'] = false
 
 	var appliedFor = await functions.getAppliedForDetails(user_id, app_id);
-	marksheets = await functions.getDocuments_checkstepper(user_id, app_id, 'marklist', '', '');
-	getDistinctData = await functions.getDistinctData(user_id);
-	const uniqueValues = getDistinctData.map((item) => item.dataValues.uniqueValues);
-
-	for (var i = 0; i < uniqueValues.length; i++) {
-		degree = uniqueValues[i].split('_')[0];
-		faculty = uniqueValues[i].split('_')[1];
-		if (appliedFor.educationalDetails == true) {
-			transcript = await functions.getDocuments_checkstepper(user_id, app_id, 'transcript', degree, faculty);
-		}
-		if (appliedFor.instructionalField == true) {
-			instructional = await functions.getDocuments_checkstepper(user_id, app_id, 'instructional', degree, faculty);
-		}
-		if (appliedFor.curriculum == true) {
-			curriculum = await functions.getDocuments_checkstepper(user_id, app_id, 'curriculum', degree, faculty);
-		}
-		if (appliedFor.gradToPer == true) {
-			gradToPer = await functions.getDocuments_checkstepper(user_id, app_id, 'GradeToPercentageLetter', degree, faculty);
-		}
-		if (appliedFor.affiliation == true) {
-			affiliation = await functions.getDocuments_checkstepper(user_id, app_id, 'affiliation', degree, faculty);
-		}
-		if (appliedFor.CompetencyLetter == true) {
-		}
-		if (appliedFor.LetterforNameChange == true) {
-		}
-	}
-
 	if (appliedFor) {
+		marksheets = await functions.getDocuments_checkstepper(user_id, app_id, 'marklist', '', '');
+		getDistinctData = await functions.getDistinctData(user_id);
+		const uniqueValues = getDistinctData.map((item) => item.dataValues.uniqueValues);
+	
+		for (var i = 0; i < uniqueValues.length; i++) {
+			degree = uniqueValues[i].split('_')[0];
+			faculty = uniqueValues[i].split('_')[1];
+			if (appliedFor.educationalDetails == true) {
+				transcript = await functions.getDocuments_checkstepper(user_id, app_id, 'transcript', degree, faculty);
+			}
+			if (appliedFor.instructionalField == true) {
+				instructional = await functions.getDocuments_checkstepper(user_id, app_id, 'instructional', degree, faculty);
+			}
+			if (appliedFor.curriculum == true) {
+				curriculum = await functions.getDocuments_checkstepper(user_id, app_id, 'curriculum', degree, faculty);
+			}
+			if (appliedFor.gradToPer == true) {
+				gradToPer = await functions.getDocuments_checkstepper(user_id, app_id, 'GradeToPercentageLetter', degree, faculty);
+			}
+			if (appliedFor.affiliation == true) {
+				affiliation = await functions.getDocuments_checkstepper(user_id, app_id, 'affiliation', degree, faculty);
+			}
+			if (appliedFor.CompetencyLetter == true) {
+			}
+			if (appliedFor.LetterforNameChange == true) {
+			}
+		}
+
 		require('async').series([
 			function (callback) {
 				// for marksheets
@@ -3433,7 +3284,7 @@ router.get('/checkstepper_inner',middlewares.getUserInfo, async function (req, r
 			function (callback) {
 				// for transcripts
 				if (appliedFor.educationalDetails == true) {
-					if (transcript.length > 0) {
+					if (transcript && transcript.length > 0) {
 						obj_inner['tab2'] = true;
 						count = count + 1;
 						callback(null, appliedFor);
@@ -3482,7 +3333,7 @@ router.get('/checkstepper_inner',middlewares.getUserInfo, async function (req, r
 			function (callback) {
 				//Curriculum
 				if (appliedFor.curriculum == true) {
-					if (curriculum.length > 0) {
+					if (curriculum&& curriculum.length > 0) {
 						obj_inner['tab5'] = true;
 						count = count + 1;
 						callback(null, appliedFor);
@@ -3498,7 +3349,7 @@ router.get('/checkstepper_inner',middlewares.getUserInfo, async function (req, r
 			function (callback) {
 				// GradeToPercentageLetter
 				if (appliedFor.gradToPer == true) {
-					if (gradToPer.length > 0) {
+					if (gradToPer && gradToPer.length > 0) {
 						obj_inner['tab6'] = true;
 						count = count + 1;
 						callback(null, appliedFor);
@@ -3524,8 +3375,13 @@ router.get('/checkstepper_inner',middlewares.getUserInfo, async function (req, r
 					data: obj_inner,
 				});
 			});
-	} else {
-
+	} 
+	else {
+		res.json({
+			status: 400,
+			message: 'Sending Tab Status',
+			data: obj_inner,
+		});
 	}
 })
 
@@ -3653,10 +3509,11 @@ router.get('/getPaymentIssueData',middlewares.getUserInfo, async (req, res) => {
 		})
 			res.json({
 				status: 200,
-				data: payerror
+				data: user
 			});
 		}
 	} catch (error) {
+		console.error("Error in getPaymentIssueData", error);
 		return res.status(500).json({
 			status: 500,
 			message: "Internal Server Error"
@@ -3789,20 +3646,30 @@ router.get('/getEducationalDetails',middlewares.getUserInfo, async (req, res) =>
 		})
 	} else {
 		return res.json({
-			status: 400
+			status: 400,
+			data: applied_for_details
 		})
 	}
 })
 
 
 /**getProfilevalue Route to get user profile Data */
-router.get('/getProfileValue',middlewares.getUserInfo,async (req, res) => {
+router.get('/getProfileValue', async (req, res) => {
 	try{
-		const userId= req.User.id; 
+		const userId=req.query.user_id;
 		const view_data={};
 
 		const user = await functions.getUser(userId);
-		if(user){ 
+		if(user){
+			const orders = await functions.getOrders(userId);
+
+			if(orders){
+				if(orders.length > 0){
+					view_data.amount_paid = true;
+				}else{
+					view_data.amount_paid = false;
+				}
+			}
 			view_data.profile = user;
 			return res.json({
 				status:200,
@@ -3824,10 +3691,10 @@ router.get('/getProfileValue',middlewares.getUserInfo,async (req, res) => {
 })
 
 /**updateProfile Route to update user profile Data */
-router.post('/updateProfile',middlewares.getUserInfo, async (req, res) => {
+router.post('/updateProfile', async (req, res) => {
 	try{
 		console.log("req.body",req.body.data.username);
-		const userId = req.User.id;
+		const userId = req.body.user_id;
 		const username = req.body.data.username;
 		const surname = req.body.data.surname;
 		const gender = req.body.data.gender; 

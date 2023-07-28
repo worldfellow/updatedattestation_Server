@@ -22,6 +22,7 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: false,
       defaultValue: 'default'
     },
+    user_id  : DataTypes.INTEGER
   });
 
   UserTranscript.updateEmailStatus = function(id,status){

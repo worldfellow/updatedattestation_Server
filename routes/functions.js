@@ -73,7 +73,7 @@ module.exports = {
 
     //Educational Details
     getUpdatedEducationalDetails: async (user_id, formdata, degree, phdvalue) => {
-        return models.Applied_For_Details.update({ educationalDetails: formdata.educationalDetails, instructionalField: formdata.instructionalDetails, curriculum: formdata.curriculumDetails, gradToPer: formdata.gradToPer, affiliation: formdata.affiliation, CompetencyLetter: formdata.CompetencyLetter, LetterforNameChange: formdata.LetterforNameChange, isphd: phdvalue }, { where: { user_id: user_id } })
+        return models.Applied_For_Details.update({ educationalDetails: formdata.educationalDetails, instructionalField: formdata.instructionalDetails, curriculum: formdata.curriculumDetails, gradToPer: formdata.gradToPer, affiliation: formdata.affiliation, CompetencyLetter: formdata.CompetencyLetter, LetterforNameChange: formdata.LetterforNameChange, isphd: formdata.phd }, { where: { user_id: user_id } })
     },
 
     getCreateEducationalDetails: async (user_id, formdata) => {
@@ -526,6 +526,9 @@ module.exports = {
             if (type == 'gradtoper') {
                 return await models.GradeToPercentageLetter.create({ user_id: user_id, file_name: image, upload_step: 'default', name: education_type + '_' + faculty + '_GradeToPercentageLetter', faculty: faculty, collegeId: collegeid, pattern: pattern, education_type: education_type + '_GradeToPercentageLetter' });
             }
+            if (type == 'LetterforNameChange') {
+                return await models.Letterfor_NameChange.create({ user_id: user_id, file_name: image, upload_step: 'default'});
+            }
         } catch {
         }
 
@@ -553,7 +556,7 @@ module.exports = {
             where: {
                 user_id: user_id, app_id: {
                     [Op.eq]: null
-                }
+                },courseClgId :{[Op.ne] : null}
             }, attributes: [
                 [Sequelize.fn('DISTINCT', Sequelize.col('courseClgId', 'id')), 'uniqueValues']
             ]
@@ -624,13 +627,13 @@ module.exports = {
     getCollegeDetails_unique: async function (id) {
         return await models.College.findOne({ where: { id: id } })
     },
-    updateDocuments: async function (documentid, data, type) {
+    updateDocuments: async function (data, type ,user_id) {
         var DATA = data[0]
         var pattern;
         var pattern_name;
-        if (DATA.pattern.name) {
-            pattern = DATA.pattern.value
-            pattern_name = DATA.pattern.name
+        if (DATA.patteren.name) {
+            pattern = DATA.patteren.value
+            pattern_name = DATA.patteren.name
         } else {
             if (DATA.pattern.includes('Semester')) {
                 pattern = 'Semester'
@@ -641,7 +644,7 @@ module.exports = {
         }
         try {
             if (type == 'marklist') {
-                return await models.UserMarklist_Upload.update({ name: DATA.degree + '_' + DATA.faculty + '_' + pattern_name, education_type: DATA.degree, faculty: DATA.faculty, pattern: pattern, collegeId: DATA.collegeId, courseClgId: DATA.degree + '_' + DATA.faculty + '_' + pattern + '_' + DATA.collegeId }, { where: { id: documentid } });
+                return await models.UserMarklist_Upload.create({ name: DATA.degree + '_' + DATA.faculty + '_' + pattern_name, education_type: DATA.degree, faculty: DATA.faculty, pattern: pattern, collegeId: DATA.collegeId, courseClgId: DATA.degree + '_' + DATA.faculty + '_' + pattern + '_' + DATA.collegeId  , user_id : user_id , file_name : DATA.file_name});
             }
         } catch {
         }
