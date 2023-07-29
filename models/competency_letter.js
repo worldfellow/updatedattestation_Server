@@ -18,7 +18,7 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: false,
       defaultValue: 'default'
     },
-   // user_id :DataTypes.INTEGER(20),
+   app_id :DataTypes.INTEGER(20),
   });
 
 //   UserTranscript.updateEmailStatus = function(id,status){

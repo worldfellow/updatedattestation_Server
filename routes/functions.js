@@ -289,7 +289,7 @@ module.exports = {
     },
 
     getUserLetterfornamechange: async (user_id, app_id) => {
-        return models.Letterfor_NameChange.findAll({ where: { user_id: user_id, app_id: app_id } })
+        return models.Letterfor_NameChange.findOne({ where: { user_id: user_id, app_id: app_id } })
     },
 
     getUserInstructionalAndAffiliation: async (user_id, app_id, type) => {
@@ -979,5 +979,9 @@ module.exports = {
 
     getErrataInNameChangeProof: async (user_id, app_id, lock, type) => {
         return models.User_Transcript.findAll({ where: { user_id: user_id, app_id: app_id, lock_transcript: lock, type: { [Op.like]: '%' + type + '%' } } })
+    },
+
+    getUserData: async (user_id) => {
+        return models.User.findOne({ where: { user_id: user_id } })
     },
 };

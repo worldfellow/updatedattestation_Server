@@ -96,9 +96,10 @@ Application.getEmailedCount = async (appId,name,email,globalSearch)=> {
   }
 
   Application.getMyApplicationData = function (app_id) {
-    var query = `SELECT app.id, app.tracker, app.status, app.created_at, GROUP_CONCAT(ins.type) as type, GROUP_CONCAT(ins.email) as email,GROUP_CONCAT(ins.otherEmail) as otherEmail, GROUP_CONCAT(ins.refno) as refno,GROUP_CONCAT(ins.emailAsWes) as wesemail
+    var query = `SELECT apl.applied_for, apl.educationalDetails, apl.instructionalField, apl.curriculum, apl.gradToPer, apl.affiliation, apl.CompetencyLetter, apl.LetterforNameChange, app.id, app.tracker, app.status, app.created_at, GROUP_CONCAT(ins.type) as type, GROUP_CONCAT(ins.email) as email,GROUP_CONCAT(ins.otherEmail) as otherEmail, GROUP_CONCAT(ins.refno) as refno,GROUP_CONCAT(ins.emailAsWes) as wesemail
     FROM institution_details AS ins
-    LEFT JOIN application AS app ON ins.app_id = app.id
+    LEFT JOIN application AS app ON ins.app_id = app.id 
+		JOIN applied_for_details AS apl ON ins.app_id = apl.app_id
     WHERE app.id  = ${app_id}`
     return sequelize.query(query, { type: sequelize.QueryTypes.SELECT });
   }
@@ -108,7 +109,7 @@ Application.getEmailedCount = async (appId,name,email,globalSearch)=> {
     Application.hasOne(models.Institution_details, { foreignKey: 'id' });
     Application.hasOne(models.Applied_For_Details,{foreignKey:'app_id'})
     Application.hasOne(models.Emailed_Docs, { foreignKey: 'app_id' }); 
-    Application.hasMany(models.UserMarklist_Upload);
+    // Application.hasMany(models.UserMarklist_Upload);
   };
  
  
