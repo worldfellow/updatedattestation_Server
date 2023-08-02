@@ -3662,22 +3662,13 @@ router.get('/getEducationalDetails',middlewares.getUserInfo, async (req, res) =>
 
 
 /**getProfilevalue Route to get user profile Data */
-router.get('/getProfileValue', async (req, res) => {
+router.get('/getProfileValue',middlewares.getUserInfo, async (req, res) => {
 	try{
-		const userId=req.query.user_id;
+		const userId=req.User.id;
 		const view_data={};
 
 		const user = await functions.getUser(userId);
 		if(user){
-			const orders = await functions.getOrders(userId);
-
-			if(orders){
-				if(orders.length > 0){
-					view_data.amount_paid = true;
-				}else{
-					view_data.amount_paid = false;
-				}
-			}
 			view_data.profile = user;
 			return res.json({
 				status:200,
@@ -3699,10 +3690,10 @@ router.get('/getProfileValue', async (req, res) => {
 })
 
 /**updateProfile Route to update user profile Data */
-router.post('/updateProfile', async (req, res) => {
+router.post('/updateProfile',middlewares.getUserInfo, async (req, res) => {
 	try{
 		console.log("req.body",req.body.data.username);
-		const userId = req.body.user_id;
+		const userId = req.User.id;
 		const username = req.body.data.username;
 		const surname = req.body.data.surname;
 		const gender = req.body.data.gender; 
