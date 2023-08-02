@@ -3747,7 +3747,6 @@ router.post('/updateProfile', async (req, res) => {
 
 /**ChangePassword Route to change the password of user itself */
 router.post('/changePassword',middlewares.getUserInfo, async(req,res)=>{ 
-	console.log("changePassword");
 	try{
 		const userId = req.User.id;
 		const passwords = req.body.data; 
@@ -3787,5 +3786,74 @@ router.post('/changePassword',middlewares.getUserInfo, async(req,res)=>{
 router.post('/forgotPasswordSendEmailToUser', (req, res)=>{
 	console.log('/forgotPasswordSendEmailToUser');	
 })
+
+/**getNotification route to get data of user Notification. */
+router.get('/getNotification',middlewares.getUserInfo, async (req,res) => { 
+	try{
+	 const userId = req.User.id; 
+	 const notification = await models.Notifications.findAll({
+		 where:{
+			user_id:userId,
+		 }
+	 }) 
+	 console.log("data",notification[0].dataValues.created_at);
+	 const notificationsWithTimeAgo = notification.map((item) => {
+		 const createdAt = item.dataValues.created_at;
+		 const timeAgo = moment(createdAt).fromNow(); // Calculate the time difference
+		 return {
+		   ...item.dataValues,
+		   timeAgo,
+		 };
+	   }); 
+	 if(notification){
+		 return res.json({
+			 status:200,
+			 data:notificationsWithTimeAgo
+		 })
+	 }else{
+		 return res.json({
+			 status:400
+		 })
+	 }
+ 
+	}catch(error){
+	 console.error("Error in /changePassword", error);
+	 return res.json({
+		 status: 500,
+		 message: "Internal Server Error"
+	 })	
+	}
+ })
+ 
+ /**markASRead route to update the read state true */
+ router.post('/markAsRead', middlewares.getUserInfo, async (req, res) => {
+	 try {
+	   const userId = req.User.id;
+	   const notifications = await models.Notifications.findAll({
+		 where: {
+		   user_id: userId,
+		 },
+	   });
+   
+	   if (notifications && notifications.length > 0) {
+		 // Loop through all notifications and update each one individually
+		 for (const notification of notifications) {
+		   await notification.update({
+			 read: true,
+		   });
+		 }
+	   }
+   
+	   return res.json({
+		 status: 200,
+		 message: "Notifications marked as read successfully",
+	   });
+	 } catch (error) {
+	   console.error("Error in /markAsRead", error);
+	   return res.status(500).json({ 
+		 message: "Internal Server Error",
+	   });
+	 }
+   }); 
 
 module.exports = router;
