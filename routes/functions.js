@@ -289,7 +289,7 @@ module.exports = {
     },
 
     getUserLetterfornamechange: async (user_id, app_id) => {
-        return models.Letterfor_NameChange.findOne({ where: { user_id: user_id, app_id: app_id } })
+        return models.Letterfor_NameChange.findAll({ where: { user_id: user_id, app_id: app_id } })
     },
 
     getUserInstructionalAndAffiliation: async (user_id, app_id, type) => {
@@ -509,25 +509,25 @@ module.exports = {
             app_id: app_id ? app_id : null,
         }, { where: { id: id } })
     },
-    uploadDocuments: async function (pattern, collegeid, education_type, faculty, user_id, type, image) {
+    uploadDocuments: async function (user_id, type, image) {
         try {
             if (type == 'marklist') {
-                return await models.UserMarklist_Upload.create({ user_id: user_id, file_name: image, upload_step: 'default' });
+                return await models.UserMarklist_Upload.create({user_id: user_id, file_name: image, upload_step: 'default' , name  : 'Document'});
             }
             if (type == 'transcript') {
-                return await models.User_Transcript.create({ user_id: user_id, file_name: image, upload_step: 'default', name: education_type + '_' + faculty + '_' + 'Transcript', education_type: education_type + '_' + 'transcript', faculty: faculty, collegeId: collegeid, pattern: pattern });
+                return await models.User_Transcript.create({ user_id: user_id, file_name: image, upload_step: 'default' , education_type : 'transcript' ,name  : 'Document' });
             }
             if (type == 'extra') {
                 return await models.User_Transcript.create({ user_id: user_id, file_name: image, upload_step: 'default', name: 'extra_Document', education_type: 'extra_document' });
             }
             if (type == 'curriculum') {
-                return await models.User_Curriculum.create({ user_id: user_id, file_name: image, upload_step: 'default', name: education_type + '_' + faculty + '_Curriculum', education_type: education_type + '_curriculum', faculty: faculty, collegeId: collegeid, pattern: pattern });
+                return await models.User_Curriculum.create({ user_id: user_id, file_name: image, upload_step: 'default', name  : 'Document'  });
             }
             if (type == 'gradtoper') {
-                return await models.GradeToPercentageLetter.create({ user_id: user_id, file_name: image, upload_step: 'default', name: education_type + '_' + faculty + '_GradeToPercentageLetter', faculty: faculty, collegeId: collegeid, pattern: pattern, education_type: education_type + '_GradeToPercentageLetter' });
+                return await models.GradeToPercentageLetter.create({ user_id: user_id, file_name: image, upload_step: 'default', name  : 'Document' });
             }
             if (type == 'LetterforNameChange') {
-                return await models.Letterfor_NameChange.create({ user_id: user_id, file_name: image, upload_step: 'default'});
+                return await models.Letterfor_NameChange.create({ user_id: user_id, file_name: image, upload_step: 'default' , name  : 'Document' });
             }
         } catch {
         }
@@ -579,27 +579,21 @@ module.exports = {
             if (type == 'transcript' || type == 'extra') {
                 return await models.User_Transcript.findAll({
                     where: {
-                        user_id: user_id, app_id: app_id, education_type: {
-                            [Op.like]: '%' + type + '%'
-                        }
+                        user_id: user_id, app_id: app_id
                     }
                 });
             }
             if (type == 'curriculum') {
                 return await models.User_Curriculum.findAll({
                     where: {
-                        user_id: user_id, app_id: app_id, education_type: {
-                            [Op.like]: '%' + type + '%'
-                        }
+                        user_id: user_id, app_id: app_id
                     }
                 });
             }
             if (type == 'GradeToPercentageLetter') {
                 return await models.GradeToPercentageLetter.findAll({
                     where: {
-                        user_id: user_id, app_id: app_id, education_type: {
-                            [Op.like]: '%' + type + '%'
-                        }
+                        user_id: user_id, app_id: app_id
                     }
                 });
             }
@@ -886,36 +880,42 @@ module.exports = {
             if (type == 'transcript' || type == 'extra') {
                 return await models.User_Transcript.findAll({
                     where: {
-                        user_id: user_id, app_id: app_id, education_type: {
-                            [Op.like]: '%' + degree + '%'
-                        }, faculty: faculty
+                        user_id: user_id, app_id: app_id
                     }
                 });
             }
             if (type == 'curriculum') {
                 return await models.User_Curriculum.findAll({
                     where: {
-                        user_id: user_id, app_id: app_id, education_type: {
-                            [Op.like]: '%' + degree + '_curriculum%'
-                        }
+                        user_id: user_id, app_id: app_id
                     }
                 });
             }
             if (type == 'instructional' || type == 'affiliation') {
                 return await models.letter_details.findAll({
                     where: {
-                        user_id: user_id, app_id: app_id, education_type: {
-                            [Op.like]: '%' + degree + '%'
-                        }, type: type
+                        user_id: user_id, app_id: app_id
                     }
                 });
             }
             if (type == 'GradeToPercentageLetter') {
                 return await models.GradeToPercentageLetter.findAll({
                     where: {
-                        user_id: user_id, app_id: app_id, education_type: {
-                            [Op.like]: '%' + type + '%'
-                        }
+                        user_id: user_id, app_id: app_id
+                    }
+                });
+            }
+            if (type == 'competency') {
+                return await models.competency_letter.findAll({
+                    where: {
+                        user_id: user_id, app_id: app_id
+                    }
+                });
+            }
+            if (type == 'Letterfor_NameChange') {
+                return await models.Letterfor_NameChange.findAll({
+                    where: {
+                        user_id: user_id, app_id: app_id
                     }
                 });
             }

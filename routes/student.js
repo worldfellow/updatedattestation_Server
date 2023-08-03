@@ -1097,10 +1097,10 @@ router.post('/ScanData',middlewares.getUserInfo, async (req, res) => {
 		var user_id = req.User.id;
 		var app_id = req.query.app_id;
 		var type = req.query.value;
-		var education_type = req.query.education_type;
-		var collegeid = req.query.collegeid;
-		var pattern = req.query.pattern;
-		var faculty = req.query.faculty;
+		// var education_type = req.query.education_type;
+		// var collegeid = req.query.collegeid;
+		// var pattern = req.query.pattern;
+		// var faculty = req.query.faculty;
 		var dir = constant.FILE_LOCATION + "public/upload/" + type + '/' + user_id;
 		var image;
 		var coursedata = [];
@@ -1114,7 +1114,7 @@ router.post('/ScanData',middlewares.getUserInfo, async (req, res) => {
 			},
 			filename: function (req, file, callback) {
 				var extension = path.extname(file.originalname)
-				var randomString = functions.generateRandomString(10, 'alphabetic')
+				var randomString = functions.generateRandomString(10, 'alphabetic');
 				var newFileName = randomString.concat(extension);
 				image = newFileName;
 				callback(null, newFileName);
@@ -1127,99 +1127,99 @@ router.post('/ScanData',middlewares.getUserInfo, async (req, res) => {
 		upload(req, res, async function (err, data) {
 			imageLocationToCallClient = image;
 			var alldata = [];
-			if (type == 'marklist') {
-				var data = tesseract.recognize(constant.FILE_LOCATION + 'public/upload/' + type + '/' + user_id + '/' + image, config).then(async (text_data) => {
-					var getCollege = await functions.getCollegeList();
-					var getCourse = await functions.getProgramList();
-					var getApplied = await functions.getAppliedFor(user_id, '');
-					var str = text_data.replace(/(\r\n|\n|\r)/gm, "");
-					var text = str.replace('&', 'and');
-					var collegeName;
-					var courseName;
-					var courseCheck;
-					var pattern;
-					var whichduration = [];
-					
-					getCollege.forEach(function (college) {
-						if (text.includes(college.name)) {
-							collegeName = college.name
-							collegedata.push(college)
-						}
-					})
-					if (text.includes('semester') || text.includes('Semester')) {
-						pattern = 'Semester'
-						if (text.includes('X')) {
-							whichduration.push({ name: 'Semester 10', value: 'Semester' })
-						}
-						if (text.includes('IX')) {
-							whichduration.push({ name: 'Semester 9', value: 'Semester' })
-						}
-						if (text.includes('VIII')) {
-							whichduration.push({ name: 'Semester 8', value: 'Semester' })
-						}
-						if (text.includes('VII')) {
-							whichduration.push({ name: 'Semester 7', value: 'Semester' })
-						}
-						if (text.includes('VI')) {
-							whichduration.push({ name: 'Semester 6', value: 'Semester' })
-						}
+			// if (type == 'marklist') {
+			// 	var data = tesseract.recognize(constant.FILE_LOCATION + 'public/upload/' + type + '/' + user_id + '/' + image, config).then(async (text_data) => {
+			// 		var getCollege = await functions.getCollegeList();
+			// 		var getCourse = await functions.getProgramList();
+			// 		var getApplied = await functions.getAppliedFor(user_id, '');
+			// 		var str = text_data.replace(/(\r\n|\n|\r)/gm, "");
+			// 		var text = str.replace('&', 'and');
+			// 		var collegeName;
+			// 		var courseName;
+			// 		var courseCheck;
+			// 		var pattern;
+			// 		var whichduration = [];
+			// 		getCollege.forEach(function (college) {
+			// 			if (text.includes(college.name)) {
+			// 				collegeName = college.name
+			// 				collegedata.push(college)
+			// 			}
+			// 		})
+			// 		if (text.includes('semester') || text.includes('Semester')) {
+			// 			pattern = 'Semester'
+			// 			if (text.includes('X')) {
+			// 				whichduration.push({ name: 'Semester 10', value: 'Semester' })
+			// 			}
+			// 			if (text.includes('IX')) {
+			// 				whichduration.push({ name: 'Semester 9', value: 'Semester' })
+			// 			}
+			// 			if (text.includes('VIII')) {
+			// 				whichduration.push({ name: 'Semester 8', value: 'Semester' })
+			// 			}
+			// 			if (text.includes('VII')) {
+			// 				whichduration.push({ name: 'Semester 7', value: 'Semester' })
+			// 			}
+			// 			if (text.includes('VI')) {
+			// 				whichduration.push({ name: 'Semester 6', value: 'Semester' })
+			// 			}
 
 
-						if (text.includes('IV')) {
-							whichduration.push({ name: 'Semester 4', value: 'Semester' })
-						}
+			// 			if (text.includes('IV')) {
+			// 				whichduration.push({ name: 'Semester 4', value: 'Semester' })
+			// 			}
 
-						if (text.includes('V')) {
-							whichduration.push({ name: 'Semester 5', value: 'Semester' })
-						}
-
-
-
-						if (text.includes('III')) {
-							whichduration.push({ name: 'Semester 3', value: 'Semester' })
-						}
-
-						if (text.includes('II')) {
-							whichduration.push({ name: 'Semester 2', value: 'Semester' })
-						}
-
-						if (text.includes('I')) {
-							whichduration.push({ name: 'Semester 1', value: 'Semester' })
-						}
+			// 			if (text.includes('V')) {
+			// 				whichduration.push({ name: 'Semester 5', value: 'Semester' })
+			// 			}
 
 
-					} else {
-						pattern = 'Annual'
-						if (text.includes('F.Y')) {
-							whichduration = 'First Year'
-						}
-						else if (text.includes('S.Y')) {
-							whichduration = 'Second Year'
-						}
-						else if (text.includes('T.Y')) {
-							whichduration = 'Third Year'
-						}
-					}
-					getCourse.forEach(function (course) {
-						if (text.includes(course.short_name) || text.includes(course.full_name)) {
-							courseName = course.full_name
-							courseCheck = course.degree
-							coursedata.push(course)
-						} else {
-						}
-					})
-					var uploadDocuments;
-					// var uploadDocuments = await functions.uploadDocuments(pattern, collegeid, education_type, faculty, user_id, type, imageLocationToCallClient);
-					alldata.push(collegedata, coursedata, whichduration, null,imageLocationToCallClient);
-					res.json({
-						data: alldata,
-						status: 200
-					})
 
-				}).catch((error) => { console.log('**********error.message***************', error.message) });
-			} else {
-				var uploadDocuments = await functions.uploadDocuments(pattern, collegeid, education_type, faculty, user_id, type, imageLocationToCallClient);
-				alldata.push(null, null, null, null);
+			// 			if (text.includes('III')) {
+			// 				whichduration.push({ name: 'Semester 3', value: 'Semester' })
+			// 			}
+
+			// 			if (text.includes('II')) {
+			// 				whichduration.push({ name: 'Semester 2', value: 'Semester' })
+			// 			}
+
+			// 			if (text.includes('I')) {
+			// 				whichduration.push({ name: 'Semester 1', value: 'Semester' })
+			// 			}
+
+
+			// 		} else {
+			// 			pattern = 'Annual'
+			// 			if (text.includes('F.Y')) {
+			// 				whichduration = 'First Year'
+			// 			}
+			// 			else if (text.includes('S.Y')) {
+			// 				whichduration = 'Second Year'
+			// 			}
+			// 			else if (text.includes('T.Y')) {
+			// 				whichduration = 'Third Year'
+			// 			}
+			// 		}
+			// 		getCourse.forEach(function (course) {
+			// 			if (text.includes(course.short_name) || text.includes(course.full_name)) {
+			// 				courseName = course.full_name
+			// 				courseCheck = course.degree
+			// 				coursedata.push(course)
+			// 			} else {
+			// 			}
+			// 		})
+			// 		var uploadDocuments;
+			// 		// var uploadDocuments = await functions.uploadDocuments(pattern, collegeid, education_type, faculty, user_id, type, imageLocationToCallClient);
+			// 		alldata.push(collegedata, coursedata, whichduration, null,imageLocationToCallClient);
+			// 		res.json({
+			// 			data: alldata,
+			// 			status: 200
+			// 		})
+
+			// 	}).catch((error) => { console.log('**********error.message***************', error.message) });
+			// } else {
+				var uploadDocuments = await functions.uploadDocuments(user_id, type, imageLocationToCallClient);
+				console.log('uploadDocuments.id' ,uploadDocuments.id)
+				alldata.push(uploadDocuments.id);
 				if(uploadDocuments){
 					res.json({
 						status: 200,
@@ -1227,7 +1227,7 @@ router.post('/ScanData',middlewares.getUserInfo, async (req, res) => {
 					})
 				}else{res.json({status : 400})}
 				
-			}
+			// }
 
 		});
 	} catch (err) {
@@ -3081,6 +3081,8 @@ router.get('/checkstepper', middlewares.getUserInfo, async function (req, res) {
 	var count = 0;
 	var marksheets = 0;
 	var transcript = 0;
+	var curriculum = 0;
+	var gradToPer = 0;
 	obj['tab1'] = false,
 		obj['tab2'] = false,
 		obj['tab3'] = false
@@ -3091,32 +3093,38 @@ router.get('/checkstepper', middlewares.getUserInfo, async function (req, res) {
 
 	var appliedFor = await functions.getAppliedForDetails(user_id, app_id);
 	if (appliedFor) {
-		marksheets = await functions.getDocumentFuntion(user_id, app_id, 'marklist');
-	getDistinctData = await functions.getDistinctData(user_id);
-	const uniqueValues = getDistinctData.map((item) => item.dataValues.uniqueValues);
-	for (var i = 0; i < uniqueValues.length; i++) {
-		degree = uniqueValues[i].split('_')[0];
-		faculty = uniqueValues[i].split('_')[1];
-		if (appliedFor.educationalDetails == true) {
-			transcript = await functions.getDocuments_checkstepper(user_id, app_id, 'transcript', degree, faculty);
-		}
-		if (appliedFor.instructionalField == true) {
-			instructional = await functions.getDocuments_checkstepper(user_id, app_id, 'instructional', degree, faculty);
-		}
-		if (appliedFor.curriculum == true) {
-			curriculum = await functions.getDocuments_checkstepper(user_id, app_id, 'curriculum', degree, faculty);
-		}
-		if (appliedFor.gradToPer == true) {
-			gradToPer = await functions.getDocuments_checkstepper(user_id, app_id, 'GradeToPercentageLetter', degree, faculty);
-		}
-		if (appliedFor.affiliation == true) {
-			affiliation = await functions.getDocuments_checkstepper(user_id, app_id, 'affiliation', degree, faculty);
-		}
-		if (appliedFor.CompetencyLetter == true) {
-		}
-		if (appliedFor.LetterforNameChange == true) {
-		}
-	}
+		marksheets = await functions.getDocuments_checkstepper(user_id, app_id, 'marklist', '', '');
+		transcript = await functions.getDocuments_checkstepper(user_id, app_id, 'transcript', '', '');
+		instructional = await functions.getDocuments_checkstepper(user_id, app_id, 'instructional', '', '');
+		curriculum = await functions.getDocuments_checkstepper(user_id, app_id, 'curriculum', '', '');
+		gradToPer = await functions.getDocuments_checkstepper(user_id, app_id, 'GradeToPercentageLetter', '', '');
+		affiliation = await functions.getDocuments_checkstepper(user_id, app_id, 'affiliation', '', '');
+
+	// getDistinctData = await functions.getDistinctData(user_id);
+	// const uniqueValues = getDistinctData.map((item) => item.dataValues.uniqueValues);
+	// for (var i = 0; i < uniqueValues.length; i++) {
+	// 	degree = uniqueValues[i].split('_')[0];
+	// 	faculty = uniqueValues[i].split('_')[1];
+	// 	if (appliedFor.educationalDetails == true) {
+	// 		transcript = await functions.getDocuments_checkstepper(user_id, app_id, 'transcript', degree, faculty);
+	// 	}
+	// 	if (appliedFor.instructionalField == true) {
+	// 		instructional = await functions.getDocuments_checkstepper(user_id, app_id, 'instructional', degree, faculty);
+	// 	}
+	// 	if (appliedFor.curriculum == true) {
+	// 		curriculum = await functions.getDocuments_checkstepper(user_id, app_id, 'curriculum', degree, faculty);
+	// 	}
+	// 	if (appliedFor.gradToPer == true) {
+	// 		gradToPer = await functions.getDocuments_checkstepper(user_id, app_id, 'GradeToPercentageLetter', degree, faculty);
+	// 	}
+	// 	if (appliedFor.affiliation == true) {
+	// 		affiliation = await functions.getDocuments_checkstepper(user_id, app_id, 'affiliation', degree, faculty);
+	// 	}
+	// 	if (appliedFor.CompetencyLetter == true) {
+	// 	}
+	// 	if (appliedFor.LetterforNameChange == true) {
+	// 	}
+	// }
 
 	require('async').series([
 			function (callback) {
@@ -3139,31 +3147,31 @@ router.get('/checkstepper', middlewares.getUserInfo, async function (req, res) {
 			},
 			function (callback) {
 				if (appliedFor.educationalDetails == true) {
-					if (transcript && transcript.length >= uniqueValues.length) { transcriptFlag = true } else { transcriptFlag = false }
+					if (transcript && transcript.length > 0 ) { transcriptFlag = true } else { transcriptFlag = false }
 				} else {
 					transcriptFlag = true
 				}
 
 				if (appliedFor.instructionalField == true) {
-					if (instructional.length >= uniqueValues.length) { instructionalFieldFlag = true } else { instructionalFieldFlag = false }
+					if (instructional.length > 0 ) { instructionalFieldFlag = true } else { instructionalFieldFlag = false }
 				} else {
 					instructionalFieldFlag = true
 				}
 
 				if (appliedFor.curriculum == true) {
-					if (curriculum && curriculum.length >= uniqueValues.length) { curriculumFlag = true } else { curriculumFlag = false }
+					if (curriculum && curriculum.length > 0) { curriculumFlag = true } else { curriculumFlag = false }
 				} else {
 					curriculumFlag = true
 				}
 
 				if (appliedFor.gradToPer == true) {
-					if (gradToPer && gradToPer.length >= uniqueValues.length) { gradFlag = true } else { gradFlag = false }
+					if (gradToPer && gradToPer.length> 0) { gradFlag = true } else { gradFlag = false }
 				} else {
 					gradFlag = true
 				}
 
 				if (appliedFor.affiliation == true) {
-					if (affiliation.length >= uniqueValues.length) { affiliationFlag = true } else { affiliationFlag = false }
+					if (affiliation.length > 0) { affiliationFlag = true } else { affiliationFlag = false }
 				} else {
 					affiliationFlag = true
 				}
@@ -3228,50 +3236,64 @@ router.get('/checkstepper_inner',middlewares.getUserInfo, async function (req, r
 	var count = 0;
 	var marksheets = 0;
 	var transcript = 0;
+	var curriculum = 0;
+	var gradToPer = 0;
+	var competency = 0;
+	var Letterfor_NameChange = 0;
 	var faculty;
 	var degree;
 	var educationalDetails = true;
-	obj_inner['tab1'] = false,
-	obj_inner['tab2'] = false,
-	obj_inner['tab3'] = false,
-	obj_inner['tab4'] = false,
-	obj_inner['tab5'] = false,
-	obj_inner['tab6'] = false,
-	obj_inner['tab7'] = false
+	obj_inner['tab1'] = false, //marksheet
+	obj_inner['tab2'] = false, // transcript
+	obj_inner['tab3'] = false, // instruction
+	obj_inner['tab4'] = false, // affiliation
+	obj_inner['tab5'] = false, // Curriculum
+	obj_inner['tab6'] = false,//GradeToPercentageLetter
+	obj_inner['tab7'] = false // competency
+	obj_inner['tab8'] = false //Letter For Mother Name on Marksheet Details
+	// obj_inner['tab9'] = false
 
 	var appliedFor = await functions.getAppliedForDetails(user_id, app_id);
 	if (appliedFor) {
 		marksheets = await functions.getDocuments_checkstepper(user_id, app_id, 'marklist', '', '');
-		getDistinctData = await functions.getDistinctData(user_id);
-		const uniqueValues = getDistinctData.map((item) => item.dataValues.uniqueValues);
+		transcript = await functions.getDocuments_checkstepper(user_id, app_id, 'transcript', '', '');
+		instructional = await functions.getDocuments_checkstepper(user_id, app_id, 'instructional', '', '');
+		curriculum = await functions.getDocuments_checkstepper(user_id, app_id, 'curriculum', '', '');
+		gradToPer = await functions.getDocuments_checkstepper(user_id, app_id, 'GradeToPercentageLetter', '', '');
+		affiliation = await functions.getDocuments_checkstepper(user_id, app_id, 'affiliation', '', '');
+		Letterfor_NameChange = await functions.getDocuments_checkstepper(user_id, app_id, 'Letterfor_NameChange', '', '');
+		competency = await functions.getDocuments_checkstepper(user_id, app_id, 'competency', '', '');
+		// getDistinctData = await functions.getDistinctData(user_id);
+		// const uniqueValues = getDistinctData.map((item) => item.dataValues.uniqueValues);
 	
-		for (var i = 0; i < uniqueValues.length; i++) {
-			degree = uniqueValues[i].split('_')[0];
-			faculty = uniqueValues[i].split('_')[1];
-			if (appliedFor.educationalDetails == true) {
-				transcript = await functions.getDocuments_checkstepper(user_id, app_id, 'transcript', degree, faculty);
-			}
-			if (appliedFor.instructionalField == true) {
-				instructional = await functions.getDocuments_checkstepper(user_id, app_id, 'instructional', degree, faculty);
-			}
-			if (appliedFor.curriculum == true) {
-				curriculum = await functions.getDocuments_checkstepper(user_id, app_id, 'curriculum', degree, faculty);
-			}
-			if (appliedFor.gradToPer == true) {
-				gradToPer = await functions.getDocuments_checkstepper(user_id, app_id, 'GradeToPercentageLetter', degree, faculty);
-			}
-			if (appliedFor.affiliation == true) {
-				affiliation = await functions.getDocuments_checkstepper(user_id, app_id, 'affiliation', degree, faculty);
-			}
-			if (appliedFor.CompetencyLetter == true) {
-			}
-			if (appliedFor.LetterforNameChange == true) {
-			}
-		}
+		// for (var i = 0; i < uniqueValues.length; i++) {
+		// 	degree = uniqueValues[i].split('_')[0];
+		// 	faculty = uniqueValues[i].split('_')[1];
+		// 	if (appliedFor.educationalDetails == true) {
+		// 		transcript = await functions.getDocuments_checkstepper(user_id, app_id, 'transcript', degree, faculty);
+		// 	}
+		// 	if (appliedFor.instructionalField == true) {
+		// 		instructional = await functions.getDocuments_checkstepper(user_id, app_id, 'instructional', degree, faculty);
+		// 	}
+		// 	if (appliedFor.curriculum == true) {
+		// 		curriculum = await functions.getDocuments_checkstepper(user_id, app_id, 'curriculum', degree, faculty);
+		// 	}
+		// 	if (appliedFor.gradToPer == true) {
+		// 		gradToPer = await functions.getDocuments_checkstepper(user_id, app_id, 'GradeToPercentageLetter', degree, faculty);
+		// 	}
+		// 	if (appliedFor.affiliation == true) {
+		// 		affiliation = await functions.getDocuments_checkstepper(user_id, app_id, 'affiliation', degree, faculty);
+		// 	}
+		// 	if (appliedFor.CompetencyLetter == true) {
+		// 	}
+		// 	if (appliedFor.LetterforNameChange == true) {
+		// 	}
+		// }
 
 		require('async').series([
+			// for marksheets
 			function (callback) {
-				// for marksheets
+				
 				if (marksheets.length > 0) {
 					obj_inner['tab1'] = true;
 					count = count + 1;
@@ -3281,8 +3303,9 @@ router.get('/checkstepper_inner',middlewares.getUserInfo, async function (req, r
 					callback(null, appliedFor);
 				}
 			},
+			// for transcripts
 			function (callback) {
-				// for transcripts
+				
 				if (appliedFor.educationalDetails == true) {
 					if (transcript && transcript.length > 0) {
 						obj_inner['tab2'] = true;
@@ -3298,8 +3321,9 @@ router.get('/checkstepper_inner',middlewares.getUserInfo, async function (req, r
 					callback(null, appliedFor);
 				}
 			},
+			// Instructional Details
 			function (callback) {
-				// Instructional Details
+			
 				if (appliedFor.instructionalField == true) {
 					if (instructional.length > 0) {
 						obj_inner['tab3'] = true;
@@ -3314,8 +3338,9 @@ router.get('/checkstepper_inner',middlewares.getUserInfo, async function (req, r
 					callback(null, appliedFor);
 				}
 			},
+			// Affiliation details
 			function (callback) {
-				// Affiliation details
+				
 				if (appliedFor.affiliation == true) {
 					if (affiliation.length > 0) {
 						obj_inner['tab4'] = true;
@@ -3330,10 +3355,11 @@ router.get('/checkstepper_inner',middlewares.getUserInfo, async function (req, r
 					callback(null, appliedFor);
 				}
 			},
+			//Curriculum
 			function (callback) {
-				//Curriculum
+				
 				if (appliedFor.curriculum == true) {
-					if (curriculum&& curriculum.length > 0) {
+					if (curriculum && curriculum.length > 0) {
 						obj_inner['tab5'] = true;
 						count = count + 1;
 						callback(null, appliedFor);
@@ -3346,8 +3372,9 @@ router.get('/checkstepper_inner',middlewares.getUserInfo, async function (req, r
 					callback(null, appliedFor);
 				}
 			},
+			// GradeToPercentageLetter
 			function (callback) {
-				// GradeToPercentageLetter
+				
 				if (appliedFor.gradToPer == true) {
 					if (gradToPer && gradToPer.length > 0) {
 						obj_inner['tab6'] = true;
@@ -3362,10 +3389,44 @@ router.get('/checkstepper_inner',middlewares.getUserInfo, async function (req, r
 					callback(null, appliedFor);
 				}
 			},
+			//competency
 			function (callback) {
-				obj_inner['tab7'] = false
-				callback(null, appliedFor);
-			}
+				
+				if (appliedFor.CompetencyLetter == true) {
+					if (competency && competency.length > 0) {
+						obj_inner['tab7'] = true;
+						count = count + 1;
+						callback(null, appliedFor);
+					} else {
+						obj_inner['tab7'] = false
+						callback(null, appliedFor);
+					}
+				} else {
+					obj_inner['tab7'] = false
+					callback(null, appliedFor);
+				}
+			},
+			//Letter For Mother Name on Marksheet Details
+			function (callback) {
+				
+				if (appliedFor.LetterforNameChange == true) {
+					if (Letterfor_NameChange && Letterfor_NameChange.length > 0) {
+						obj_inner['tab8'] = true;
+						count = count + 1;
+						callback(null, appliedFor);
+					} else {
+						obj_inner['tab8'] = false
+						callback(null, appliedFor);
+					}
+				} else {
+					obj_inner['tab8'] = false
+					callback(null, appliedFor);
+				}
+			},
+			// function (callback) {
+			// 	obj_inner['tab9'] = false
+			// 	callback(null, appliedFor);
+			// }
 		],
 			function (err, result) {
 				console.log('*********** obj_inner ***********', obj_inner);
@@ -3669,6 +3730,15 @@ router.get('/getProfileValue',middlewares.getUserInfo, async (req, res) => {
 
 		const user = await functions.getUser(userId);
 		if(user){
+			const orders = await functions.getOrders(userId);
+
+			if(orders){
+				if(orders.length > 0){
+					view_data.amount_paid = true;
+				}else{
+					view_data.amount_paid = false;
+				}
+			}
 			view_data.profile = user;
 			return res.json({
 				status:200,
@@ -3738,6 +3808,7 @@ router.post('/updateProfile',middlewares.getUserInfo, async (req, res) => {
 
 /**ChangePassword Route to change the password of user itself */
 router.post('/changePassword',middlewares.getUserInfo, async(req,res)=>{ 
+	console.log("changePassword");
 	try{
 		const userId = req.User.id;
 		const passwords = req.body.data; 
