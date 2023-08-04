@@ -301,7 +301,7 @@ module.exports = {
     },
 
     getUserNameChangeProof: async (user_id, app_id, type) => {
-        return models.User_Transcript.findAll({ where: { user_id: user_id, app_id: app_id, type: type } })
+        return models.User_Transcript.findAll({ where: { user_id: user_id, app_id: app_id, education_type: type } })
     },
 
     //get admin role details
@@ -950,38 +950,57 @@ module.exports = {
     },
 
     getErrataInMarksheets: async (user_id, app_id, lock) => {
-        return models.UserMarklist_Upload.findAll({ where: { user_id: user_id, app_id, lock_transcript: lock } })
+        return models.UserMarklist_Upload.findAll({ where: { user_id: user_id, app_id: app_id, lock_transcript: lock } })
     },
 
     getErrataInTranscripts: async (user_id, app_id, lock) => {
-        return models.User_Transcript.findAll({ where: { user_id: user_id, app_id, lock_transcript: lock } })
+        return models.User_Transcript.findAll({ where: { user_id: user_id, app_id: app_id, lock_transcript: lock } })
     },
 
     getErrataInInstructionalAndAffiliation: async (user_id, app_id, lock, type) => {
-        return models.letter_details.findAll({ where: { user_id: user_id, app_id, lock_transcript: lock, type } })
+        return models.letter_details.findAll({ where: { user_id: user_id, app_id: app_id, lock_transcript: lock, type: { [Op.like]: '%' + type + '%' } } })
     },
 
     getErrataInCurriculums: async (user_id, app_id, lock) => {
-        return models.User_Curriculum.findAll({ where: { user_id: user_id, app_id, lock_transcript: lock } })
+        return models.User_Curriculum.findAll({ where: { user_id: user_id, app_id: app_id, lock_transcript: lock } })
     },
 
     getErrataInGradtoper: async (user_id, app_id, lock) => {
-        return models.GradeToPercentageLetter.findAll({ where: { user_id: user_id, app_id, lock_transcript: lock } })
+        return models.GradeToPercentageLetter.findAll({ where: { user_id: user_id, app_id: app_id, lock_transcript: lock } })
     },
 
     getErrataInCompetency: async (user_id, app_id, lock) => {
-        return models.competency_letter.findAll({ where: { user_id: user_id, app_id, lock_transcript: lock } })
+        return models.competency_letter.findAll({ where: { user_id: user_id, app_id: app_id, lock_transcript: lock } })
     },
 
     getErrataInLetterForNameChange: async (user_id, app_id, lock) => {
-        return models.Letterfor_NameChange.findAll({ where: { user_id: user_id, app_id, lock_transcript: lock } })
+        return models.Letterfor_NameChange.findAll({ where: { user_id: user_id, app_id: app_id, lock_transcript: lock } })
     },
 
     getErrataInNameChangeProof: async (user_id, app_id, lock, type) => {
-        return models.User_Transcript.findAll({ where: { user_id: user_id, app_id: app_id, lock_transcript: lock, type: { [Op.like]: '%' + type + '%' } } })
+        return models.User_Transcript.findAll({ where: { user_id: user_id, app_id: app_id, lock_transcript: lock, education_type: { [Op.like]: '%' + type + '%' } } })
     },
 
     getUserData: async (user_id) => {
         return models.User.findOne({ where: { user_id: user_id } })
+    },
+
+    getOrderDetails: async (user_id, app_id) => {
+        return models.Orders.findOne({ where: { user_id: user_id, application_id: app_id } })
+    },
+
+    getTrasactionDetails: async (order_id) => {
+        return models.Transaction.findOne({ where: { order_id: order_id } })
+    },
+
+    getPaymentIssueDetails: async (issue_id) => {
+        return models.paymenterror_details.findOne({ where: { id: issue_id } })
+    },
+
+    getUpdatePaymentNotes: async (notes_data, tracker, issue_id) => {
+        return models.paymenterror_details.update({
+            note: notes_data ? notes_data : null,
+            tracker: tracker ? tracker : null,
+        }, { where: { id: issue_id } })
     },
 };
