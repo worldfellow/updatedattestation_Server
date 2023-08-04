@@ -198,7 +198,6 @@ var unprotected = [
   '/api/student/getPaymentIssueData',  
   '/api/student/getProfileValue',
   '/api/student/updateProfile',
-  '/api/student/getDownloadPaymentReceipt',
 
   //new students
   '/api/student/login',
@@ -264,7 +263,7 @@ var unprotected = [
   '/api/admin/rejectApplications',
   '/api/admin/updateNotes',
   '/api/admin/getDownloadExcel',
-  '/api/admin/getDownloadBySaveAs',
+  '/api/admin/getDownloadExcelBySaveAs',
   '/api/admin/getApplicationData', 
   '/api/admin/verifiedApplication',
   '/api/admin/getWesApplication',
@@ -277,6 +276,7 @@ var unprotected = [
   '/api/admin/resendWesApplication',
   '/api/admin/verifyApplication',
   '/api/admin/getWes_details',
+  '/api/admin/ocr_Details',
 ];
 app.use(checkjwt({
   secret: cfg.jwtSecret

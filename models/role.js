@@ -88,11 +88,6 @@ module.exports = function (sequelize, DataTypes) {
 			allowNull: false,
 			defaultValue: false
 		},
-		adminPaymentIssue: {
-			type: DataTypes.BOOLEAN,
-			allowNull: false,
-			defaultValue: false
-		},
 	},
 		{
 			classMethods: {

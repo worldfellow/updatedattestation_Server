@@ -20,7 +20,6 @@ const { pattern } = require('pdfkit');
 const upload = multer({ dest: 'public/upload/marklist' });
 const tesseract = require("node-tesseract-ocr");
 const middlewares = require('../middleware');
-var self_PDF = require('./self_letter');
 const config = {
 	lang: "eng",
 	oem: 1,
@@ -88,9 +87,7 @@ router.post('/login', async (req, res) => {
 									roles += 'adminWesApp'
 								} if (getRoleDetails.adminActivityTracker == true) {
 									roles += 'adminActivityTracker'
-								} if (getRoleDetails.adminPaymentIssue == true) {
-									roles += 'adminPaymentIssue'
-								}else { }
+								} else { }
 
 								console.log('roles', roles);
 
@@ -3543,97 +3540,37 @@ router.post('/savePaymentIssueData',middlewares.getUserInfo, async (req, res) =>
 /**
  * Get Route of user Payment Issue Details.
  */
-router.get('/getPaymentIssueData', middlewares.getUserInfo, async (req, res) => {
-	var userId = req.User.id;
-	var user_type = req.query.user_type;
-	var tracker = req.query.tracker;
-	var payerror = [];
+router.get('/getPaymentIssueData',middlewares.getUserInfo, async (req, res) => {
+	var payerror=[];
 	try {
-		if (user_type == 'student') {
-			console.log('///////////////////');
-			var user = await models.paymenterror_details.findAll({
-				where: {
-					user_id: userId,
-				}
+		const userId = req.User.id;
+		const user = await models.paymenterror_details.findAll({
+			where: {
+				user_id: userId,
+			}
+		})
+		if (user) {
+			user.forEach(async function (paymenterror) {
+				var extension = paymenterror.file_name.split('.').pop();
+				payerror.push({
+				id: paymenterror.id,
+				name: paymenterror.name,
+				filePath: constant.BASE_URL + "/api/upload/paymentIssue/" + userId + "/" + paymenterror.file_name,
+				extension: extension,
+				fileName: paymenterror.file_name,
+				date:paymenterror.date,
+				transaction_id:paymenterror.transaction_id,
+				bank_refno:paymenterror.bank_refno,
+				tracker:paymenterror.tracker,
+				order_id:paymenterror.order_id,
+				user_id:paymenterror.user_id,
+				amount:paymenterror.amount,
+				note:paymenterror.note,
 			})
-
-			if (user) {
-				user.forEach(async function (paymenterror) {
-					var extension = paymenterror.file_name.split('.').pop();
-					payerror.push({
-						id: paymenterror.id,
-						name: paymenterror.name,
-						filePath: constant.BASE_URL + "/api/upload/paymentIssue/" + userId + "/" + paymenterror.file_name,
-						extension: extension,
-						fileName: paymenterror.file_name,
-						date: paymenterror.date,
-						transaction_id: paymenterror.transaction_id,
-						bank_refno: paymenterror.bank_refno,
-						tracker: paymenterror.tracker,
-						order_id: paymenterror.order_id,
-						user_id: paymenterror.user_id,
-						amount: paymenterror.amount,
-						note: paymenterror.note,
-						email: paymenterror.email,
-						tracker: paymenterror.tracker,
-						notes: paymenterror.note,
-						admin_notes: paymenterror.admin_notes,
-					})
-				})
-			} else {
-				res.json({
-					status: 400,
-					message: 'Something went wrong!'
-				});
-			}
-		} else {
-			console.log('!!!!!!!!!!!!!!!!!!');
-			var user = await models.paymenterror_details.findAll({
-				where:{
-					tracker: tracker,
-				}
-			});
-
-			if (user) {
-				user.forEach(async function (paymenterror) {
-					var extension = paymenterror.file_name.split('.').pop();
-					payerror.push({
-						id: paymenterror.id,
-						name: paymenterror.name,
-						filePath: constant.BASE_URL + "/api/upload/paymentIssue/" + paymenterror.user_id + "/" + paymenterror.file_name,
-						extension: extension,
-						fileName: paymenterror.file_name,
-						date: paymenterror.date,
-						transaction_id: paymenterror.transaction_id,
-						bank_refno: paymenterror.bank_refno,
-						tracker: paymenterror.tracker,
-						order_id: paymenterror.order_id,
-						user_id: paymenterror.user_id,
-						amount: paymenterror.amount,
-						note: paymenterror.note,
-						email: paymenterror.email,
-						tracker: paymenterror.tracker,
-						notes: paymenterror.note,
-						admin_notes: paymenterror.admin_notes,
-					})
-				})
-			}else {
-				res.json({
-					status: 400,
-					message: 'Something went wrong!'
-				});
-			}
-		}
-		console.log('///////////////////',payerror);
-
-		if(payerror.length > 0){
+		})
 			res.json({
 				status: 200,
-				data: payerror
-			});
-		}else{
-			res.json({
-				status: 400,
+				data: user
 			});
 		}
 	} catch (error) {
@@ -3645,7 +3582,7 @@ router.get('/getPaymentIssueData', middlewares.getUserInfo, async (req, res) => 
 	}
 })
 
-router.get('/getMyApplicationData', middlewares.getUserInfo, async (req, res) => {
+router.get('/getMyApplicationData',middlewares.getUserInfo, async (req, res) => {
 	console.log('/getMyApplicationData');
 
 	var user_id = req.User.id;
@@ -3655,82 +3592,87 @@ router.get('/getMyApplicationData', middlewares.getUserInfo, async (req, res) =>
 
 	if (applicationDetails.length > 0) {
 		for (let application of applicationDetails) {
+			var data = await models.Application.getMyApplicationData(application.id);
 
-			//marksheets errata
+			//marksheets
 			var marksheetErrata = await functions.getErrataInMarksheets(application.user_id, application.id, 1);
 
 			if (marksheetErrata.length > 0) {
 				var marksheetsErrata = true;
 			}
 
-			//transcripts errata
+			//transcripts
 			var trascriptErrata = await functions.getErrataInTranscripts(application.user_id, application.id, 1);
 
 			if (trascriptErrata.length > 0) {
 				var transcriptsErrata = true;
 			}
 
-			//instructional errata
+			//instructional
 			var instructionalErrata = await functions.getErrataInInstructionalAndAffiliation(application.user_id, application.id, 1, 'instructional');
 			if (instructionalErrata.length > 0) {
 				var instructionalsErrata = true;
 			}
 
-			//curriculum errata
+			//curriculum
 			var curriculumErrata = await functions.getErrataInCurriculums(application.user_id, application.id, 1);
 
 			if (curriculumErrata.length > 0) {
 				var curriculumsErrata = true;
 			}
 
-			//gradtoper errata
+			//gradtoper
 			var gradetoperErrata = await functions.getErrataInGradtoper(application.user_id, application.id, 1);
 
 			if (gradetoperErrata.length > 0) {
 				var gradetopersErrata = true;
 			}
 
-			//affiliation errata
+			//affiliation
 			var affiliationErrata = await functions.getErrataInInstructionalAndAffiliation(application.user_id, application.id, 1, 'affiliation');
 
 			if (affiliationErrata.length > 0) {
 				var affiliationsErrata = true;
 			}
 
-			//competency errata
+			//competency
 			var competencyErrata = await functions.getErrataInCompetency(application.user_id, application.id, 1);
 
 			if (competencyErrata.length > 0) {
 				var competencysErrata = true;
 			}
 
-			//letter for name change errata
+			//letter for name change
 			var letterfornamechangeErrata = await functions.getErrataInLetterForNameChange(application.user_id, application.id, 1);
 
 			if (letterfornamechangeErrata.length > 0) {
 				var letterfornamechangesErrata = true;
 			}
 
-			//name change proof errata
-			var namechangeproofErrata = await functions.getErrataInNameChangeProof(application.user_id, application.id, 1, 'extra_document');
+			//name change proof
+			var namechangeproofErrata = await functions.getErrataInNameChangeProof(application.user_id, application.id, 1);
 
 			if (namechangeproofErrata.length > 0) {
 				var namechangeproofsErrata = true;
 			}
 
-			//educational details
-			var applied_for_details = await functions.getAppliedForDetails(application.user_id, application.id);
-
-			//purpose details
-			var purpose_details = await functions.getInstituteDataAll(application.user_id, application.id);
-
 			applicationData.push({
-				id: application.id,
-				tracker: application.tracker,
-				status: application.status,
-				created_at: application.created_at ? moment(new Date(application.created_at)).format("DD-MM-YYYY") : '',
-				appliedData: applied_for_details,
-				purposeData: purpose_details,
+				id: data[0].id,
+				tracker: data[0].tracker,
+				status: data[0].status,
+				created_at: data[0].created_at ? moment(new Date(data[0].created_at)).format("DD-MM-YYYY") : '',
+				type: data[0].type,
+				email: data[0].email + ' ' + data[0].otherEmail,
+				refno: 'MU-' + data[0].refno,
+				wesemail: data[0].wesemail,
+				educationalDetails: data[0].educationalDetails,
+				instructionalField: data[0].instructionalField,
+				curriculum: data[0].curriculum,
+				gradToPer: data[0].gradToPer,
+				affiliation: data[0].affiliation,
+				CompetencyLetter: data[0].CompetencyLetter,
+				LetterforNameChange: data[0].LetterforNameChange,
+				applied_for: data[0].applied_for,
 				marksheetsErrata: marksheetsErrata ? marksheetsErrata : null,
 				transcriptsErrata: transcriptsErrata ? transcriptsErrata : null,
 				instructionalsErrata: instructionalsErrata ? instructionalsErrata : null,
@@ -3753,7 +3695,7 @@ router.get('/getMyApplicationData', middlewares.getUserInfo, async (req, res) =>
 				status: 400
 			})
 		}
-	} else {
+	}else {
 		return res.json({
 			status: 400
 		})
@@ -3975,57 +3917,5 @@ router.get('/getNotification',middlewares.getUserInfo, async (req,res) => {
 	   });
 	 }
    }); 
-
-   /* Author : Prathmesh Pawar
-Route : educationalDetails - create & update educational details of step 1.
-Paramater : app_id of student */
-router.get('/getDownloadPaymentReceipt', middlewares.getUserInfo, async (req, res) => {
-	console.log('/getDownloadPaymentReceipt');
-
-	var user_id = req.User.id;
-	var app_id = req.query.app_id;
-	var user_email = req.User.email;
-
-	var filePath = constant.FILE_LOCATION + 'public/upload/transcript/' + user_id + '/' + app_id + '_Attestation_Payment_Challan.pdf';
-
-	if (fs.existsSync(filePath)) {
-		return res.json({
-			status: 200,
-			data: filePath,
-		})
-	} else {
-		var orderDetails = await functions.getOrderDetails(user_id, app_id);
-
-		if (orderDetails) {
-			var transctionDetails = await functions.getTrasactionDetails(orderDetails.id);
-
-			if (transctionDetails) {
-				self_PDF.online_payment_challan(user_id, app_id, transctionDetails.amount, transctionDetails.merchant_param5, transctionDetails.created_at, transctionDetails.order_status, orderDetails.id, user_email, function (err) {
-					if (err) {
-						return res.json({
-							status: 400,
-							message: "Something Went wrong!"
-						})
-					} else {
-						return res.json({
-							status: 200,
-							data: filePath,
-						})
-					}
-				})
-			} else {
-				return res.json({
-					status: 400,
-					message: "Something Went wrong!"
-				})
-			}
-		} else {
-			return res.json({
-				status: 400,
-				message: "Something Went wrong!"
-			})
-		}
-	}
-})
 
 module.exports = router;

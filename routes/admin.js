@@ -23,7 +23,6 @@ const { promisify } = require('util');
 const unlinkAsync = promisify(fs.unlink);
 var fn = require('./signfn');
 const pdf = require('pdf-parse');
-const middlewares = require('../middleware');
 
 router.post('/updateOtp', async (req, res) => {
     console.log('/updateOtp');
@@ -774,7 +773,7 @@ router.get('/getDocumentsData', async (req, res) => {
     }
 
     //name change proof
-    var getNameChangeProof = await functions.getUserNameChangeProof(student_id, 'extra_document');
+    var getNameChangeProof = await functions.getUserNameChangeProof(student_id, 'extraDocument');
 
     getNameChangeProof.forEach(async function (namechangeproof) {
         extension = namechangeproof.file_name.split('.').pop();
@@ -1387,7 +1386,7 @@ router.get('/getDownloadExcel', async (req, res) => {
     }
 })
 
-router.get('/getDownloadBySaveAs', (req, res) => {
+router.get('/getDownloadExcelBySaveAs', (req, res) => {
     console.log('/getDownloadExcelBySaveAs');
 
     var filepath = req.query.filepath;
@@ -2223,44 +2222,22 @@ router.post('/getWes_details',function(req,res){
 		});
 })
 
-router.post('/updatePaymentNotes', middlewares.getUserInfo, async (req, res) =>{
-    console.log('/updatePaymentNotes');
-
-    var user_id = req.body.user_id;
-    var notes_data = req.body.notes_data;
-    var tracker = req.body.tracker;
-    var issue_id = req.body.issue_id;
-    var user_email = req.User.email;
-    var user_name = req.User.name + ' ' + req.User.surname;
-
-    var paymentIssueDetails = await functions.getPaymentIssueDetails(issue_id);
-    console.log('JJJJJJJJJJJJJJJJJJ',paymentIssueDetails);
-
-    if(paymentIssueDetails){
-        var updateNotes = await functions.getUpdatePaymentNotes(notes_data, tracker, issue_id);
-        console.log('PPPPPPPPPPPPPPPPPPP',updateNotes);
-
-        if(updateNotes == true){
-            let data = user_name + "'s note updated by " + user_email + ".";
-            let activity = "Note updated";
-            functions.activitylog(user_id, '', activity, data, req);
-
-            return res.json({
-				status : 200,
-				message : 'Note updated successfully', 
-			})
+router.post('/ocr_Details' ,function(req,res){
+    console.log('ocr_Details');
+    request.post(coOCR_BASE_URL+'/admin/adminDashboard/pending/pickupdate',{json:{"app_id":app_id,"user_id":user_id,"email_admin":req.user.email,"date":date , "source" : source,"clientIP":clientIP,"name":name}},
+    function(error, response, VERIFY){
+        if(error){
+            console.log("VERIFY==>",VERIFY);
         }else{
-            return res.json({
-				status : 400,
-				message : 'Failed to update note!', 
-			})
+            console.log("response",VERIFY);
+            if(VERIFY.status == 200){
+                res.json({
+                    status:200,
+                    message:'Application Verified Successfullly..'
+                })
+            }
         }
-    }else{
-        return res.json({
-            status : 400,
-            message : 'Something went wrong!', 
-        })
-    }
+    })
 })
 
 module.exports = router;
