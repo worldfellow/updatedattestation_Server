@@ -20,6 +20,9 @@ const { pattern } = require('pdfkit');
 const upload = multer({ dest: 'public/upload/marklist' });
 const tesseract = require("node-tesseract-ocr");
 const middlewares = require('../middleware');
+var self_PDF = require('./self_letter');
+const canvas = require('canvas');
+const captcha = require('node-captcha-generator');
 const config = {
 	lang: "eng",
 	oem: 1,
@@ -87,7 +90,9 @@ router.post('/login', async (req, res) => {
 									roles += 'adminWesApp'
 								} if (getRoleDetails.adminActivityTracker == true) {
 									roles += 'adminActivityTracker'
-								} else { }
+								} if (getRoleDetails.adminPaymentIssue == true) {
+									roles += 'adminPaymentIssue'
+								}else { }
 
 								console.log('roles', roles);
 
@@ -158,22 +163,27 @@ router.post('/register', async (req, res) => {
 /* Author : Prathmesh Pawar
 Route : educationalDetails - create & update educational details of step 1.
 Paramater : formdata and user_id of student */
-router.post('/educationalDetails', middlewares.getUserInfo, async (req, res) => {
-	console.log("/educationalDetails");
+router.post('/educationalDetails', middlewares.getUserInfo, async (req, res) => { 
 
 	var user_id = req.User.id;
 	var degree = req.body.degree;
+	const appliedData = req.body.formdata;
+	const userEmail = req.User.email;
+	const appliedValue = Object.keys(appliedData).filter(key => appliedData[key]);
 	app_id = req.body.app_id;
 	if (app_id == 'null' || app_id == null || app_id == undefined || app_id == 'undefined' || app_id == '') {
 		app_id = null
 	} else {
 		app_id = req.query.app_id
 	}
-
 	var applied_for_details = await functions.getAppliedForDetails(user_id, app_id);
 	if (applied_for_details) {
 		var updatedAppliedDetails = await functions.getUpdatedEducationalDetails(user_id, req.body.formdata, degree);
 		if (updatedAppliedDetails) {
+			/**Activity Tracker */
+			let data = userEmail + " was Attested For " + appliedValue;
+			let activity = "Attested For";
+			functions.activitylog(user_id, '', activity, data, req);
 			res.json({
 				status: 200,
 				message: "updated"
@@ -183,6 +193,10 @@ router.post('/educationalDetails', middlewares.getUserInfo, async (req, res) => 
 	else {
 		var createdAppliedDetails = await functions.getCreateEducationalDetails(user_id, req.body.formdata, degree);
 		if (createdAppliedDetails) {
+			/**Activity Tracker */
+			let data = userEmail + " was Attested For " + appliedValue;
+			let activity = "Attested For";
+			functions.activitylog(user_id, '', activity, data, req);;
 			res.json({
 				status: 200,
 				message: "added"
@@ -223,7 +237,7 @@ router.post('/updateAllInstitute',middlewares.getUserInfo, async (req, res) => {
 	console.log('/updateAllInstitute');
 
 	var formData = req.body.formData;
-	var email = req.body.formData.emails;
+	var email = req.body.formData.allEmail;
 	var emailArr;
 	var anotherEmailArr;
 	var anotherEmail;
@@ -234,8 +248,14 @@ router.post('/updateAllInstitute',middlewares.getUserInfo, async (req, res) => {
 	var institute_id = req.body.institute_id;
 	var function_type = req.body.function_type;
 	var admin_id = req.body.admin_id;
-	var user_email = req.body.user_email;
+	var user_email = req.User.email;
 	var user_type = req.body.user_type;
+
+	if (app_id == 'null' || app_id == null || app_id == undefined || app_id == 'undefined' || app_id == '') {
+		app_id = null
+	} else {
+		app_id = req.query.app_id
+	}
 
 	var applied = await functions.getEducationalDetailsCount(user_id, app_id);
 
@@ -273,10 +293,10 @@ router.post('/updateAllInstitute',middlewares.getUserInfo, async (req, res) => {
 		var createInstitute = await functions.getCreateInstitution(formData, emailArr, user_id, type, app_id, anotherEmailArr, anotherEmail);
 
 		if (createInstitute) {
-			var data = type + ' Created by ' + user_email;
-			var activity = "Create purpose";
-
-			functions.getCreateActivityTracker(user_id, app_id, activity, data);
+             /**Activity Tracker */
+			let data = type + ' Purpose Created by ' + user_email;
+			let activity = "Purpose Created";
+			functions.activitylog(user_id,app_id, activity, data, req);
 
 			res.json({
 				status: 200,
@@ -295,16 +315,16 @@ router.post('/updateAllInstitute',middlewares.getUserInfo, async (req, res) => {
 			var updateInstitute = await functions.getUpdateInstitution(formData, emailArr, user_id, type, app_id, anotherEmailArr, anotherEmail, institute_id);
 
 			if (updateInstitute == true) {
-				if (user_type == 'student') {
-					var data = type + ' updated by ' + user_email;
-					var activity = "Update purpose";
-
-					functions.getCreateActivityTracker(user_id, app_id, activity, data);
-				} else {
-					var data = type + ' updated by ' + user_email;
-					var activity = "Update purpose";
-
-					functions.getCreateActivityTracker(user_id, app_id, activity, data);
+				if (user_type == 'student') { 
+					/**Activity Tracker */
+					let data = type + ' Purpose Updated by ' + user_email;
+					let activity = "Purpose Updated";
+					functions.activitylog(user_id,app_id, activity, data, req);
+				} else { 
+					/**Activity Tracker */
+					let data = type + ' Purpose Updated by ' + user_email;
+					let activity = "Purpose Updated";
+					functions.activitylog(user_id,app_id, activity, data, req);
 				}
 
 				res.json({
@@ -329,12 +349,12 @@ router.post('/updateAllInstitute',middlewares.getUserInfo, async (req, res) => {
 /* Author : Prathmesh Pawar
 Route : deleteInstituteHrd - delete both purpose records all institute as well as hrd.
 Paramater : institute_id, purpose_name and user_id of student */
-router.post('/deleteInstituteHrd', middlewares.getUserInfo, async (req, res) => {
-	console.log('/deleteInstitute');
+router.post('/deleteInstituteHrd', middlewares.getUserInfo, async (req, res) => { 
 
 	var institute_id = req.body.institute_id;
 	var purpose_name = req.body.purpose_name;
 	var user_id = req.User.id;
+	var userEmail = req.User.email;
 
 	if (purpose_name == 'HRD') {
 		var deleteHrd = await functions.getDeleteHrd(institute_id);
@@ -346,6 +366,10 @@ router.post('/deleteInstituteHrd', middlewares.getUserInfo, async (req, res) => 
 				var deleteHrdInstitute = await functions.getDeleteHrdInstitute(user_id, purpose_name);
 
 				if (deleteHrdInstitute) {
+					/**Activity Tracker */
+					let data = purpose_name + ' Details Deleted by ' + userEmail;
+					let activity = "HRD Deleted";
+					functions.activitylog(user_id, '', activity, data, req);
 					res.json({
 						status: 200,
 						message: purpose_name + " data deleted successfully!"
@@ -357,6 +381,10 @@ router.post('/deleteInstituteHrd', middlewares.getUserInfo, async (req, res) => 
 					})
 				}
 			} else {
+				/**Activity Tracker */
+				let data = purpose_name + ' Details Deleted by ' + userEmail;
+				let activity = "HRD Deleted";
+				functions.activitylog(user_id, '', activity, data, req);
 				res.json({
 					status: 200,
 					message: purpose_name + " data deleted successfully!"
@@ -369,11 +397,13 @@ router.post('/deleteInstituteHrd', middlewares.getUserInfo, async (req, res) => 
 			})
 		}
 	} else {
-		var deleteInstitute = await functions.getDeleteInstitution(institute_id);
-		console.log('deleteInstitute', deleteInstitute);
-		console.log('deleteInstitute', deleteInstitute.length);
+		var deleteInstitute = await functions.getDeleteInstitution(institute_id); 
 
 		if (deleteInstitute) {
+			/**Activity Tracker */
+			let data = purpose_name + ' Purpose Details Deleted by ' + userEmail;
+			let activity = "Purpose Deleted";
+			functions.activitylog(user_id, '', activity, data, req);
 			res.json({
 				status: 200,
 				message: purpose_name + " data deleted successfully!"
@@ -396,7 +426,7 @@ router.get('/getInstituteData',middlewares.getUserInfo, async (req, res) => {
 
 	var purpose_name = req.query.purpose_name;
 	var app_id = req.query.app_id;
-	if (app_id == 'null' || app_id == null || app_id == undefined || app_id == '') {
+	if (app_id == 'null' || app_id == null || app_id == undefined || app_id == '' || app_id == 'undefined') {
 		app_id = null
 	} else {
 		app_id = req.query.app_id
@@ -430,6 +460,8 @@ router.get('/getInstituteData',middlewares.getUserInfo, async (req, res) => {
 						lastnameaswes: institute.lastnameaswes,
 						name: institute.name,
 						user_id: institute.user_id,
+app_id: institute.app_id,
+						other_email: institute.otherEmail,
 					})
 				});
 
@@ -470,6 +502,7 @@ router.get('/getInstituteData',middlewares.getUserInfo, async (req, res) => {
 						name: institute.name,
 						user_id: institute.user_id,
 						other_email: institute.otherEmail,
+						app_id: institute.app_id,
 					})
 				});
 
@@ -574,7 +607,7 @@ router.get('/getHrdInfo',middlewares.getUserInfo, async (req, res) => {
 			data.push({
 				faculty: item.faculty,
 				colleges: item.collegeId,
-				pattern: item.patteren,
+				pattern: item.pattern,
 				type: item.education_type + ' of ' + item.faculty,
 				fullName: user[0].name + ' ' + user[0].surname,
 				degree: degree_type,
@@ -1093,14 +1126,19 @@ router.get('/getCollegeList', async (req, res) => {
  * Fetch Details such as college course pattern and upload documents.
  */
 router.post('/ScanData',middlewares.getUserInfo, async (req, res) => {
+	console.log('dddddddddddddddddddddddddddddd' , req.query)
 	try {
 		var user_id = req.User.id;
 		var app_id = req.query.app_id;
 		var type = req.query.value;
-		// var education_type = req.query.education_type;
-		// var collegeid = req.query.collegeid;
-		// var pattern = req.query.pattern;
-		// var faculty = req.query.faculty;
+		var collegeid = req.query.collegeid;
+		var education_type = req.query.education_type;
+		var pattern = req.query.pattern;
+		var faculty = req.query.faculty;
+		const userEmail = req.User.email;
+		var collegeName , courseName , courseCheck , collegeId , duration , faculty , pattern ,degree;
+		var saveData = [] ;
+		var whichduration = [] ;
 		var dir = constant.FILE_LOCATION + "public/upload/" + type + '/' + user_id;
 		var image;
 		var coursedata = [];
@@ -1127,6 +1165,127 @@ router.post('/ScanData',middlewares.getUserInfo, async (req, res) => {
 		upload(req, res, async function (err, data) {
 			imageLocationToCallClient = image;
 			var alldata = [];
+			if (type == 'marklist') {
+				var inputDirectory = dir + '/' + imageLocationToCallClient
+				var extension = imageLocationToCallClient.split('.');
+				var extension = extension[1];
+				var outputDirectory = constant.FILE_LOCATION;
+				var text=''
+				var getCollege = await functions.getCollegeList();
+				var getCourse = await functions.getProgramList(); 
+				var name = await functions.getUserData(63473); 
+				const url = constant.OCR_BASE_URL + 'test?param1=' +inputDirectory + '&param2=' + imageLocationToCallClient + '&param3=' + extension + '&param4='+outputDirectory
+				axios.get(url)
+                .then(response => {
+                text = response.data;
+                    for(var i = 0 ; i < text.length ; i++){
+                        getCourse.forEach(function (course) {
+                                        if (text[i].includes(course.short_name) || text[i].includes(course.full_name)) {
+                                            courseName = course.full_name
+                                            degree = course.degree,
+                                            duration = course.year
+                                            faculty  = course.faculty
+                                        } 
+										
+										if (text[i].includes('semester') || text[i].includes('Semester')) {
+														pattern = 'Semester'
+														if (text[i].includes('X')) {
+															whichduration = 'Semester 10'
+														}
+														if (text[i].includes('IX')) {
+															whichduration = 'Semester 9'
+														}
+														if (text[i].includes('VIII')) {
+															whichduration = 'Semester 8'
+														}
+														if (text[i].includes('VII')) {
+															whichduration = 'Semester 7'
+														}
+														if (text[i].includes('VI')) {
+															whichduration = 'Semester 6'
+														}
+								
+								
+														if (text[i].includes('IV')) {
+															whichduration = 'Semester 4'
+														}
+								
+														if (text[i].includes('V')) {
+															whichduration = 'Semester 5'
+														}
+								
+								
+								
+														if (text[i].includes('III')) {
+															whichduration = 'Semester 3'
+														}
+								
+														if (text[i].includes('II')) {
+															whichduration = 'Semester 2'
+														}
+								
+														if (text[i].includes('I')) {
+															whichduration = 'Semester 1'
+															// whichduration.push({ name: 'Semester 1', value: 'Semester' })
+														}
+								
+								
+										} else {
+														pattern = 'Annual'
+														if (text[i].includes('F.Y')) {
+															whichduration = 'First Year'
+														}
+														else if (text[i].includes('S.Y')) {
+															whichduration = 'Second Year'
+														}
+														else if (text[i].includes('T.Y')) {
+															whichduration = 'Third Year'
+														}
+										}
+                        })
+                        if(text[i].includes(name.name)){
+                        		name = name.name
+                        }
+                        // alldata.push(courseName , pattern , imageLocationToCallClient ,whichduration);
+						alldata.push({
+							'courseName' : courseName,
+							'pattern' : pattern,
+							'file_name' :imageLocationToCallClient,
+							'whichduration' : whichduration,
+							'pattern' : pattern,
+							'degree' : degree,
+							'faculty' : faculty
+						})
+						res.json({
+							status: 200,
+							data: alldata
+						})
+                    }
+                })
+			}else{
+				if(type == 'paymentIssue'){
+					alldata.push(imageLocationToCallClient);
+					if(alldata){
+						res.json({
+							status: 200,
+							data: alldata
+						})
+					}else{res.json({status : 400})}
+					
+					}else{
+						// var uploadDocuments = await functions.uploadDocuments(user_id, type, imageLocationToCallClient);
+						var uploadDocuments = await functions.uploadDocuments(pattern, collegeid, education_type, faculty, user_id, type, imageLocationToCallClient);
+
+					alldata.push(uploadDocuments.id);
+					if(uploadDocuments){  
+						/**Activity Tracker */
+						let data =  type +" Document ( "+imageLocationToCallClient +" ) was Uploaded by " + userEmail;
+						let activity = type +" Uploaded";
+						functions.activitylog(user_id,'', activity, data, req);
+						res.json({status: 200,data: alldata})
+					}else{res.json({status : 400})}
+					}
+			}
 			// if (type == 'marklist') {
 			// 	var data = tesseract.recognize(constant.FILE_LOCATION + 'public/upload/' + type + '/' + user_id + '/' + image, config).then(async (text_data) => {
 			// 		var getCollege = await functions.getCollegeList();
@@ -1217,16 +1376,30 @@ router.post('/ScanData',middlewares.getUserInfo, async (req, res) => {
 
 			// 	}).catch((error) => { console.log('**********error.message***************', error.message) });
 			// } else {
-				var uploadDocuments = await functions.uploadDocuments(user_id, type, imageLocationToCallClient);
-				console.log('uploadDocuments.id' ,uploadDocuments.id)
-				alldata.push(uploadDocuments.id);
-				if(uploadDocuments){
+if(type == 'paymentIssue'){
+				alldata.push(imageLocationToCallClient);
+				if(alldata){
 					res.json({
 						status: 200,
 						data: alldata
 					})
 				}else{res.json({status : 400})}
 				
+}else{
+					var uploadDocuments = await functions.uploadDocuments(user_id, type, imageLocationToCallClient);
+				alldata.push(uploadDocuments.id);
+				if(uploadDocuments){  
+					/**Activity Tracker */
+					let data =  type +" Document ( "+imageLocationToCallClient +" ) was Uploaded by " + userEmail;
+					let activity = type +" Uploaded";
+					functions.activitylog(user_id,'', activity, data, req);
+					res.json({
+						status: 200,
+						data: alldata
+					})
+				}else{res.json({status : 400})}
+				
+				}
 			// }
 
 		});
@@ -1276,6 +1449,8 @@ router.get('/getNameChangeData', middlewares.getUserInfo,async (req, res) => {
 			data: user,
 			filename: filename
 		})
+	}else{
+		res.json({status : 400 , data: null , filename : null})
 	}
 })
 
@@ -1284,7 +1459,7 @@ router.get('/getletterDetails',middlewares.getUserInfo, async (req, res) => {
 	try {
 		const userId = req.User.id;
 		// const appId = req.query.app_id;
-		const degreeValue = req.query.degrees;
+		const degreeValue = 'Bachelors,Masters,Phd';
 		var degreeVal = degreeValue.split(",");
 		const educationDetailsInstructional = {
 			bachelors: [],
@@ -1429,6 +1604,7 @@ router.get('/getAppliedUserDetail',middlewares.getUserInfo, async (req, res) => 
 			}
 		})
 		if (user) {
+			console.log('useruseruseruseruseruseruser', user)
 			res.json({
 				status: 200,
 				data: user
@@ -2475,7 +2651,7 @@ router.post('/upload_letterforNameChange',middlewares.getUserInfo, async (req, r
 router.post('/saveLetterNameChangeData',middlewares.getUserInfo, async (req, res) => {
 	try {
 		const userId = req.User.id;
-
+        const userEmail = req.User.email;
 		const user = await models.Letterfor_NameChange.findOne({
 			where: {
 				user_id: userId,
@@ -2494,7 +2670,10 @@ router.post('/saveLetterNameChangeData',middlewares.getUserInfo, async (req, res
 				lastnameasperpassport: req.body.data.lastNamePassportCtrl,
 				type: 'Passport'
 			});
-
+			/**Activity Tracker */
+			let data =  "Letter for Name Change Letter updated by " + userEmail;
+			let activity = "Name Change Letter Updated";
+			functions.activitylog(userId,'', activity, data, req);
 			res.json({
 				status: 200,
 				message: 'Data saved successfully!!!'
@@ -2514,6 +2693,10 @@ router.post('/saveLetterNameChangeData',middlewares.getUserInfo, async (req, res
 			});
 
 			if (userCreated) {
+				/**Activity Tracker */
+				let data =  "Letter for Name Change Letter created by " + userEmail;
+				let activity = "Name Change Letter Created";
+				functions.activitylog(userId,'', activity, data, req);
 				res.json({
 					status: 200,
 					message: 'Data saved successfully!!!'
@@ -2544,11 +2727,12 @@ router.post('/saveInstructionalData',middlewares.getUserInfo, upload.none(), asy
 		const specialization = req.body.specialization;
 		const division = req.body.division;
 		const duration = req.body.duration;
-		const yearOfpassing = req.body.yearOfpassing;
+		const yearOfpassing = req.body.yearOfPassing;
 		const education = req.body.education
-		const user_id = req.User.id;
+		const userId = req.User.id;
 		const faculty = course.split(' of ')[1];
 		const type = req.body.type;
+		const userEmail = req.User.email;
 		const user = await models.letter_details.findOne({
 			where: {
 				id: doc_id
@@ -2556,7 +2740,7 @@ router.post('/saveInstructionalData',middlewares.getUserInfo, upload.none(), asy
 		})
 		if (user) {
 			await user.update({
-				user_d: user_id,
+				user_id: userId,
 				studentName: name,
 				courseName: course,
 				collegeName: college,
@@ -2568,13 +2752,17 @@ router.post('/saveInstructionalData',middlewares.getUserInfo, upload.none(), asy
 				faculty: faculty,
 				type: type
 			})
-			res.json({
+			/**Activity Tracker */
+			let data =   type + " letter details Updated by " + userEmail;
+			let activity = type + " letter Updated";
+			functions.activitylog(userId,'', activity, data, req);
+			return res.json({
 				status: 200,
 				message: 'Data Updated successfully!!!'
 			});
 		} else {
 			await models.letter_details.create({
-				user_id: user_id,
+				user_id: userId,
 				studentName: name,
 				courseName: course,
 				collegeName: college,
@@ -2586,7 +2774,11 @@ router.post('/saveInstructionalData',middlewares.getUserInfo, upload.none(), asy
 				faculty: faculty,
 				type: type
 			})
-			res.json({
+			/**Activity Tracker */
+			let data = type + " letter details Created by " + userEmail;
+			let activity = type + " letter Created";
+			functions.activitylog(userId,'', activity, data, req);
+			return res.json({
 				status: 200,
 				message: 'Data saved successfully!!!'
 			});
@@ -2608,11 +2800,13 @@ router.post('/saveInstructionalData',middlewares.getUserInfo, upload.none(), asy
  * @param {String} doc_type - Type of the document
  * @param {Integer} doc_id - Id of the document
  */
-router.delete('/deleteDocument', async (req, res) => {
+router.delete('/deleteDocument',middlewares.getUserInfo, async (req, res) => { 
 	try {
 		const doc_id = req.query.id;
 		const doc_type = req.query.type;
-		if (doc_type == 'gradToPer') {
+		const userEmail = req.User.email;
+		const userId = req.User.id;
+		if (doc_type == 'gradToPer') { 
 			try {
 				const letter = await models.GradeToPercentageLetter.findOne({
 					where: {
@@ -2622,6 +2816,10 @@ router.delete('/deleteDocument', async (req, res) => {
 				if (letter) {
 					const letterDelete = await letter.destroy()
 					if (letterDelete) {
+						/**Activity Tracker */ 
+						let data =  "Grade to Percentage letter Document ( "+letter.file_name+" ) Deleted by " + userEmail;
+						let activity = "gradeToPer Deleted";
+						functions.activitylog(userId,'', activity, data, req);
 						return res.json({
 							status: 200,
 							data: letterDelete
@@ -2649,6 +2847,10 @@ router.delete('/deleteDocument', async (req, res) => {
 				if (file) {
 					const fileDelete = await file.destroy()
 					if (fileDelete) {
+						/**Activity Tracker */
+						let data =  "ExtraDocument ( "+file.file_name+" ) Deleted by " + userEmail;
+						let activity = "ExtraDocument Deleted";
+						functions.activitylog(userId,'', activity, data, req);
 						return res.json({
 							status: 200,
 							data: fileDelete
@@ -2676,6 +2878,10 @@ router.delete('/deleteDocument', async (req, res) => {
 				if (file) {
 					const fileDelete = await file.destroy()
 					if (fileDelete) {
+						/**Activity Tracker */
+						let data =  "Marksheet Document ( "+file.file_name+" ) Deleted by " + userEmail;
+						let activity = "Marksheet Deleted";
+						functions.activitylog(userId,'', activity, data, req);
 						return res.json({
 							status: 200,
 							data: fileDelete
@@ -2703,6 +2909,10 @@ router.delete('/deleteDocument', async (req, res) => {
 				if (file) {
 					const fileDelete = await file.destroy()
 					if (fileDelete) {
+						/**Activity Tracker */
+						let data =  "Transcript Letter Document ( "+file.file_name+" ) Deleted by " + userEmail;
+						let activity = "Transcript Deleted";
+						functions.activitylog(userId,'', activity, data, req);
 						return res.json({
 							status: 200,
 							data: fileDelete
@@ -2730,6 +2940,10 @@ router.delete('/deleteDocument', async (req, res) => {
 				if (file) {
 					const fileDelete = await file.destroy()
 					if (fileDelete) {
+						/**Activity Tracker */
+						let data =  "Curriculum Letter Document ( "+file.file_name+" ) Deleted by " + userEmail;
+						let activity = "Curriculum Deleted";
+						functions.activitylog(userId,'', activity, data, req);
 						return res.json({
 							status: 200,
 							data: fileDelete
@@ -2757,6 +2971,10 @@ router.delete('/deleteDocument', async (req, res) => {
 				if (file) {
 					const fileDelete = await file.destroy()
 					if (fileDelete) {
+						/**Activity Tracker */
+						let data =  "Competency Letter Document ( "+file.file_name+" ) Deleted by " + userEmail;
+						let activity = "Competency Deleted";
+						functions.activitylog(userId,'', activity, data, req);
 						return res.json({
 							status: 200,
 							data: fileDelete
@@ -2787,6 +3005,10 @@ router.delete('/deleteDocument', async (req, res) => {
 						name: null
 					});
 					if (del) {
+						/**Activity Tracker */
+						let data =  "Letter for Name Change Document ( "+file.file_name+" ) Deleted by " + userEmail;
+						let activity = "NameChangeDocument Deleted";
+						functions.activitylog(userId,'', activity, data, req);
 						return res.json({
 							status: 200,
 						});
@@ -2808,6 +3030,10 @@ router.delete('/deleteDocument', async (req, res) => {
 				if (user) {
 					const data = await user.destroy()
 					if (data) {
+						/**Activity Tracker */
+						let data =  "Payment Issue Document ( "+file.file_name+" ) Deleted by " + userEmail;
+						let activity = "PaymentIssue Deleted";
+						functions.activitylog(userId,'', activity, data, req);
 						res.json({
 							status: 200,
 						})
@@ -2833,55 +3059,15 @@ router.delete('/deleteDocument', async (req, res) => {
  * Delete the form of user based on parameters passed in the API request
  * @param {String} info_type - Type of the Form document
  * @param {Integer} userId - userId of the Form document
+ * @param {Integer} doc_id - Id of the Document
  */
 router.delete('/deleteInfo',middlewares.getUserInfo, async (req, res) => {
 	try {
 		const userId = req.User.id;
 		const info_type = req.query.type;
-		if (info_type == 'Instructional') {
-			try {
-				const instructional = await models.InstructionalDetails.findOne({
-					where: {
-						userId: userId
-					}
-				})
-				if (instructional) {
-					const data = await instructional.destroy();
-
-					if (data) {
-						return res.json({
-							status: 200
-						})
-					}
-				}
-			} catch (error) {
-				return res.json({
-					status: 500,
-					message: 'An error occurred while updating GradeToPercentageLetter.'
-				});
-			}
-		} else if (info_type == 'Affiliation') {
-			try {
-				const affiliation = await models.Affiliation_Letter.findOne({
-					where: {
-						user_id: userId
-					}
-				})
-				if (affiliation) {
-					const data = await affiliation.destroy();
-					if (data) {
-						return res.json({
-							status: 200
-						})
-					}
-				}
-			} catch (error) {
-				return res.json({
-					status: 500,
-					message: 'An error occurred while updating Affiliation_Letter.'
-				})
-			}
-		} else if (info_type == 'NameChangeletter') {
+		const doc_id = req.query.id; 
+		const userEmail = req.User.email;   
+		 if (info_type == 'NameChangeletter') {
 			try {
 				const letter = await models.Letterfor_NameChange.findOne({
 					where: {
@@ -2891,6 +3077,10 @@ router.delete('/deleteInfo',middlewares.getUserInfo, async (req, res) => {
 				if (letter) {
 					const data = await letter.destroy();
 					if (data) {
+						/**Activity Tracker */
+						let data = info_type + " details Deleted by " + userEmail;
+						let activity = info_type + " Deleted";
+						functions.activitylog(userId,'', activity, data, req);
 						return res.json({
 							status: 200
 						})
@@ -2903,7 +3093,34 @@ router.delete('/deleteInfo',middlewares.getUserInfo, async (req, res) => {
 				})
 			}
 
-		}
+		}else { 
+				try {
+					const instructional = await models.letter_details.findOne({
+						where: {
+							user_id: userId,
+							id:doc_id,
+							type:info_type
+						}
+					})
+					if (instructional) { 
+						const data = await instructional.destroy();
+						if (data) {
+							/**Activity Tracker */
+							let data = info_type + " letter details Deleted by " + userEmail;
+							let activity = info_type + " letter Deleted";
+							functions.activitylog(userId,'', activity, data, req);   
+								return res.json({
+									status: 200
+								})  
+						}
+					}
+				} catch (error) {
+					return res.json({
+						status: 500,
+						message: 'An error occurred while deleting Your Data.'
+					});
+				}
+			} 
 	} catch (error) {
 		console.error("Error in /deleteInfo", error);
 		return res.json({
@@ -2944,7 +3161,7 @@ router.get('/getUploadeddocument_student',middlewares.getUserInfo,async function
 					'CollegeName': college ? college.name : 'null',
 					'filePath': constant.FILE_LOCATION + 'public/upload/' + 'marklist' + '/' + user_id + '/' + marksheet[i].file_name,
 					'fileName': marksheet[i].file_name,
-					'extension': marksheet[i].file_name.split('.').pop(),
+					'extension':marksheet[i].file_name ? marksheet[i].file_name.split('.').pop(): 'null',
 					'id': marksheet[i].id,
 					'user_id': marksheet[i].user_id,
 					'app_id': marksheet[i].app_id,
@@ -2971,7 +3188,7 @@ router.get('/getUploadeddocument_student',middlewares.getUserInfo,async function
 							'CollegeName': college ? college.name : 'null',
 							'filePath': constant.FILE_LOCATION + 'public/upload/' + 'transcript' + '/' + user_id + '/' + transcript[i].file_name,
 							'fileName': transcript[i].file_name,
-							'extension': transcript[i].file_name.split('.').pop(),
+							'extension': transcript[i].file_name ? transcript[i].file_name.split('.').pop() : 'null',
 							'id': transcript[i].id,
 							'user_id': transcript[i].user_id,
 							'app_id': transcript[i].app_id,
@@ -2992,7 +3209,7 @@ router.get('/getUploadeddocument_student',middlewares.getUserInfo,async function
 						'CollegeName': college ? college.name : 'null',
 						'filePath': constant.FILE_LOCATION + 'public/upload/' + 'curriculum' + '/' + user_id + '/' + curriculum[i].file_name,
 						'fileName': curriculum[i].file_name,
-						'extension': curriculum[i].file_name.split('.').pop(),
+						'extension':curriculum[i].file_name ? curriculum[i].file_name.split('.').pop() : 'null',
 						'id': curriculum[i].id,
 						'user_id': curriculum[i].user_id,
 						'app_id': curriculum[i].app_id,
@@ -3015,7 +3232,7 @@ router.get('/getUploadeddocument_student',middlewares.getUserInfo,async function
 						'CollegeName': college ? college.name : 'null',
 						'filePath': constant.FILE_LOCATION + 'public/upload/' + 'gradtoper' + '/' + user_id + '/' + gradtoper[i].file_name,
 						'fileName': gradtoper[i].file_name,
-						'extension': gradtoper[i].file_name.split('.').pop(),
+						'extension': gradtoper[i].file_name ? gradtoper[i].file_name.split('.').pop() : 'null',
 						'id': gradtoper[i].id,
 						'user_id': gradtoper[i].user_id,
 						'app_id': gradtoper[i].app_id,
@@ -3043,7 +3260,7 @@ router.get('/getUploadeddocument_student',middlewares.getUserInfo,async function
 						'name': extra[i].name,
 						'filePath': constant.FILE_LOCATION + 'public/upload/' + 'extra' + '/' + user_id + '/' + extra[i].file_name,
 						'fileName': extra[i].file_name,
-						'extension': extra[i].file_name.split('.').pop(),
+						'extension': extra[i].file_name ? extra[i].file_name.split('.').pop() : 'null',
 						'id': extra[i].id,
 						'user_id': extra[i].user_id,
 						'app_id': extra[i].app_id,
@@ -3243,6 +3460,7 @@ router.get('/checkstepper_inner',middlewares.getUserInfo, async function (req, r
 	var faculty;
 	var degree;
 	var educationalDetails = true;
+	let firstFalseTab = null;
 	obj_inner['tab1'] = false, //marksheet
 	obj_inner['tab2'] = false, // transcript
 	obj_inner['tab3'] = false, // instruction
@@ -3334,7 +3552,8 @@ router.get('/checkstepper_inner',middlewares.getUserInfo, async function (req, r
 						callback(null, appliedFor);
 					}
 				} else {
-					obj_inner['tab3'] = false
+					obj_inner['tab3']= true;
+					count = count + 1;
 					callback(null, appliedFor);
 				}
 			},
@@ -3351,7 +3570,8 @@ router.get('/checkstepper_inner',middlewares.getUserInfo, async function (req, r
 						callback(null, appliedFor);
 					}
 				} else {
-					obj_inner['tab4'] = false
+					obj_inner['tab4']= true;
+					count = count + 1;
 					callback(null, appliedFor);
 				}
 			},
@@ -3368,7 +3588,8 @@ router.get('/checkstepper_inner',middlewares.getUserInfo, async function (req, r
 						callback(null, appliedFor);
 					}
 				} else {
-					obj_inner['tab5'] = false
+					obj_inner['tab5'] = true;
+					count = count + 1;
 					callback(null, appliedFor);
 				}
 			},
@@ -3385,7 +3606,8 @@ router.get('/checkstepper_inner',middlewares.getUserInfo, async function (req, r
 						callback(null, appliedFor);
 					}
 				} else {
-					obj_inner['tab6'] = false
+					obj_inner['tab6'] = true;
+					count = count + 1;
 					callback(null, appliedFor);
 				}
 			},
@@ -3402,7 +3624,8 @@ router.get('/checkstepper_inner',middlewares.getUserInfo, async function (req, r
 						callback(null, appliedFor);
 					}
 				} else {
-					obj_inner['tab7'] = false
+					obj_inner['tab7'] = true;
+					count = count + 1;
 					callback(null, appliedFor);
 				}
 			},
@@ -3419,29 +3642,35 @@ router.get('/checkstepper_inner',middlewares.getUserInfo, async function (req, r
 						callback(null, appliedFor);
 					}
 				} else {
-					obj_inner['tab8'] = false
+					obj_inner['tab8']= true;
+					count = count + 1;
 					callback(null, appliedFor);
 				}
 			},
-			// function (callback) {
-			// 	obj_inner['tab9'] = false
-			// 	callback(null, appliedFor);
-			// }
 		],
 			function (err, result) {
-				console.log('*********** obj_inner ***********', obj_inner);
+let firstFalseTab = null;
+
+				for (const tab in obj_inner) {
+					if (obj_inner.hasOwnProperty(tab) && obj_inner[tab] === false) {
+						firstFalseTab = tab;
+						break;
+					}
+				}
 				res.json({
 					status: 200,
 					message: 'Sending Tab Status',
-					data: obj_inner,
+					data: firstFalseTab,
+					step: obj_inner,
 				});
-			});
+		});
 	} 
 	else {
 		res.json({
 			status: 400,
 			message: 'Sending Tab Status',
-			data: obj_inner,
+			data: firstFalseTab,
+			step: obj_inner,
 		});
 	}
 })
@@ -3482,37 +3711,14 @@ router.get('/captcha', function (req, res) {
 router.post('/savePaymentIssueData',middlewares.getUserInfo, async (req, res) => {
 	try {
 		var user_id = req.User.id;
-		var values = req.query.data;
+		var values = req.body.data;
 		var type = 'paymentIssue'
-		var dir = constant.FILE_LOCATION + "public/upload/" + type + '/' + user_id;
-		var image;
 		var Date = moment(values.paymentdateCtrl).format('DD/MM/YYYY');
 
-		if (!fs.existsSync(dir)) {
-			fs.mkdirSync(dir);
-		}
-		var storage = multer.diskStorage({
-			destination: function (req, file, callback) {
-				callback(null, constant.FILE_LOCATION + "public/upload/" + type + '/' + user_id);
-			},
-			filename: function (req, file, callback) {
-				console.log('file.originalname', file.originalname)
-				var extension = path.extname(file.originalname)
-				var randomString = functions.generateRandomString(10, 'alphabetic')
-				var newFileName = randomString.concat(extension);
-				image = newFileName;
-				callback(null, newFileName);
-			}
-		});
 
-		var upload = multer({
-			storage: storage,
-		}).single('file');
-		upload(req, res, async function (err, data) {
-			imageLocationToCallClient = image;
 			const userCreated = await models.paymenterror_details.create({
 				user_id: user_id,
-				file_name: imageLocationToCallClient,
+				file_name: values.filename,
 				email: values.emailCtrl,
 				transaction_id: values.transactionCtrl,
 				date: Date,
@@ -3526,7 +3732,6 @@ router.post('/savePaymentIssueData',middlewares.getUserInfo, async (req, res) =>
 			if (userCreated) {
 				res.json({ status: 200 })
 			}
-		});
 	} catch (err) {
 		console.error(err);
 		return res.status(500).json({
@@ -3540,37 +3745,108 @@ router.post('/savePaymentIssueData',middlewares.getUserInfo, async (req, res) =>
 /**
  * Get Route of user Payment Issue Details.
  */
-router.get('/getPaymentIssueData',middlewares.getUserInfo, async (req, res) => {
-	var payerror=[];
+router.get('/getPaymentIssueData', middlewares.getUserInfo, async (req, res) => {
+	var userId = req.User.id;
+	var user_type = req.query.user_type;
+	var tracker = req.query.tracker;
+var filterText = req.query.filterText;
+	console.log('filterText',filterText);
+	var payerror = [];
 	try {
-		const userId = req.User.id;
-		const user = await models.paymenterror_details.findAll({
-			where: {
-				user_id: userId,
-			}
-		})
-		if (user) {
-			user.forEach(async function (paymenterror) {
-				var extension = paymenterror.file_name.split('.').pop();
-				payerror.push({
-				id: paymenterror.id,
-				name: paymenterror.name,
-				filePath: constant.BASE_URL + "/api/upload/paymentIssue/" + userId + "/" + paymenterror.file_name,
-				extension: extension,
-				fileName: paymenterror.file_name,
-				date:paymenterror.date,
-				transaction_id:paymenterror.transaction_id,
-				bank_refno:paymenterror.bank_refno,
-				tracker:paymenterror.tracker,
-				order_id:paymenterror.order_id,
-				user_id:paymenterror.user_id,
-				amount:paymenterror.amount,
-				note:paymenterror.note,
+		if (user_type == 'student') {
+			var user = await models.paymenterror_details.findAll({
+				where: {
+					user_id: userId,
+				}
 			})
-		})
+
+			if (user) {
+				user.forEach(async function (paymenterror) {
+					if(paymenterror){
+						var extension = paymenterror.file_name.split('.').pop();
+					payerror.push({
+						id: paymenterror.id,
+						name: paymenterror.name,
+						filePath: constant.BASE_URL + "/api/upload/paymentIssue/" + userId + "/" + paymenterror.file_name,
+						extension: extension,
+						fileName: paymenterror.file_name,
+						date: paymenterror.date ? moment(new Date(paymenterror.date)).format("DD-MM-YYYY") : '',
+						transaction_id: paymenterror.transaction_id,
+						bank_refno: paymenterror.bank_refno,
+						tracker: paymenterror.tracker,
+						order_id: paymenterror.order_id,
+						user_id: paymenterror.user_id,
+						amount: paymenterror.amount,
+						note: paymenterror.note,
+						email: paymenterror.email,
+						tracker: paymenterror.tracker,
+						notes: paymenterror.note,
+						admin_notes: paymenterror.admin_notes,
+					})
+					}
+				})
+			} else {
+				res.json({
+					status: 400,
+					message: 'Something went wrong!'
+				});
+			}
+		} else {
+if(filterText){
+			var user = await models.paymenterror_details.findAll({
+				where:{
+					tracker: tracker,
+id: filterText,
+						email: filterText,
+				}
+			});
+}else{
+				var user = await models.paymenterror_details.findAll({
+					where:{
+						tracker: tracker,
+					}
+				});
+			}
+
+			if (user) {
+				user.forEach(async function (paymenterror) {
+					var extension = paymenterror.file_name.split('.').pop();
+					payerror.push({
+						id: paymenterror.id,
+						name: paymenterror.name,
+						filePath: constant.BASE_URL + "/api/upload/paymentIssue/" + paymenterror.user_id + "/" + paymenterror.file_name,
+						extension: extension,
+						fileName: paymenterror.file_name,
+						date: paymenterror.date ? moment(new Date(paymenterror.date)).format("DD-MM-YYYY") : '',
+						transaction_id: paymenterror.transaction_id,
+						bank_refno: paymenterror.bank_refno,
+						tracker: paymenterror.tracker,
+						order_id: paymenterror.order_id,
+						user_id: paymenterror.user_id,
+						amount: paymenterror.amount,
+						note: paymenterror.note,
+						email: paymenterror.email,
+						tracker: paymenterror.tracker,
+						notes: paymenterror.note,
+						admin_notes: paymenterror.admin_notes,
+					})
+				})
+			}else {
+				res.json({
+					status: 400,
+					message: 'Something went wrong!'
+				});
+			}
+		}
+
+		if(payerror.length > 0){
 			res.json({
 				status: 200,
-				data: user
+				data: payerror
+			});
+		}else{
+			res.json({
+				status: 400,
 			});
 		}
 	} catch (error) {
@@ -3582,7 +3858,7 @@ router.get('/getPaymentIssueData',middlewares.getUserInfo, async (req, res) => {
 	}
 })
 
-router.get('/getMyApplicationData',middlewares.getUserInfo, async (req, res) => {
+router.get('/getMyApplicationData', middlewares.getUserInfo, async (req, res) => {
 	console.log('/getMyApplicationData');
 
 	var user_id = req.User.id;
@@ -3592,87 +3868,82 @@ router.get('/getMyApplicationData',middlewares.getUserInfo, async (req, res) => 
 
 	if (applicationDetails.length > 0) {
 		for (let application of applicationDetails) {
-			var data = await models.Application.getMyApplicationData(application.id);
 
-			//marksheets
+			//marksheets errata
 			var marksheetErrata = await functions.getErrataInMarksheets(application.user_id, application.id, 1);
 
 			if (marksheetErrata.length > 0) {
 				var marksheetsErrata = true;
 			}
 
-			//transcripts
+			//transcripts errata
 			var trascriptErrata = await functions.getErrataInTranscripts(application.user_id, application.id, 1);
 
 			if (trascriptErrata.length > 0) {
 				var transcriptsErrata = true;
 			}
 
-			//instructional
+			//instructional errata
 			var instructionalErrata = await functions.getErrataInInstructionalAndAffiliation(application.user_id, application.id, 1, 'instructional');
 			if (instructionalErrata.length > 0) {
 				var instructionalsErrata = true;
 			}
 
-			//curriculum
+			//curriculum errata
 			var curriculumErrata = await functions.getErrataInCurriculums(application.user_id, application.id, 1);
 
 			if (curriculumErrata.length > 0) {
 				var curriculumsErrata = true;
 			}
 
-			//gradtoper
+			//gradtoper errata
 			var gradetoperErrata = await functions.getErrataInGradtoper(application.user_id, application.id, 1);
 
 			if (gradetoperErrata.length > 0) {
 				var gradetopersErrata = true;
 			}
 
-			//affiliation
+			//affiliation errata
 			var affiliationErrata = await functions.getErrataInInstructionalAndAffiliation(application.user_id, application.id, 1, 'affiliation');
 
 			if (affiliationErrata.length > 0) {
 				var affiliationsErrata = true;
 			}
 
-			//competency
+			//competency errata
 			var competencyErrata = await functions.getErrataInCompetency(application.user_id, application.id, 1);
 
 			if (competencyErrata.length > 0) {
 				var competencysErrata = true;
 			}
 
-			//letter for name change
+			//letter for name change errata
 			var letterfornamechangeErrata = await functions.getErrataInLetterForNameChange(application.user_id, application.id, 1);
 
 			if (letterfornamechangeErrata.length > 0) {
 				var letterfornamechangesErrata = true;
 			}
 
-			//name change proof
-			var namechangeproofErrata = await functions.getErrataInNameChangeProof(application.user_id, application.id, 1);
+			//name change proof errata
+			var namechangeproofErrata = await functions.getErrataInNameChangeProof(application.user_id, application.id, 1, 'extra_document');
 
 			if (namechangeproofErrata.length > 0) {
 				var namechangeproofsErrata = true;
 			}
 
+			//educational details
+			var applied_for_details = await functions.getAppliedForDetails(application.user_id, application.id);
+
+			//purpose details
+			var purpose_details = await functions.getInstituteDataAll(application.user_id, application.id);
+
 			applicationData.push({
-				id: data[0].id,
-				tracker: data[0].tracker,
-				status: data[0].status,
-				created_at: data[0].created_at ? moment(new Date(data[0].created_at)).format("DD-MM-YYYY") : '',
-				type: data[0].type,
-				email: data[0].email + ' ' + data[0].otherEmail,
-				refno: 'MU-' + data[0].refno,
-				wesemail: data[0].wesemail,
-				educationalDetails: data[0].educationalDetails,
-				instructionalField: data[0].instructionalField,
-				curriculum: data[0].curriculum,
-				gradToPer: data[0].gradToPer,
-				affiliation: data[0].affiliation,
-				CompetencyLetter: data[0].CompetencyLetter,
-				LetterforNameChange: data[0].LetterforNameChange,
-				applied_for: data[0].applied_for,
+				id: application.id,
+				tracker: application.tracker,
+				status: application.status,
+				created_at: application.created_at ? moment(new Date(application.created_at)).format("DD-MM-YYYY") : '',
+				appliedData: applied_for_details,
+				purposeData: purpose_details,
 				marksheetsErrata: marksheetsErrata ? marksheetsErrata : null,
 				transcriptsErrata: transcriptsErrata ? transcriptsErrata : null,
 				instructionalsErrata: instructionalsErrata ? instructionalsErrata : null,
@@ -3695,7 +3966,7 @@ router.get('/getMyApplicationData',middlewares.getUserInfo, async (req, res) => 
 				status: 400
 			})
 		}
-	}else {
+	} else {
 		return res.json({
 			status: 400
 		})
@@ -3729,16 +4000,7 @@ router.get('/getProfileValue',middlewares.getUserInfo, async (req, res) => {
 		const view_data={};
 
 		const user = await functions.getUser(userId);
-		if(user){
-			const orders = await functions.getOrders(userId);
-
-			if(orders){
-				if(orders.length > 0){
-					view_data.amount_paid = true;
-				}else{
-					view_data.amount_paid = false;
-				}
-			}
+		if(user){ 
 			view_data.profile = user;
 			return res.json({
 				status:200,
@@ -3857,8 +4119,7 @@ router.get('/getNotification',middlewares.getUserInfo, async (req,res) => {
 		 where:{
 			user_id:userId,
 		 }
-	 }) 
-	 console.log("data",notification[0].dataValues.created_at);
+	 })  
 	 const notificationsWithTimeAgo = notification.map((item) => {
 		 const createdAt = item.dataValues.created_at;
 		 const timeAgo = moment(createdAt).fromNow(); // Calculate the time difference
@@ -3917,5 +4178,208 @@ router.get('/getNotification',middlewares.getUserInfo, async (req,res) => {
 	   });
 	 }
    }); 
+
+   /* Author : Prathmesh Pawar
+Route : educationalDetails - create & update educational details of step 1.
+Paramater : app_id of student */
+router.get('/getDownloadPaymentReceipt', middlewares.getUserInfo, async (req, res) => {
+	console.log('/getDownloadPaymentReceipt');
+
+	var user_id = req.User.id;
+	var app_id = req.query.app_id;
+	var user_email = req.User.email;
+
+	var filePath = constant.FILE_LOCATION + 'public/upload/transcript/' + user_id + '/' + app_id + '_Attestation_Payment_Challan.pdf';
+
+	if (fs.existsSync(filePath)) {
+		return res.json({
+			status: 200,
+			data: filePath,
+		})
+	} else {
+		var orderDetails = await functions.getOrderDetails(user_id, app_id);
+
+		if (orderDetails) {
+			var transctionDetails = await functions.getTrasactionDetails(orderDetails.id);
+
+			if (transctionDetails) {
+				self_PDF.online_payment_challan(user_id, app_id, transctionDetails.amount, transctionDetails.merchant_param5, transctionDetails.created_at, transctionDetails.order_status, orderDetails.id, user_email, function (err) {
+					if (err) {
+						return res.json({
+							status: 400,
+							message: "Something Went wrong!"
+						})
+					} else {
+						return res.json({
+							status: 200,
+							data: filePath,
+						})
+					}
+				})
+			} else {
+				return res.json({
+					status: 400,
+					message: "Something Went wrong!"
+				})
+			}
+		} else {
+			return res.json({
+				status: 400,
+				message: "Something Went wrong!"
+			})
+		}
+	}
+})
+
+
+/**getPreApplication route  to user can see where he is in the process of filling the data*/
+router.get('/getPreApplication', middlewares.getUserInfo, async (req, res) => {
+	try {
+		const userId = req.User.id;
+
+		const appliedDetails = await functions.getAppliedDetails(userId, 'Applied_For_Details', '');
+
+		if (appliedDetails) {
+			const educationalFlag = true;
+			const [
+				transcript,
+				instructional,
+				curriculum,
+				gradToPer,
+				affiliation,
+				competency,
+				letterForNameChange
+			] = await Promise.all([
+				functions.getAppliedDetails(userId, 'User_Transcript', ''),
+				functions.getAppliedDetails(userId, 'letter_details', 'instructional'),
+				functions.getAppliedDetails(userId, 'User_Curriculum', ''),
+				functions.getAppliedDetails(userId, 'GradeToPercentageLetter', ''),
+				functions.getAppliedDetails(userId, 'letter_details', 'affiliation'),
+				functions.getAppliedDetails(userId, 'competency_letter', ''),
+				functions.getAppliedDetails(userId, 'Letterfor_NameChange', '')
+			]);
+			if ((appliedDetails.educationalDetails && transcript == null) ||
+				(appliedDetails.instructionalField && instructional == null) ||
+				(appliedDetails.curriculum && curriculum == null) ||
+				(appliedDetails.gradToPer && gradToPer == null) ||
+				(appliedDetails.affiliation && affiliation == null) ||
+				(appliedDetails.CompetencyLetter && competency == null) ||
+				(appliedDetails.LetterforNameChange && letterForNameChange == null)) {
+				documentFlag = false;
+			} else {
+				documentFlag = true;
+			}
+
+			const [
+				purposeData,
+				hrdData,
+				applicationData
+			] = await Promise.all([
+				functions.getAppliedDetails(userId, 'Institution_details', ''),
+				functions.getAppliedDetails(userId, 'Hrd_details', ''),
+				functions.getAppliedDetails(userId, 'Application', '')
+			]);
+
+			const purposeFlag = purposeData != null || hrdData != null;
+			const paymentFlag = applicationData != null;
+
+			return res.json({
+				status: 200,
+				educationDetails: educationalFlag,
+				documentDetails: documentFlag,
+				purposeDetails: purposeFlag,
+				paymentDetails: paymentFlag
+			})
+		}
+	} catch (error) {
+		console.error("Error in /getPreApplication", error);
+		return res.status(500).json({
+			message: "Internal Server Error",
+		});
+	}
+});
+
+/**getPostApplication Route to show the user after payment is application in which process*/
+router.get('/getPostApplication', middlewares.getUserInfo, async (req, res) => {
+    try {
+        const userId = req.User.id;
+
+        const applicationData = await models.Application.findOne({
+            where: {
+                user_id: userId,
+            }
+        });
+
+        const statusFlagMap = {
+            'apply:new': { pending: true },
+            'verified:accept': { pending: true, verified: true },
+            'signed:accept': { pending: true, verified: true, signed: true },
+            'done:accept': { pending: true, verified: true, signed: true, done: true },
+        };
+
+        let applicationStatus = {};
+
+        if (applicationData) {
+            const statusKey = `${applicationData.tracker}:${applicationData.status}`;
+            applicationStatus = statusFlagMap[statusKey] || {};
+        }
+
+        console.log(applicationStatus);
+        return res.json({
+            status: 200,
+            ...applicationStatus,
+        });
+
+    } catch (error) {
+        console.error("Error in /getPreApplication", error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+        });
+    }
+});
+
+router.get('/createCaptcha', async (req, res)=>{
+	console.log('/createCaptcha');
+
+	const { createCanvas } = canvas;
+	console.log('/cccccccccccccccccc');
+	const captchaCanvas = createCanvas(150, 50);
+	console.log('/dddddddddddddddddd');
+  
+	const captchaImage = captchaCanvas.toDataURL('image/png');
+	console.log('//////////////////',captchaImage);
+  
+	res.json({ 
+		status: 200,
+		data: captchaImage,
+		value: captchaCanvas.value,
+	});
+
+
+	// let data = new captcha({
+	// 	length: 5,
+	// 	size:({
+	// 		width: 450,
+	// 		height: 200,
+	// 	})
+	// })
+
+	// await data.toBase64(async(err, base64)=>{
+	// 	if(err){
+	// 		res.json({ 
+	// 			status: 400,
+	// 			id: 1,
+	// 			message: 'Failed to load captcha!' 
+	// 		});
+	// 	}else{
+	// 		res.json({ 
+	// 			status: 200,
+	// 			id: 1,
+	// 			data: base64,
+	// 			value: data.value,
+	// 		});
+	// 	}
+	// })
+})
 
 module.exports = router;

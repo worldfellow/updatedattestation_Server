@@ -23,6 +23,7 @@ const { promisify } = require('util');
 const unlinkAsync = promisify(fs.unlink);
 var fn = require('./signfn');
 const pdf = require('pdf-parse');
+const middlewares = require('../middleware');
 
 router.post('/updateOtp', async (req, res) => {
     console.log('/updateOtp');
@@ -310,15 +311,20 @@ router.get('/getActivityTrackerList', async (req, res) => {
     console.log('/getActivityTrackerList');
 
     var student_id = req.query.student_id;
-    console.log('888888888888888888', student_id);
+    var offset = req.query.offset;
+    var limit = req.query.limit;
+    var globalSearch = req.query.globalSearch;
 
     if (student_id == '' || student_id == null || student_id == undefined) {
-        var trackerList = await functions.getActivityTrackerList();
-
+        var trackerList = await functions.getActivityTrackerList(offset, limit, globalSearch);
+        var trackerCount = await functions.getActivityTrackerCount(globalSearch);
+        console.log('trackerCount',trackerCount);
+        console.log('trackerList',trackerList);
         if (trackerList.length > 0) {
             return res.json({
                 status: 200,
                 data: trackerList,
+                count: trackerCount
             });
         } else {
             return res.json({
@@ -346,7 +352,7 @@ router.get('/getActivityTrackerList', async (req, res) => {
 router.get('/getStudentList', async (req, res) => {
     console.log('/getStudentList');
 
-    var user_id = req.query.id;
+    var user_id = req.query.user_id;
     var limit = req.query.limit;
     var offset = req.query.offset;
     var name = req.query.name;
@@ -354,25 +360,23 @@ router.get('/getStudentList', async (req, res) => {
     var user_type = req.query.user_type;
     var globalSearch = req.query.globalSearch;
 
-    console.log('/name', name);
-    console.log('/email', email);
-    console.log('/user_id', user_id);
-    console.log('/limit', limit);
-    console.log('/offset', offset);
-    console.log('/globalSearch', globalSearch);
-    console.log('/user_type', user_type);
-
     const data = await models.User.getStudentDetails(user_id, limit, offset, name, email, user_type, globalSearch);
-    console.log('dataaaa', data);
+    const count = await functions.getStudentCount(name, email, user_type, globalSearch);
+
+    console.log('dataaaa', JSON.stringify(data));
+    console.log('counttt', count);
 
     if (data.length > 0) {
         return res.json({
             status: 200,
             data: data,
+            count: count,
         });
     } else {
         return res.json({
             status: 400,
+            data: data,
+            count: count,
         });
     }
 
@@ -773,7 +777,7 @@ router.get('/getDocumentsData', async (req, res) => {
     }
 
     //name change proof
-    var getNameChangeProof = await functions.getUserNameChangeProof(student_id, 'extraDocument');
+    var getNameChangeProof = await functions.getUserNameChangeProof(student_id, 'extra_document');
 
     getNameChangeProof.forEach(async function (namechangeproof) {
         extension = namechangeproof.file_name.split('.').pop();
@@ -1386,7 +1390,7 @@ router.get('/getDownloadExcel', async (req, res) => {
     }
 })
 
-router.get('/getDownloadExcelBySaveAs', (req, res) => {
+router.get('/getDownloadBySaveAs', (req, res) => {
     console.log('/getDownloadExcelBySaveAs');
 
     var filepath = req.query.filepath;
@@ -2222,22 +2226,84 @@ router.post('/getWes_details',function(req,res){
 		});
 })
 
-router.post('/ocr_Details' ,function(req,res){
-    console.log('ocr_Details');
-    request.post(coOCR_BASE_URL+'/admin/adminDashboard/pending/pickupdate',{json:{"app_id":app_id,"user_id":user_id,"email_admin":req.user.email,"date":date , "source" : source,"clientIP":clientIP,"name":name}},
-    function(error, response, VERIFY){
-        if(error){
-            console.log("VERIFY==>",VERIFY);
+router.post('/updatePaymentNotes', middlewares.getUserInfo, async (req, res) =>{
+    console.log('/updatePaymentNotes');
+
+    var user_id = req.body.user_id;
+    var notes_data = req.body.notes_data;
+    var tracker = req.body.tracker;
+    var issue_id = req.body.issue_id;
+    var user_email = req.User.email;
+    var user_name = req.User.name + ' ' + req.User.surname;
+
+    var paymentIssueDetails = await functions.getPaymentIssueDetails(issue_id);
+    console.log('JJJJJJJJJJJJJJJJJJ',notes_data);
+
+    if(paymentIssueDetails){
+        var updateNotes = await functions.getUpdatePaymentNotes(notes_data, tracker, issue_id);
+        console.log('PPPPPPPPPPPPPPPPPPP',updateNotes);
+
+        if(updateNotes == true){
+            let data = user_name + "'s note updated by " + user_email + ".";
+            let activity = "Note updated";
+            functions.activitylog(user_id, '', activity, data, req);
+
+            return res.json({
+				status : 200,
+				message : 'Note updated successfully', 
+			})
         }else{
-            console.log("response",VERIFY);
-            if(VERIFY.status == 200){
-                res.json({
-                    status:200,
-                    message:'Application Verified Successfullly..'
+            return res.json({
+				status : 400,
+				message : 'Failed to update note!', 
+			})
+        }
+    }else{
+        return res.json({
+            status : 400,
+            message : 'Something went wrong!', 
+        })
+    }
+})
+
+/** getEmailActivityTracker route to get data of email activity */
+router.get('/getEmailActivityTracker', async (req, res) => {
+    try {
+        const globalSearch = req.query.globalSearch;
+        const limit = req.query.limit;
+        const offset = req.query.offset;
+        const EmailActivity = [];
+        const EmailActivityData = await functions.getEmailActivity(globalSearch, limit, offset);
+        const EmailActivityCount = await functions.getEmailActivityCount(globalSearch);
+        if (EmailActivityData && EmailActivityCount) {
+
+            for (const data of EmailActivityData) {
+                EmailActivity.push({
+                    email: data.email,
+                    subject: data.subject,
+                    status: data.status,
+                    created_at: moment(new Date(data.created_at)).format("DD/MM/YYYY"),
+                    opens_count: data.opens_count,
+                    clicks_count: data.clicks_count,
                 })
             }
+            return res.json({
+                status: 200,
+                data: EmailActivity,
+                count: EmailActivityCount
+            })
+        }else{
+            return res.json({
+                status: 400, 
+                message:"No Data Available" ,
+            })   
         }
-    })
+    } catch (error) {
+        console.error("Error in /getEmailActivityTracker", error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+        });
+    }
 })
 
 module.exports = router;

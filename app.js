@@ -57,7 +57,7 @@ app.use((err, req, res, next) => {
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/signedpdf',express.static(__dirname + "/public/signedpdf/"));
 app.use('/api/images',express.static(__dirname + "/public/images/"));
-app.use('/api/register',express.static(__dirname + "/public/register/"));
+// app.use('/api/register',express.static(__dirname + "/public/register/"));
 app.use('/api/upload',express.static(__dirname + "/public/upload/"));
 
 //var io = require('socket.io').listen(2);
@@ -126,7 +126,7 @@ app.use(auth.initialize());
 var unprotected = [
   '/api/auth/getclickDetails',
   '/api/auth/reset-pass',
-  '/api/auth/register',
+  // '/api/auth/register',
   '/api/auth/forgot-password',
   '/api/auth/resetpassword',
   '/api/auth/resend-otp',
@@ -189,7 +189,7 @@ var unprotected = [
   '/api/auth/getUserDataByEmail',
   '/api/admin/generateHrdLetter',
   '/api/cron/improvementFeedback',
-  '/api/student/register',
+  // '/api/student/register',
   '/api/student/checkstepper_inner',
   '/api/student/checkstepper',
   '/api/student/getCountry',
@@ -198,6 +198,10 @@ var unprotected = [
   '/api/student/getPaymentIssueData',  
   '/api/student/getProfileValue',
   '/api/student/updateProfile',
+  '/api/student/getDownloadPaymentReceipt',
+  '/api/student/getPreApplication',
+  '/api/student/getPostApplication',
+  '/api/admin/getEmailActivityTracker',
 
   //new students
   '/api/student/login',
@@ -241,6 +245,8 @@ var unprotected = [
   '/api/student/changePassword',
   '/api/student/forgotPasswordSendEmailToUser',
   '/api/student/getNotification',
+  '/api/student/register',
+  '/api/student/createCaptcha',
   //new admin
   '/api/admin/updateOtp',
   '/api/admin/updateCollegeFaculty',
@@ -263,7 +269,7 @@ var unprotected = [
   '/api/admin/rejectApplications',
   '/api/admin/updateNotes',
   '/api/admin/getDownloadExcel',
-  '/api/admin/getDownloadExcelBySaveAs',
+  '/api/admin/getDownloadBySaveAs',
   '/api/admin/getApplicationData', 
   '/api/admin/verifiedApplication',
   '/api/admin/getWesApplication',
@@ -276,7 +282,7 @@ var unprotected = [
   '/api/admin/resendWesApplication',
   '/api/admin/verifyApplication',
   '/api/admin/getWes_details',
-  '/api/admin/ocr_Details',
+  '/api/admin/updatePaymentNotes',
 ];
 app.use(checkjwt({
   secret: cfg.jwtSecret

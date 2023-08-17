@@ -301,7 +301,7 @@ module.exports = {
     },
 
     getUserNameChangeProof: async (user_id, app_id, type) => {
-        return models.User_Transcript.findAll({ where: { user_id: user_id, app_id: app_id, type: type } })
+        return models.User_Transcript.findAll({ where: { user_id: user_id, app_id: app_id, education_type: type } })
     },
 
     //get admin role details
@@ -383,58 +383,39 @@ module.exports = {
         }, { where: { id: id } })
     },
 
-    getCreateActivityTrackerChange: async (user_id, changed_by, changed_item, status, app_id) => {
-        console.log('djsdhdfhasiu', app_id);
-        return models.Activitytracker.create({
-            user_id: user_id,
-            activity: changed_item + ' ' + status,
-            data: changed_item + ' has ' + status + ' by ' + changed_by,
-            application_id: app_id ? app_id : null,
-        })
-    },
+    getActivityTrackerList: async (offset, limit, globalSearch) => {
+        const data = {}
+        if (globalSearch) {
+            data[Op.or] = [
+                Sequelize.literal(`CONCAT(data, '', activity, '') LIKE '%${globalSearch}%'`),
+            ];
+        }
 
-    getCreateActivityTrackerDelete: async (user_id, deleted_by, deleted_item, app_id) => {
-        return models.Activitytracker.create({
-            user_id: user_id,
-            activity: deleted_item + ' deleted',
-            data: deleted_item + ' is deleted by ' + deleted_by,
-            application_id: app_id ? app_id : null,
-        })
-    },
+        offset = parseInt(offset);
+        limit = parseInt(limit);
 
-    getCreateActivityTrackerAdd: async (user_id, added_by, added_item, app_id) => {
-        return models.Activitytracker.create({
-            user_id: user_id,
-            activity: added_item + ' added',
-            data: added_item + ' is added by ' + added_by,
-            application_id: app_id ? app_id : null,
-        })
-    },
-
-    getCreateActivityTrackerUpdate: async (user_id, updated_by, updated_item, app_id) => {
-        return models.Activitytracker.create({
-            user_id: user_id,
-            activity: updated_item + ' updated',
-            data: updated_item + ' is updated by ' + updated_by,
-            application_id: app_id ? app_id : null,
-        })
-    },
-
-    // getCreateActivityTrackerReset: async (user_id, reset_by, reset_item, status, app_id) => {
-    //     return models.Activitytracker.create({
-    //         user_id: user_id,
-    //         activity: reset_item + ' reset',
-    //         data: reset_item + ' is reset by ' + reset_by, 
-    //         application_id: app_id ? app_id: null,
-    //     })
-    // },
-
-    getActivityTrackerList: async () => {
-        return models.Activitytracker.findAll({})
+        return models.Activitytracker.findAll({
+            where: data,
+            limit: limit,
+            offset: offset,
+        });
     },
 
     getActivityTrackerSingle: async (user_id) => {
         return models.Activitytracker.findAll({ where: { user_id: user_id } })
+    },
+
+    getActivityTrackerCount: async (globalSearch) => {
+        const data = {}
+        if (globalSearch) {
+            data[Op.or] = [
+                Sequelize.literal(`CONCAT(data, '', activity, '') LIKE '%${globalSearch}%'`),
+            ];
+        }
+
+        return models.Activitytracker.count({
+            where: data,
+        });
     },
 
     generateRandomString: function (length, charset) {
@@ -509,25 +490,22 @@ module.exports = {
             app_id: app_id ? app_id : null,
         }, { where: { id: id } })
     },
-    uploadDocuments: async function (user_id, type, image) {
+    uploadDocuments: async function (pattern, collegeid, education_type, faculty, user_id, type, imageLocationToCallClient) {
         try {
-            if (type == 'marklist') {
-                return await models.UserMarklist_Upload.create({user_id: user_id, file_name: image, upload_step: 'default' , name  : 'Document'});
-            }
-            if (type == 'transcript') {
-                return await models.User_Transcript.create({ user_id: user_id, file_name: image, upload_step: 'default' , education_type : 'transcript' ,name  : 'Document' });
+            if (type == 'transcript') { 
+                return await models.User_Transcript.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default' , education_type : education_type + '_transcript' ,name  : education_type + '_' + faculty + '_Transcript' , faculty : faculty , pattern : pattern  , collegeId : collegeid});
             }
             if (type == 'extra') {
-                return await models.User_Transcript.create({ user_id: user_id, file_name: image, upload_step: 'default', name: 'extra_Document', education_type: 'extra_document' });
+                return await models.User_Transcript.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default', name: 'extra_Document', education_type: 'extra_document' });
             }
             if (type == 'curriculum') {
-                return await models.User_Curriculum.create({ user_id: user_id, file_name: image, upload_step: 'default', name  : 'Document'  });
+                return await models.User_Curriculum.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default', education_type : education_type ,name  : education_type + '_' + faculty + '_Curriculum' , faculty : faculty , pattern : pattern  , collegeId : collegeid });
             }
             if (type == 'gradtoper') {
-                return await models.GradeToPercentageLetter.create({ user_id: user_id, file_name: image, upload_step: 'default', name  : 'Document' });
+                return await models.GradeToPercentageLetter.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default', education_type : education_type ,name  : education_type + '_' + faculty + '_GradeToPercentageLetter' , faculty : faculty , pattern : pattern  , collegeId : collegeid });
             }
             if (type == 'LetterforNameChange') {
-                return await models.Letterfor_NameChange.create({ user_id: user_id, file_name: image, upload_step: 'default' , name  : 'Document' });
+                return await models.Letterfor_NameChange.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default' , name  : 'Passport' });
             }
         } catch {
         }
@@ -623,44 +601,17 @@ module.exports = {
     },
     updateDocuments: async function (data, type ,user_id) {
         var DATA = data[0]
+        console.log('DATA ' , DATA)
         var pattern;
         var pattern_name;
-        if (DATA.patteren.name) {
-            pattern = DATA.patteren.value
-            pattern_name = DATA.patteren.name
-        } else {
-            if (DATA.pattern.includes('Semester')) {
-                pattern = 'Semester'
-            } else {
-                pattern = 'Annual'
-            }
-            pattern_name = DATA.pattern
-        }
+   
         try {
             if (type == 'marklist') {
-                return await models.UserMarklist_Upload.create({ name: DATA.degree + '_' + DATA.faculty + '_' + pattern_name, education_type: DATA.degree, faculty: DATA.faculty, pattern: pattern, collegeId: DATA.collegeId, courseClgId: DATA.degree + '_' + DATA.faculty + '_' + pattern + '_' + DATA.collegeId  , user_id : user_id , file_name : DATA.file_name});
+                return await models.UserMarklist_Upload.create({ name: DATA.degree + '_' + DATA.faculty + '_' + DATA.whichduration, education_type: DATA.degree, faculty: DATA.faculty, pattern: DATA.pattern, collegeId: DATA.collegeId, courseClgId: DATA.degree + '_' + DATA.faculty + '_' + DATA.pattern + '_' + DATA.collegeId  , user_id : user_id , file_name : DATA.file_name});
             }
         } catch {
         }
 
-    },
-
-    getCreateActivityTrackerResend: async (user_id, updated_by, updated_item, app_id) => {
-        return models.Activitytracker.create({
-            user_id: user_id,
-            activity: 'Application resend',
-            data: updated_by + ' has resend the application and changed the tracker and status to ' + updated_item + ' of application no ' + app_id,
-            application_id: app_id ? app_id : null,
-        })
-    },
-
-    getCreateActivityTrackerReject: async (user_id, updated_by, updated_item, app_id) => {
-        return models.Activitytracker.create({
-            user_id: user_id,
-            activity: 'Application reject',
-            data: updated_by + ' has reject the application and changed the tracker & status to ' + updated_item + ' of application no ' + app_id,
-            application_id: app_id ? app_id : null,
-        })
     },
 
     getResendRejectApplication: async (user_id, app_id, tracker, status) => {
@@ -681,27 +632,18 @@ module.exports = {
             data
             , { where: { id: app_id } })
     },
-
-    //using for all activities trackers
-    getCreateActivityTracker: async (user_id, app_id, activity, data) => {
-        return models.Activitytracker.create({
-            user_id: user_id ? user_id : null,
-            activity: activity ? activity : null,
-            data: data ? data : null,
-            application_id: app_id ? app_id : null,
-        })
-    },
+ 
     /**Activity Tracker function */
-    activitylog: async (userId, appId, activity, data, req) => {
-        let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-        const activityTracker = await models.Activitytracker.create({
-            user_id: userId,
-            activity: activity,
-            data: data,
-            application_id: appId,
-            ip_address: ip,
-            created_at: moment()
-        })
+    activitylog: async (userId, appId, activity, data, req) => { 
+            let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+            const activityTracker = await models.Activitytracker.create({
+                user_id: userId,
+                activity: activity,
+                data: data,
+                application_id: appId,
+                ip_address: ip,
+                created_at: moment()
+            })  
     },
     /**get count of Total and filtered Application Count */
     getApplicationCount: async (tracker, status, app_id, name, email, globalSearch) => {
@@ -950,38 +892,151 @@ module.exports = {
     },
 
     getErrataInMarksheets: async (user_id, app_id, lock) => {
-        return models.UserMarklist_Upload.findAll({ where: { user_id: user_id, app_id, lock_transcript: lock } })
+        return models.UserMarklist_Upload.findAll({ where: { user_id: user_id, app_id: app_id, lock_transcript: lock } })
     },
 
     getErrataInTranscripts: async (user_id, app_id, lock) => {
-        return models.User_Transcript.findAll({ where: { user_id: user_id, app_id, lock_transcript: lock } })
+        return models.User_Transcript.findAll({ where: { user_id: user_id, app_id: app_id, lock_transcript: lock } })
     },
 
     getErrataInInstructionalAndAffiliation: async (user_id, app_id, lock, type) => {
-        return models.letter_details.findAll({ where: { user_id: user_id, app_id, lock_transcript: lock, type } })
+        return models.letter_details.findAll({ where: { user_id: user_id, app_id: app_id, lock_transcript: lock, type: { [Op.like]: '%' + type + '%' } } })
     },
 
     getErrataInCurriculums: async (user_id, app_id, lock) => {
-        return models.User_Curriculum.findAll({ where: { user_id: user_id, app_id, lock_transcript: lock } })
+        return models.User_Curriculum.findAll({ where: { user_id: user_id, app_id: app_id, lock_transcript: lock } })
     },
 
     getErrataInGradtoper: async (user_id, app_id, lock) => {
-        return models.GradeToPercentageLetter.findAll({ where: { user_id: user_id, app_id, lock_transcript: lock } })
+        return models.GradeToPercentageLetter.findAll({ where: { user_id: user_id, app_id: app_id, lock_transcript: lock } })
     },
 
     getErrataInCompetency: async (user_id, app_id, lock) => {
-        return models.competency_letter.findAll({ where: { user_id: user_id, app_id, lock_transcript: lock } })
+        return models.competency_letter.findAll({ where: { user_id: user_id, app_id: app_id, lock_transcript: lock } })
     },
 
     getErrataInLetterForNameChange: async (user_id, app_id, lock) => {
-        return models.Letterfor_NameChange.findAll({ where: { user_id: user_id, app_id, lock_transcript: lock } })
+        return models.Letterfor_NameChange.findAll({ where: { user_id: user_id, app_id: app_id, lock_transcript: lock } })
     },
 
     getErrataInNameChangeProof: async (user_id, app_id, lock, type) => {
-        return models.User_Transcript.findAll({ where: { user_id: user_id, app_id: app_id, lock_transcript: lock, type: { [Op.like]: '%' + type + '%' } } })
+        return models.User_Transcript.findAll({ where: { user_id: user_id, app_id: app_id, lock_transcript: lock, education_type: { [Op.like]: '%' + type + '%' } } })
     },
 
     getUserData: async (user_id) => {
-        return models.User.findOne({ where: { user_id: user_id } })
+        return models.User.findOne({ where: { id: user_id } })
+    },
+
+    getOrderDetails: async (user_id, app_id) => {
+        return models.Orders.findOne({ where: { user_id: user_id, application_id: app_id } })
+    },
+
+    getTrasactionDetails: async (order_id) => {
+        return models.Transaction.findOne({ where: { order_id: order_id } })
+    },
+
+    getPaymentIssueDetails: async (issue_id) => {
+        return models.paymenterror_details.findOne({ where: { id: issue_id } })
+    },
+
+    getUpdatePaymentNotes: async (notes_data, tracker, issue_id) => {
+        return models.paymenterror_details.update({
+            note: notes_data ? notes_data : null,
+            tracker: tracker ? tracker : null,
+        }, { where: { id: issue_id } })
+    },
+
+    getStudentCount: async (name, email, user_type, globalSearch) => {
+        const user = {}
+
+        if (name) {
+            console.log('nnnnnnnnnnnnnnnn');
+            user[Op.and] = [
+                Sequelize.literal(`CONCAT(User.name, ' ',User.surname) LIKE '%${name}%'`),
+            ];
+        }
+
+        if (email) {
+            console.log('eeeeeeeeeeeeeeeee');
+            user[Op.and] = [
+                Sequelize.literal(`CONCAT(User.email, ' ') LIKE '%${email}%'`),
+            ];
+        }
+
+        if (user_type) {
+            console.log('tttttttttttttt');
+            user.user_type = user_type;
+        }
+
+        if (globalSearch) {
+            console.log('ggggggggggggg');
+            user[Op.or] = [
+                Sequelize.literal(`CONCAT(User.name, '', User.surname, '', User.email, '') LIKE '%${globalSearch}%'`),
+            ];
+        }
+
+        console.log('$$$$$$$$$$$$$$$$$$$$$$',user);
+
+        const count = models.User.count({
+            include: [{
+                model: models.Applied_For_Details,
+            }],
+            where: user,
+        });
+        return count;
+    },
+    /**getAppliedDetails function to get the data of each table with userid and type */
+    getAppliedDetails: async (userId, tableName, type) => {
+        try {
+            const whereUser = {
+                user_id: userId
+            };
+
+            if (type !== '') {
+                whereUser.type = type;
+            }
+            const table = models[tableName];
+            const appliedDetails = await table.findOne({
+                where: whereUser
+            });
+
+            return appliedDetails;
+        } catch (error) {
+            console.error("Error in getAppliedDetails:", error);
+            throw error;
+        }
+    },
+    /**getEmailActivity function to get the data of emailActivitytracker */
+    getEmailActivity: async (globalSearch, limits, offsets) => {
+        const whereEmail = {};
+        if (globalSearch) {
+            whereEmail[Op.or] = [
+                Sequelize.literal(`CONCAT(email, ' ', subject, ' ',status) LIKE '%${globalSearch}%'`)
+            ]
+        }
+        // Convert limits and offsets to numbers
+        const parsedLimits = parseInt(limits, 10);
+        const parsedOffsets = parseInt(offsets, 10);
+
+        const emailActivity = await models.EmailActivityTracker.findAll({
+            where: whereEmail,
+            limit: parsedLimits,
+            order: [['created_at', 'DESC']],
+            offset: parsedOffsets
+        })
+        return emailActivity;
+    },
+    /**getEmailAtivityCount to get count of emailactivitytracker data */
+    getEmailActivityCount: async (globalSearch) => {
+        const whereEmail = {};
+        if (globalSearch) {
+            whereEmail[Op.or] = [
+                Sequelize.literal(`CONCAT(email, ' ', subject, ' ',status) LIKE '%${globalSearch}%'`)
+            ]
+        }
+        const emailActivityCount = await models.EmailActivityTracker.count({
+            where: whereEmail,
+        })
+        return emailActivityCount;
     },
 };
