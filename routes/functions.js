@@ -181,8 +181,8 @@ module.exports = {
 
     //get specific institute data 
     getInstituteData: async (id) => {
-            return models.Institution_details.findOne({ where: { id : id } })
-},
+        return models.Institution_details.findOne({ where: { id: id } })
+    },
 
     //get single institute data
     getInstituteDataSingle: async (institute_id, purpose_name) => {
@@ -492,20 +492,38 @@ module.exports = {
     },
     uploadDocuments: async function (pattern, collegeid, education_type, faculty, user_id, type, imageLocationToCallClient) {
         try {
-            if (type == 'transcript') { 
-                return await models.User_Transcript.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default' , education_type : education_type + '_transcript' ,name  : education_type + '_' + faculty + '_Transcript' , faculty : faculty , pattern : pattern  , collegeId : collegeid});
+            if (type == 'transcript') {
+                return await models.User_Transcript.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default', education_type: education_type + '_transcript', name: education_type + '_' + faculty + '_Transcript', faculty: faculty, pattern: null, collegeId: collegeid });
+            }
+            if (type == 'convocation') {
+                return await models.User_Transcript.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default', education_type: education_type + '_convocation', name: education_type + '_' + faculty + '_Convocation', faculty: faculty, pattern: null, collegeId: collegeid });
             }
             if (type == 'extra') {
                 return await models.User_Transcript.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default', name: 'extra_Document', education_type: 'extra_document' });
             }
             if (type == 'curriculum') {
-                return await models.User_Curriculum.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default', education_type : education_type ,name  : education_type + '_' + faculty + '_Curriculum' , faculty : faculty , pattern : pattern  , collegeId : collegeid });
+                return await models.User_Curriculum.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default', education_type: education_type, name: education_type + '_' + faculty + '_Curriculum', faculty: faculty, pattern: pattern, collegeId: collegeid });
             }
             if (type == 'gradtoper') {
-                return await models.GradeToPercentageLetter.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default', education_type : education_type ,name  : education_type + '_' + faculty + '_GradeToPercentageLetter' , faculty : faculty , pattern : pattern  , collegeId : collegeid });
+                return await models.GradeToPercentageLetter.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default', education_type: education_type, name: education_type + '_' + faculty + '_GradeToPercentageLetter', faculty: faculty, pattern: pattern, collegeId: collegeid });
             }
             if (type == 'LetterforNameChange') {
-                return await models.Letterfor_NameChange.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default' , name  : 'Passport' });
+                const fileData = await models.Letterfor_NameChange.findOne({
+                    where: {
+                        user_id: user_id
+                    }
+                })
+                if (fileData) {
+                    return await fileData.update({
+                        file_name: imageLocationToCallClient,
+                        name: 'Passport'
+                    })
+                } else {
+                    return await models.Letterfor_NameChange.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default', name: 'Passport' });
+                }
+            }
+            if (type == 'thesis' || type == 'topicChange') {
+                return await models.User_Transcript.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default', education_type: 'Phd_' + type, name: 'Phd_' + type, });
             }
         } catch {
         }
@@ -534,7 +552,7 @@ module.exports = {
             where: {
                 user_id: user_id, app_id: {
                     [Op.eq]: null
-                },courseClgId :{[Op.ne] : null}
+                }, courseClgId: { [Op.ne]: null }
             }, attributes: [
                 [Sequelize.fn('DISTINCT', Sequelize.col('courseClgId', 'id')), 'uniqueValues']
             ]
@@ -549,7 +567,7 @@ module.exports = {
         return data;
 
     },
-    getDocumentFuntion: async function (user_id, app_id, type) {
+    getDocumentFunction: async function (user_id, app_id, type) {
         try {
             if (type == 'marklist') {
                 return await models.UserMarklist_Upload.findAll({ where: { user_id: user_id, app_id: app_id } });
@@ -557,7 +575,21 @@ module.exports = {
             if (type == 'transcript' || type == 'extra') {
                 return await models.User_Transcript.findAll({
                     where: {
-                        user_id: user_id, app_id: app_id
+                        user_id: user_id, app_id: app_id, education_type: { [Op.like]: `%${type}%` }
+                    }
+                });
+            }
+            if (type == 'convocation') {
+                return await models.User_Transcript.findAll({
+                    where: {
+                        user_id: user_id, app_id: app_id, education_type: { [Op.like]: `%${type}%` }
+                    }
+                });
+            }
+            if (type == 'thesis' || type == 'topicChange') {
+                return await models.User_Transcript.findAll({
+                    where: {
+                        user_id: user_id, app_id: app_id, education_type: 'Phd_' + type
                     }
                 });
             }
@@ -599,15 +631,14 @@ module.exports = {
     getCollegeDetails_unique: async function (id) {
         return await models.College.findOne({ where: { id: id } })
     },
-    updateDocuments: async function (data, type ,user_id) {
+    updateDocuments: async function (data, type, user_id) {
         var DATA = data[0]
-        console.log('DATA ' , DATA)
         var pattern;
         var pattern_name;
-   
+
         try {
             if (type == 'marklist') {
-                return await models.UserMarklist_Upload.create({ name: DATA.degree + '_' + DATA.faculty + '_' + DATA.whichduration, education_type: DATA.degree, faculty: DATA.faculty, pattern: DATA.pattern, collegeId: DATA.collegeId, courseClgId: DATA.degree + '_' + DATA.faculty + '_' + DATA.pattern + '_' + DATA.collegeId  , user_id : user_id , file_name : DATA.file_name});
+                return await models.UserMarklist_Upload.create({ name: DATA.degree + '_' + DATA.faculty + '_' + DATA.whichduration.name, education_type: DATA.degree, faculty: DATA.faculty, pattern: DATA.pattern, collegeId: DATA.collegeId, courseClgId: DATA.degree + '_' + DATA.faculty + '_' + DATA.pattern + '_' + DATA.collegeId, user_id: user_id, file_name: DATA.file_name });
             }
         } catch {
         }
@@ -632,18 +663,18 @@ module.exports = {
             data
             , { where: { id: app_id } })
     },
- 
+
     /**Activity Tracker function */
-    activitylog: async (userId, appId, activity, data, req) => { 
-            let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-            const activityTracker = await models.Activitytracker.create({
-                user_id: userId,
-                activity: activity,
-                data: data,
-                application_id: appId,
-                ip_address: ip,
-                created_at: moment()
-            })  
+    activitylog: async (userId, appId, activity, data, req) => {
+        let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+        const activityTracker = await models.Activitytracker.create({
+            user_id: userId,
+            activity: activity,
+            data: data,
+            application_id: appId,
+            ip_address: ip,
+            created_at: moment()
+        })
     },
     /**get count of Total and filtered Application Count */
     getApplicationCount: async (tracker, status, app_id, name, email, globalSearch) => {
@@ -975,7 +1006,7 @@ module.exports = {
             ];
         }
 
-        console.log('$$$$$$$$$$$$$$$$$$$$$$',user);
+        console.log('$$$$$$$$$$$$$$$$$$$$$$', user);
 
         const count = models.User.count({
             include: [{
@@ -986,7 +1017,7 @@ module.exports = {
         return count;
     },
     /**getAppliedDetails function to get the data of each table with userid and type */
-    getAppliedDetails: async (userId, tableName, type) => {
+    getAppliedDetail: async (userId, tableName, type) => {
         try {
             const whereUser = {
                 user_id: userId
@@ -1039,4 +1070,36 @@ module.exports = {
         })
         return emailActivityCount;
     },
+
+    getUserMarksheet: async (user_id) => {
+        return await models.UserMarklist_Upload.findAll({
+            where: {
+                user_id: user_id
+            }
+        })
+    },
+
+    getUserMarklistData: async (user_id, course) => {
+        const marksheet = await models.UserMarklist_Upload.findAll({
+            where: {
+                user_id: user_id,
+                name: {
+                    [Op.like]: `%${course}%`
+                }
+            }
+        })
+        return marksheet;
+    },
+    getFacultyData: async (course) => {
+        const abc = course.split('_');
+        const facultyMaster = await models.facultymaster.findOne({
+            where: {
+                degree: abc[0],
+                faculty: abc[1]
+            },
+            attributes: ['full_name', 'year']
+
+        })
+        return facultyMaster;
+    }
 };
