@@ -247,6 +247,8 @@ var unprotected = [
   '/api/student/getNotification',
   '/api/student/register',
   '/api/student/createCaptcha',
+  '/api/student/verifyOtp',
+  '/api/student/checkEmailExist',
   //new admin
   '/api/admin/updateOtp',
   '/api/admin/updateCollegeFaculty',

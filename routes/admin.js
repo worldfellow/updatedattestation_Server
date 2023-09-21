@@ -360,7 +360,8 @@ router.get('/getStudentList', async (req, res) => {
     var user_type = req.query.user_type;
     var globalSearch = req.query.globalSearch;
 
-    const data = await models.User.getStudentDetails(user_id, limit, offset, name, email, user_type, globalSearch);
+    // const data = await models.User.getStudentDetails(user_id, limit, offset, name, email, user_type, globalSearch);
+    const data = await functions.getStudentDetails(user_id, limit, offset, name, email, user_type, globalSearch);
     const count = await functions.getStudentCount(name, email, user_type, globalSearch);
 
     console.log('dataaaa', JSON.stringify(data));

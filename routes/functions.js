@@ -829,22 +829,33 @@ module.exports = {
         const wesData = await models.Wes_Records.findAll({ where: { appl_id: appId } });
         return wesData;
     },
+
     registerUser: async (formData, hashPassword) => {
-        id = models.User.create({
-            name: formData.firstName ? formData.firstName : null,
-            surname: formData.lastName ? formData.lastName : null,
-            email: formData.email ? formData.email : null,
-            mobile: formData.mobile ? formData.mobile : null,
-            mobile_country_code: formData.countryCode ? formData.countryCode : null,
-            gender: formData.gender ? formData.gender : null,
+        if(formData.sameWappNoCtrl == true){
+            var wappCountryCode = formData.countryCtrl;
+            var wappMobileNo = formData.mobileNoCtrl;
+        }else{
+            var wappCountryCode = null;
+            var wappMobileNo = null;
+        }
+        return models.User.create({
+            name: formData.nameCtrl ? formData.nameCtrl : null,
+            surname: formData.surnameCtrl ? formData.surnameCtrl : null,
+            email: formData.emailCtrl ? formData.emailCtrl : null,
+            mobile: formData.mobileNoCtrl ? formData.mobileNoCtrl : null,
+            mobile_country_code: formData.countryCtrl ? formData.countryCtrl : null,
+            gender: formData.genderCtrl ? formData.genderCtrl : null,
             password: hashPassword ? hashPassword : null,
             user_status: 'active',
             user_type: 'student',
             is_otp_verified: 0,
-            is_email_verified: 0
+            is_email_verified: 0,
+            postal_code: '',
+            what_mobile_country_code: wappCountryCode,
+            what_mobile: wappMobileNo,
         })
-        console.log('ididid', id)
     },
+
     getDocuments_checkstepper: async function (user_id, app_id, type, degree, faculty) {
         try {
             if (type == 'marklist') {
@@ -1101,5 +1112,67 @@ module.exports = {
 
         })
         return facultyMaster;
-    }
+    },
+
+    getVerifyOtp: async (email, otp) => {
+        return models.User.findOne({ where: { email: email, otp: otp } })
+    },
+
+    getUpdateVerifiedOtp: async (email) => {
+        return models.User.update({ is_otp_verified: true }, { where: { email: email }})
+    },
+
+    getCheckEmailExist: async (email) => {
+        return models.User.findOne({ where: { email: email } })
+    },
+
+    getStudentDetails: async (user_id, limit, offset, name, email, user_type, globalSearch) => {
+        const user = {};
+        if (globalSearch) {
+            user[Op.or] = [
+                Sequelize.literal(`CONCAT(name, ' ', surname, ' ',email) LIKE '%${globalSearch}%'`)
+            ]
+        }
+
+        if (name) {
+            console.log('nnnnnnnnnnnnnnnn');
+            user[Op.and] = [
+                Sequelize.literal(`CONCAT(name, ' ',surname) LIKE '%${name}%'`),
+            ];
+        }
+
+        if (email) {
+            console.log('eeeeeeeeeeeeeeeee');
+            user[Op.and] = [
+                Sequelize.literal(`CONCAT(email, ' ') LIKE '%${email}%'`),
+            ];
+        }
+
+        if (user_id) {
+            console.log('eeeeeeeeeeeeeeeee');
+            user[Op.and] = [
+                Sequelize.literal(`CONCAT(user_id, ' ') LIKE '%${user_id}%'`),
+            ];
+        }
+
+        if (user_type) {
+            console.log('tttttttttttttt');
+            user.user_type = user_type;
+        }
+
+        if (limit) {
+            console.log('tttttttttttttt');
+            user.limit = limit;
+        } 
+        
+        if (offset) {
+            console.log('tttttttttttttt');
+            user.offset = offset;
+        }
+
+        const data = await models.User.findAll({
+            where: user,
+        })
+        return data;
+    },
 };

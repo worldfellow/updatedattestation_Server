@@ -21,8 +21,8 @@ const upload = multer({ dest: 'public/upload/marklist' });
 const tesseract = require("node-tesseract-ocr");
 const middlewares = require('../middleware');
 var self_PDF = require('./self_letter');
-const canvas = require('canvas');
-const captcha = require('node-captcha-generator');
+const { Captcha } = require('captcha-canvas');
+const axios = require('axios');
 const config = {
 	lang: "eng",
 	oem: 1,
@@ -148,14 +148,88 @@ router.post('/login', async (req, res) => {
 })
 
 router.post('/register', async (req, res) => {
-	var values = req.query.values;
-	var password = values.password;
+	var data = req.body.data;
+	var email = data.emailCtrl;
+	var password = data.passwordCtrl;
 	var hashPassword = functions.generateHashPassword(password);
-	register = await functions.registerUser(values, hashPassword);
-	if (register) {
-		let data = "Student registered with email id " + values.email
-		let activity = "Registration";
-		// functions.activitylog(userId, appId, activity, data, req);
+
+	checkEmailExist = await functions.getCheckEmailExist(email);
+
+	if(checkEmailExist){
+		res.json({
+			status: 400,
+			message: "Email Already Exists"
+		})
+	}else{
+		register = await functions.registerUser(data, hashPassword);
+		if (register) {
+			let data = register.name + " " + register.surname + " registered with email id " + register.email;
+			let activity = "Registration";
+			functions.activitylog(register.id, null, activity, data, req);
+	
+			res.json({
+				status: 200,
+				message: "Registered Successfully"
+			})
+		} else {
+			res.json({
+				status: 400,
+				message: "Failed to Register!"
+			})
+		}
+	}
+})
+
+/* Author : Prathmesh Pawar
+Route : checkEmailExist - verify otp while user making registration.
+Paramater : otp of user */
+router.post('/checkEmailExist', async (req, res) => {
+	var email = req.body.email;
+
+	checkEmailExist = await functions.getCheckEmailExist(email);
+
+	if (checkEmailExist) {
+		res.json({
+			status: 400,
+			message: "Email Already Exists"
+		})
+	} else {
+		res.json({
+			status: 200,
+			message: "Email Dosen`t Exists!"
+		})
+	}
+
+})
+
+/* Author : Prathmesh Pawar
+Route : verifyOtp - verify otp while user making registration.
+Paramater : otp and email of user */
+router.post('/verifyOtp', async (req, res) => {
+	var otp = req.body.otp;
+	var email = req.body.email;
+
+	verifyOtp = await functions.getVerifyOtp(email, otp);
+
+	if (verifyOtp) {
+		var updateVerifiedOtp = await functions.getUpdateVerifiedOtp(email);
+
+		if (updateVerifiedOtp == true) {
+			res.json({
+				status: 200,
+				message: "OTP Verified Successfully"
+			})
+		} else {
+			res.json({
+				status: 400,
+				message: "Invalid OTP!"
+			})
+		}
+	} else {
+		res.json({
+			status: 400,
+			message: "Invalid OTP!"
+		})
 	}
 })
 
@@ -1608,6 +1682,10 @@ router.get('/getAppliedUserDetail', middlewares.getUserInfo, async (req, res) =>
 				status: 200,
 				data: user
 			});
+		}else{
+			res.json({
+				status: 400
+			})
 		}
 	} catch (error) {
 		return res.status(500).json({
@@ -3909,10 +3987,11 @@ router.post('/savePaymentIssueData', middlewares.getUserInfo, async (req, res) =
 			amount: values.amountCtrl,
 			note: values.noteCtrl,
 			name: 'Payment Not Reflecting',
+			status: 'Inprocess'
 		});
 
 		if (userCreated) {
-			res.json({ status: 200 })
+			res.json({ status: 200, message: 'Payment Issue Added Successfully' })
 		}
 	} catch (err) {
 		console.error(err);
@@ -4468,6 +4547,14 @@ router.get('/getPreApplication', middlewares.getUserInfo, async (req, res) => {
 				purposeDetails: purposeFlag,
 				paymentDetails: paymentFlag
 			})
+		}else{
+			return res.json({
+				status: 400,
+				educationDetails: false,
+				documentDetails: false,
+				purposeDetails: false,
+				paymentDetails: false
+			})
 		}
 	} catch (error) {
 		console.error("Error in /getPreApplication", error);
@@ -4516,44 +4603,18 @@ router.get('/getPostApplication', middlewares.getUserInfo, async (req, res) => {
 });
 
 router.get('/createCaptcha', async (req, res) => {
+	console.log('/createCaptcha');
 
-
-	const { createCanvas } = canvas;
-	const captchaCanvas = createCanvas(150, 50);
-
-	const captchaImage = captchaCanvas.toDataURL('image/png');
+	const captcha = new Captcha();
+	captcha.async = false;
+	captcha.addDecoy();
+	captcha.drawTrace();
+	captcha.drawCaptcha();
 
 	res.json({
 		status: 200,
-		data: captchaImage,
-		value: captchaCanvas.value,
+		data: captcha.text,
 	});
-
-
-	// let data = new captcha({
-	// 	length: 5,
-	// 	size:({
-	// 		width: 450,
-	// 		height: 200,
-	// 	})
-	// })
-
-	// await data.toBase64(async(err, base64)=>{
-	// 	if(err){
-	// 		res.json({ 
-	// 			status: 400,
-	// 			id: 1,
-	// 			message: 'Failed to load captcha!' 
-	// 		});
-	// 	}else{
-	// 		res.json({ 
-	// 			status: 200,
-	// 			id: 1,
-	// 			data: base64,
-	// 			value: data.value,
-	// 		});
-	// 	}
-	// })
 })
 
 module.exports = router;
