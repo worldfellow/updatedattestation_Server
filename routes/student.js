@@ -774,9 +774,15 @@ router.post('/updateAllHrd', middlewares.getUserInfo, async (req, res) => {
 				})
 			} else {
 				var createInstitute = await functions.getCreateHrdInstitute(user_id, purpose_name, emailArr, anotherEmailArr, anotherEmail, app_id);
-
+				console.log('FFFFFFFFFFFFF',createInstitute);
 				if (createInstitute) {
-					var createActivityTrackerAdd = await functions.getCreateActivityTrackerAdd(user_id, admin_email, formData.course_name, app_id);
+					/**Activity Tracker */
+					// let data = type + " Document ( " + imageLocationToCallClient + " ) was Uploaded by " + userEmail;
+					// let activity = type + " Uploaded";
+					// functions.activitylog(user_id, '', activity, data, req);
+					// res.json({ status: 200, data: alldata })
+					// } else { res.json({ status: 400 }) }
+					// var createActivityTrackerAdd = await functions.getCreateActivityTrackerAdd(user_id, admin_email, formData.course_name, app_id);
 
 					res.json({
 						status: 200,
@@ -801,9 +807,19 @@ router.post('/updateAllHrd', middlewares.getUserInfo, async (req, res) => {
 
 		if (updateHrd == true) {
 			if (user_type == 'student') {
-				var createActivityTrackerUpdate = await functions.getCreateActivityTrackerUpdate(user_id, admin_email, formData.course_name, app_id);
+				/**Activity Tracker */
+				// let data = type + " Document ( " + imageLocationToCallClient + " ) was Uploaded by " + userEmail;
+				// let activity = type + " Uploaded";
+				// functions.activitylog(user_id, '', activity, data, req);
+				// res.json({ status: 200, data: alldata })
+				// } else { res.json({ status: 400 }) }
 			} else {
-				var createActivityTrackerUpdate = await functions.getCreateActivityTrackerUpdate(admin_id, admin_email, formData.course_name, app_id);
+				/**Activity Tracker */
+				// let data = type + " Document ( " + imageLocationToCallClient + " ) was Uploaded by " + userEmail;
+				// let activity = type + " Uploaded";
+				// functions.activitylog(user_id, '', activity, data, req);
+				// res.json({ status: 200, data: alldata })
+				// } else { res.json({ status: 400 }) }
 			}
 
 			res.json({
@@ -904,6 +920,8 @@ router.get('/preViewApplication', middlewares.getUserInfo, async (req, res) => {
 		competencyletterDetails: applied_for_details.CompetencyLetter,
 		letterfornamechangeDetails: applied_for_details.LetterforNameChange,
 	})
+
+	console.log(';;;;;;;;;;;;;;;',educationalDetails);
 
 	//college data
 	var getApplied = await functions.getAppliedDetails(user_id, app_id);
@@ -1065,6 +1083,8 @@ router.get('/preViewApplication', middlewares.getUserInfo, async (req, res) => {
 		instructionalData: instructionalData,
 		affiliationData: affiliationData,
 	})
+
+	console.log('hhhhhhhhhhhhhhhhhhh',preViewApplication);
 
 	if (preViewApplication.length > 0) {
 		res.json({
@@ -3343,8 +3363,11 @@ router.get('/getUploadeddocument_student', middlewares.getUserInfo, async functi
 						const courseName = course.dataValues.name;
 						return courses.some(value => courseName.includes(value));
 					});
-					const college = await functions.getCollegeDetails(foundCourses[0].collegeId)
-					convocationDisplay.push({ 'coursename': foundCourses[0].name, 'college': college.dataValues.name, 'collegeid': foundCourses[0].collegeId, 'faculty': foundCourses[0].faculty, 'education_type': foundCourses[0].education_type, 'pattern': foundCourses[0].pattern })
+
+					if(foundCourses){
+						const college = await functions.getCollegeDetails(foundCourses[0].collegeId)
+						convocationDisplay.push({ 'coursename': foundCourses[0].name, 'college': college.dataValues.name, 'collegeid': foundCourses[0].collegeId, 'faculty': foundCourses[0].faculty, 'education_type': foundCourses[0].education_type, 'pattern': foundCourses[0].pattern })
+					}
 				}
 			}
 		}
@@ -4547,14 +4570,6 @@ router.get('/getPreApplication', middlewares.getUserInfo, async (req, res) => {
 				purposeDetails: purposeFlag,
 				paymentDetails: paymentFlag
 			})
-		}else{
-			return res.json({
-				status: 400,
-				educationDetails: false,
-				documentDetails: false,
-				purposeDetails: false,
-				paymentDetails: false
-			})
 		}
 	} catch (error) {
 		console.error("Error in /getPreApplication", error);
@@ -4602,6 +4617,8 @@ router.get('/getPostApplication', middlewares.getUserInfo, async (req, res) => {
 	}
 });
 
+/* Author : Prathmesh Pawar
+Route : createCaptcha - to create new captcha. */
 router.get('/createCaptcha', async (req, res) => {
 	console.log('/createCaptcha');
 
@@ -4615,6 +4632,27 @@ router.get('/createCaptcha', async (req, res) => {
 		status: 200,
 		data: captcha.text,
 	});
+})
+
+/* Author : Prathmesh Pawar
+Route : checkStudentPaid - check student was paid or not to show or hide myApplication tab from dashboard.*/
+router.get('/checkStudentPaid', middlewares.getUserInfo, async (req, res) => {
+	console.log('/checkStudentPaid');
+
+	const userId = req.User.id;	
+
+	const studentPaidData = await functions.getApplicationsData(userId);
+	console.log('studentPaidData',studentPaidData);
+
+	if(studentPaidData.length > 0){
+		res.json({
+			status: 200,
+		});
+	}else{
+		res.json({
+			status: 400,
+		});
+	}
 })
 
 module.exports = router;
