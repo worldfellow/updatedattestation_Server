@@ -491,6 +491,7 @@ module.exports = {
         }, { where: { id: id } })
     },
     uploadDocuments: async function (pattern, collegeid, education_type, faculty, user_id, type, imageLocationToCallClient) {
+        console.log('type', pattern, collegeid, education_type, faculty, user_id, type, imageLocationToCallClient);
         try {
             if (type == 'transcript') {
                 return await models.User_Transcript.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default', education_type: education_type + '_transcript', name: education_type + '_' + faculty + '_Transcript', faculty: faculty, pattern: null, collegeId: collegeid });
@@ -831,10 +832,10 @@ module.exports = {
     },
 
     registerUser: async (formData, hashPassword) => {
-        if(formData.sameWappNoCtrl == true){
+        if (formData.sameWappNoCtrl == true) {
             var wappCountryCode = formData.countryCtrl;
             var wappMobileNo = formData.mobileNoCtrl;
-        }else{
+        } else {
             var wappCountryCode = null;
             var wappMobileNo = null;
         }
@@ -1119,7 +1120,7 @@ module.exports = {
     },
 
     getUpdateVerifiedOtp: async (email) => {
-        return models.User.update({ is_otp_verified: true }, { where: { email: email }})
+        return models.User.update({ is_otp_verified: true }, { where: { email: email } })
     },
 
     getCheckEmailExist: async (email) => {
@@ -1163,8 +1164,8 @@ module.exports = {
         if (limit) {
             console.log('tttttttttttttt');
             user.limit = limit;
-        } 
-        
+        }
+
         if (offset) {
             console.log('tttttttttttttt');
             user.offset = offset;

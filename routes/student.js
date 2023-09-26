@@ -155,18 +155,18 @@ router.post('/register', async (req, res) => {
 
 	checkEmailExist = await functions.getCheckEmailExist(email);
 
-	if(checkEmailExist){
+	if (checkEmailExist) {
 		res.json({
 			status: 400,
 			message: "Email Already Exists"
 		})
-	}else{
+	} else {
 		register = await functions.registerUser(data, hashPassword);
 		if (register) {
 			let data = register.name + " " + register.surname + " registered with email id " + register.email;
 			let activity = "Registration";
 			functions.activitylog(register.id, null, activity, data, req);
-	
+
 			res.json({
 				status: 200,
 				message: "Registered Successfully"
@@ -774,7 +774,7 @@ router.post('/updateAllHrd', middlewares.getUserInfo, async (req, res) => {
 				})
 			} else {
 				var createInstitute = await functions.getCreateHrdInstitute(user_id, purpose_name, emailArr, anotherEmailArr, anotherEmail, app_id);
-				console.log('FFFFFFFFFFFFF',createInstitute);
+				console.log('FFFFFFFFFFFFF', createInstitute);
 				if (createInstitute) {
 					/**Activity Tracker */
 					// let data = type + " Document ( " + imageLocationToCallClient + " ) was Uploaded by " + userEmail;
@@ -921,7 +921,7 @@ router.get('/preViewApplication', middlewares.getUserInfo, async (req, res) => {
 		letterfornamechangeDetails: applied_for_details.LetterforNameChange,
 	})
 
-	console.log(';;;;;;;;;;;;;;;',educationalDetails);
+	console.log(';;;;;;;;;;;;;;;', educationalDetails);
 
 	//college data
 	var getApplied = await functions.getAppliedDetails(user_id, app_id);
@@ -1084,7 +1084,7 @@ router.get('/preViewApplication', middlewares.getUserInfo, async (req, res) => {
 		affiliationData: affiliationData,
 	})
 
-	console.log('hhhhhhhhhhhhhhhhhhh',preViewApplication);
+	console.log('hhhhhhhhhhhhhhhhhhh', preViewApplication);
 
 	if (preViewApplication.length > 0) {
 		res.json({
@@ -1702,7 +1702,7 @@ router.get('/getAppliedUserDetail', middlewares.getUserInfo, async (req, res) =>
 				status: 200,
 				data: user
 			});
-		}else{
+		} else {
 			res.json({
 				status: 400
 			})
@@ -3364,7 +3364,7 @@ router.get('/getUploadeddocument_student', middlewares.getUserInfo, async functi
 						return courses.some(value => courseName.includes(value));
 					});
 
-					if(foundCourses){
+					if (foundCourses) {
 						const college = await functions.getCollegeDetails(foundCourses[0].collegeId)
 						convocationDisplay.push({ 'coursename': foundCourses[0].name, 'college': college.dataValues.name, 'collegeid': foundCourses[0].collegeId, 'faculty': foundCourses[0].faculty, 'education_type': foundCourses[0].education_type, 'pattern': foundCourses[0].pattern })
 					}
@@ -4570,6 +4570,14 @@ router.get('/getPreApplication', middlewares.getUserInfo, async (req, res) => {
 				purposeDetails: purposeFlag,
 				paymentDetails: paymentFlag
 			})
+		} else {
+			return res.json({
+				status: 200,
+				educationDetails: false,
+				documentDetails: false,
+				purposeDetails: false,
+				paymentDetails: false
+			})
 		}
 	} catch (error) {
 		console.error("Error in /getPreApplication", error);
@@ -4639,16 +4647,16 @@ Route : checkStudentPaid - check student was paid or not to show or hide myAppli
 router.get('/checkStudentPaid', middlewares.getUserInfo, async (req, res) => {
 	console.log('/checkStudentPaid');
 
-	const userId = req.User.id;	
+	const userId = req.User.id;
 
 	const studentPaidData = await functions.getApplicationsData(userId);
-	console.log('studentPaidData',studentPaidData);
+	console.log('studentPaidData', studentPaidData);
 
-	if(studentPaidData.length > 0){
+	if (studentPaidData.length > 0) {
 		res.json({
 			status: 200,
 		});
-	}else{
+	} else {
 		res.json({
 			status: 400,
 		});
