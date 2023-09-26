@@ -23,6 +23,7 @@ const middlewares = require('../middleware');
 var self_PDF = require('./self_letter');
 const { Captcha } = require('captcha-canvas');
 const axios = require('axios');
+const { json } = require('body-parser');
 const config = {
 	lang: "eng",
 	oem: 1,
@@ -1220,7 +1221,6 @@ router.get('/getCollegeList', async (req, res) => {
  * Fetch Details such as college course pattern and upload documents.
  */
 router.post('/ScanData', middlewares.getUserInfo, async (req, res) => {
-	console.log('dddddddddddddddddddddddddddddd', req.query)
 	try {
 		var user_id = req.User.id;
 		var app_id = req.query.app_id;
@@ -1230,13 +1230,9 @@ router.post('/ScanData', middlewares.getUserInfo, async (req, res) => {
 		var pattern = req.query.pattern;
 		var faculty = req.query.faculty;
 		const userEmail = req.User.email;
-		var collegeName, courseName, courseCheck, collegeId, duration, faculty, pattern, degree;
-		var saveData = [];
-		var whichduration = [];
+		var faculty, pattern;
 		var dir = constant.FILE_LOCATION + "public/upload/" + type + '/' + user_id;
 		var image;
-		var coursedata = [];
-		var collegedata = [];
 		if (!fs.existsSync(dir)) {
 			fs.mkdirSync(dir);
 		}
@@ -1258,104 +1254,29 @@ router.post('/ScanData', middlewares.getUserInfo, async (req, res) => {
 		}).single('file');
 		upload(req, res, async function (err, data) {
 			imageLocationToCallClient = image;
-			var alldata = [];
 			if (type == 'marklist') {
-				var inputDirectory = dir + '/' + imageLocationToCallClient
-				var extension = imageLocationToCallClient.split('.');
-				var extension = extension[1];
-				var outputDirectory = constant.FILE_LOCATION;
-				var text = ''
-				var getCollege = await functions.getCollegeList();
-				var getCourse = await functions.getProgramList();
-				var name = await functions.getUserData(63473);
-				const url = constant.OCR_BASE_URL + 'test?param1=' + inputDirectory + '&param2=' + imageLocationToCallClient + '&param3=' + extension + '&param4=' + outputDirectory
-				axios.get(url)
-					.then(response => {
-						text = response.data;
-						for (var i = 0; i < text.length; i++) {
-							getCourse.forEach(function (course) {
-								if (text[i].includes(course.short_name) || text[i].includes(course.full_name)) {
-									courseName = course.full_name
-									degree = course.degree,
-										duration = course.year
-									faculty = course.faculty
-								}
-
-								if (text[i].includes('semester') || text[i].includes('Semester')) {
-									pattern = 'Semester'
-									if (text[i].includes('X')) {
-										whichduration = 'Semester 10'
-									}
-									if (text[i].includes('IX')) {
-										whichduration = 'Semester 9'
-									}
-									if (text[i].includes('VIII')) {
-										whichduration = 'Semester 8'
-									}
-									if (text[i].includes('VII')) {
-										whichduration = 'Semester 7'
-									}
-									if (text[i].includes('VI')) {
-										whichduration = 'Semester 6'
-									}
-
-
-									if (text[i].includes('IV')) {
-										whichduration = 'Semester 4'
-									}
-
-									if (text[i].includes('V')) {
-										whichduration = 'Semester 5'
-									}
-
-
-
-									if (text[i].includes('III')) {
-										whichduration = 'Semester 3'
-									}
-
-									if (text[i].includes('II')) {
-										whichduration = 'Semester 2'
-									}
-
-									if (text[i].includes('I')) {
-										whichduration = 'Semester 1'
-										// whichduration.push({ name: 'Semester 1', value: 'Semester' })
-									}
-
-
-								} else {
-									pattern = 'Annual'
-									if (text[i].includes('F.Y')) {
-										whichduration = 'First Year'
-									}
-									else if (text[i].includes('S.Y')) {
-										whichduration = 'Second Year'
-									}
-									else if (text[i].includes('T.Y')) {
-										whichduration = 'Third Year'
-									}
-								}
-							})
-							if (text[i].includes(name.name)) {
-								name = name.name
-							}
-							// alldata.push(courseName , pattern , imageLocationToCallClient ,whichduration);
-							alldata.push({
-								'courseName': courseName,
-								'pattern': pattern,
-								'file_name': imageLocationToCallClient,
-								'whichduration': whichduration,
-								'pattern': pattern,
-								'degree': degree,
-								'faculty': faculty
-							})
-							res.json({
-								status: 200,
-								data: alldata
-							})
-						}
+				pattern = JSON.parse(pattern);
+				const data = {
+					'collegeId': collegeid,
+					'education_type': education_type,
+					'faculty': faculty,
+					'pattern': pattern.value,
+					'duration': pattern.name
+				}
+				var updateDocuments = await functions.updateDocuments(data, imageLocationToCallClient, user_id);
+				if (updateDocuments) {
+					/**Activity Tracker */
+					let data = type + " Document ( " + imageLocationToCallClient + " ) was Uploaded by " + userEmail;
+					let activity = type + " Uploaded";
+					functions.activitylog(user_id, '', activity, data, req);
+					return res.json({
+						status: 200
 					})
+				} else {
+					return res.json({
+						status: 400
+					})
+				}
 			} else {
 				if (type == 'paymentIssue') {
 					alldata.push(imageLocationToCallClient);
@@ -1367,7 +1288,6 @@ router.post('/ScanData', middlewares.getUserInfo, async (req, res) => {
 					} else { res.json({ status: 400 }) }
 
 				} else {
-					// var uploadDocuments = await functions.uploadDocuments(user_id, type, imageLocationToCallClient);
 					var uploadDocuments = await functions.uploadDocuments(pattern, collegeid, education_type, faculty, user_id, type, imageLocationToCallClient);
 
 					alldata.push(uploadDocuments.id);
@@ -3364,8 +3284,8 @@ router.get('/getUploadeddocument_student', middlewares.getUserInfo, async functi
 						return courses.some(value => courseName.includes(value));
 					});
 
-					if (foundCourses) {
-						const college = await functions.getCollegeDetails(foundCourses[0].collegeId)
+					if (foundCourses.length > 0) {
+						const college = await functions.getCollegeDetails(foundCourses[0]?.collegeId)
 						convocationDisplay.push({ 'coursename': foundCourses[0].name, 'college': college.dataValues.name, 'collegeid': foundCourses[0].collegeId, 'faculty': foundCourses[0].faculty, 'education_type': foundCourses[0].education_type, 'pattern': foundCourses[0].pattern })
 					}
 				}

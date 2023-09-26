@@ -632,18 +632,8 @@ module.exports = {
     getCollegeDetails_unique: async function (id) {
         return await models.College.findOne({ where: { id: id } })
     },
-    updateDocuments: async function (data, type, user_id) {
-        var DATA = data[0]
-        var pattern;
-        var pattern_name;
-
-        try {
-            if (type == 'marklist') {
-                return await models.UserMarklist_Upload.create({ name: DATA.degree + '_' + DATA.faculty + '_' + DATA.whichduration.name, education_type: DATA.degree, faculty: DATA.faculty, pattern: DATA.pattern, collegeId: DATA.collegeId, courseClgId: DATA.degree + '_' + DATA.faculty + '_' + DATA.pattern + '_' + DATA.collegeId, user_id: user_id, file_name: DATA.file_name });
-            }
-        } catch {
-        }
-
+    updateDocuments: async (data, imageLocationToCallClient, user_id) => {
+        return await models.UserMarklist_Upload.create({ name: data.education_type + '_' + data.faculty + '_' + data.duration, education_type: data.education_type, faculty: data.faculty, pattern: data.pattern, collegeId: data.collegeId, courseClgId: data.education_type + '_' + data.faculty + '_' + data.pattern + '_' + data.collegeId, user_id: user_id, file_name: imageLocationToCallClient });
     },
 
     getResendRejectApplication: async (user_id, app_id, tracker, status) => {
