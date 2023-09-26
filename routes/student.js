@@ -120,7 +120,7 @@ router.post('/login', async (req, res) => {
 						return res.json({
 							status: 200,
 							data: {
-								message: 'Successfully logged in!',
+								message: 'You Successfully Logged In!',
 								token: functions.createAccessToken(user),
 								user: user,
 							}
@@ -1233,6 +1233,7 @@ router.post('/ScanData', middlewares.getUserInfo, async (req, res) => {
 		var faculty, pattern;
 		var dir = constant.FILE_LOCATION + "public/upload/" + type + '/' + user_id;
 		var image;
+		var alldata = [];
 		if (!fs.existsSync(dir)) {
 			fs.mkdirSync(dir);
 		}
@@ -1826,22 +1827,6 @@ router.post('/upload_gradeToPercentLetter', middlewares.getUserInfo, async (req,
 			status: 500,
 			message: "Internal Server Error"
 		});
-	}
-})
-
-/**
- * @
- */
-router.post('/saveUserMarkList', middlewares.getUserInfo, async (req, res) => {
-	var app_id = req.body.app_id;
-	var user_id = req.User.id;
-	var type = req.body.value;
-	var data = req.body.data;
-	var updateDocuments = await functions.updateDocuments(data, type, user_id);
-	if (updateDocuments) {
-		res.json({ status: 200 })
-	} else {
-		res.json({ status: 400 })
 	}
 })
 

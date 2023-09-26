@@ -822,13 +822,6 @@ module.exports = {
     },
 
     registerUser: async (formData, hashPassword) => {
-        if (formData.sameWappNoCtrl == true) {
-            var wappCountryCode = formData.countryCtrl;
-            var wappMobileNo = formData.mobileNoCtrl;
-        } else {
-            var wappCountryCode = null;
-            var wappMobileNo = null;
-        }
         return models.User.create({
             name: formData.nameCtrl ? formData.nameCtrl : null,
             surname: formData.surnameCtrl ? formData.surnameCtrl : null,
@@ -841,9 +834,9 @@ module.exports = {
             user_type: 'student',
             is_otp_verified: 0,
             is_email_verified: 0,
-            postal_code: '',
             what_mobile_country_code: wappCountryCode,
             what_mobile: wappMobileNo,
+            sameWappNo: formData.sameWappNoCtrl,
         })
     },
 

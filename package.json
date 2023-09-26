@@ -5,7 +5,8 @@
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon app.js"
+    "start": "nodemon app.js",
+    "lint": "eslint ."
   },
   "author": "akveo <contact@akveo.com>",
   "license": "MIT",
@@ -83,6 +84,7 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
+    "eslint": "^8.50.0",
     "nodemon": "^2.0.22"
   }
 }

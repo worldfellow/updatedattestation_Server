@@ -15,7 +15,6 @@ module.exports = function(sequelize, DataTypes) {
     exam_date : DataTypes.STRING(100),
     specialization : DataTypes.STRING(100),
     degree : DataTypes.STRING(100),
-    reference_no : DataTypes.INTEGER,
     user_id: DataTypes.INTEGER,
     app_id: DataTypes.INTEGER,
     verification_type : DataTypes.STRING(100),

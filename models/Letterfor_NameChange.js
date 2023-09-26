@@ -12,15 +12,12 @@ module.exports = function(sequelize, DataTypes) {
     lastnameasperpassport : DataTypes.STRING(255),
     reference_no : DataTypes.STRING(20),
   	file_name: DataTypes.TEXT,
-    type: DataTypes.STRING(30),
     collegeId :  DataTypes.STRING(30),
     lock_transcript: {
       type: DataTypes.BOOLEAN(),
       allowNull: false,
       defaultValue: 0
     },
-    emailMsgId : DataTypes.TEXT,
-    collegeEmailStatus : DataTypes.STRING(20),
     upload_step: {
       type: DataTypes.ENUM('default', 'requested','changed'),
       allowNull: false,

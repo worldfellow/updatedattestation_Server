@@ -13,26 +13,10 @@ module.exports = function (sequelize, DataTypes) {
     email_verification_token: DataTypes.STRING(20),
     is_email_verified: DataTypes.BOOLEAN(),
     user_type: DataTypes.ENUM('admin', 'sub-admin', 'student'),
-    applying_for: DataTypes.TEXT,
-    city: DataTypes.STRING(100),
-    dob: DataTypes.DATEONLY,
     mobile_country_code: DataTypes.STRING(5),
-    postal_code: {
-      type: DataTypes.STRING(16),
-      allowNull: false
-    },
-    address: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    trudesk_key: DataTypes.TEXT,
-    what_mobile_country_code: DataTypes.STRING(5),
-    what_mobile: DataTypes.STRING(17),
+    sameWappNo: DataTypes.BOOLEAN(),
     current_location: DataTypes.STRING(17),
-    board_id: DataTypes.INTEGER(11),
-    login_count: DataTypes.INTEGER(10),
     user_status: DataTypes.ENUM('active', 'inactive', 'deleted'),
-    profile_completeness: DataTypes.STRING(3),
   });
 
   User.associate = (models) => {

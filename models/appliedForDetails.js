@@ -30,10 +30,7 @@ module.exports = function (sequelize, DataTypes) {
       type: DataTypes.BOOLEAN,
       defaultValue: false
   },
-    current_year: DataTypes.BOOLEAN(),
-    diplomaHolder: DataTypes.BOOLEAN(),
     isphd: DataTypes.BOOLEAN(),
-    applied_for: DataTypes.STRING(21),
     user_id: DataTypes.INTEGER
   });
 

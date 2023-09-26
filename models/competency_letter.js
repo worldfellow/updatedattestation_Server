@@ -4,15 +4,12 @@ module.exports = function(sequelize, DataTypes) {
   var competency_letter = sequelize.define("competency_letter", {
     name: DataTypes.TEXT,
   	file_name: DataTypes.TEXT,
-    type: DataTypes.STRING(30),
     collegeId :  DataTypes.STRING(30),
     lock_transcript: {
       type: DataTypes.BOOLEAN(),
       allowNull: false,
       defaultValue: 0
     },
-    emailMsgId : DataTypes.TEXT,
-    collegeEmailStatus : DataTypes.STRING(20),
     upload_step: {
       type: DataTypes.ENUM('default', 'requested','changed'),
       allowNull: false,
