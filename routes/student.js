@@ -1267,8 +1267,8 @@ router.post('/ScanData', middlewares.getUserInfo, async (req, res) => {
 				var updateDocuments = await functions.updateDocuments(data, imageLocationToCallClient, user_id);
 				if (updateDocuments) {
 					/**Activity Tracker */
-					let data = type + " Document ( " + imageLocationToCallClient + " ) was Uploaded by " + userEmail;
-					let activity = type + " Uploaded";
+					let data = "Marksheet Document ( " + imageLocationToCallClient + " ) was Uploaded by " + userEmail;
+					let activity = "Marksheet Uploaded";
 					functions.activitylog(user_id, '', activity, data, req);
 					return res.json({
 						status: 200
@@ -3220,6 +3220,7 @@ router.get('/getUploadeddocument_student', middlewares.getUserInfo, async functi
 	let topicChangeData = [];
 	let convocationData = [];
 	let convocationDisplay = [];
+	let competencyData = [];
 	var Applied = await functions.getAppliedFor(user_id, app_id);
 	if (Applied) {
 		var uniqueData = await functions.getDistinctData(user_id);
@@ -3436,7 +3437,26 @@ router.get('/getUploadeddocument_student', middlewares.getUserInfo, async functi
 
 		}
 		if (Applied.CompetencyLetter == true) {
-
+			var competency = await functions.getDocumentFunction(user_id, app_id, 'competency');
+			if (competency) {
+				if (competency.length > 0) {
+					for (var i = 0; i < competency.length; i++) {
+						college = await functions.getCollegeName(competency[i].collegeId);
+						competencyData.push({
+							'name': competency[i].name,
+							'CollegeName': college ? college.name : 'null',
+							'filePath': constant.FILE_LOCATION + 'public/upload/' + 'competency' + '/' + user_id + '/' + competency[i].file_name,
+							'fileName': competency[i].file_name,
+							'extension': competency[i].file_name ? competency[i].file_name.split('.').pop() : 'null',
+							'id': competency[i].id,
+							'user_id': competency[i].user_id,
+							'app_id': competency[i].app_id,
+							'upload_step': competency[i].upload_step,
+							'lock_transcript': competency[i].lock_transcript
+						})
+					}
+				};
+			}
 		}
 		if (Applied.LetterforNameChange == true) {
 
@@ -3468,7 +3488,7 @@ router.get('/getUploadeddocument_student', middlewares.getUserInfo, async functi
 			}
 		}
 
-		DocumentData.push(marksheetData, transcriptData, transcriptDisplay, unique_college, extraData, curriculumData, gradtoperData, thesisData, topicChangeData, convocationDisplay, convocationData)
+		DocumentData.push(marksheetData, transcriptData, transcriptDisplay, unique_college, extraData, curriculumData, gradtoperData, thesisData, topicChangeData, convocationDisplay, convocationData, competencyData)
 		res.json({ status: 200, data: DocumentData });
 	} else {
 		res.json({ status: 400 });

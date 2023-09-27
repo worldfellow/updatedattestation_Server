@@ -494,10 +494,10 @@ module.exports = {
         console.log('type', pattern, collegeid, education_type, faculty, user_id, type, imageLocationToCallClient);
         try {
             if (type == 'transcript') {
-                return await models.User_Transcript.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default', education_type: education_type + '_transcript', name: education_type + '_' + faculty + '_Transcript', faculty: faculty, pattern: null, collegeId: collegeid });
+                return await models.User_Transcript.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default', education_type: education_type + '_transcript', name: education_type + '_' + faculty + '_Transcript', faculty: faculty, pattern: pattern, collegeId: collegeid });
             }
             if (type == 'convocation') {
-                return await models.User_Transcript.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default', education_type: education_type + '_convocation', name: education_type + '_' + faculty + '_Convocation', faculty: faculty, pattern: null, collegeId: collegeid });
+                return await models.User_Transcript.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default', education_type: education_type + '_convocation', name: education_type + '_' + faculty + '_Convocation', faculty: faculty, pattern: pattern, collegeId: collegeid });
             }
             if (type == 'extra') {
                 return await models.User_Transcript.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default', name: 'extra_Document', education_type: 'extra_document' });
@@ -525,6 +525,9 @@ module.exports = {
             }
             if (type == 'thesis' || type == 'topicChange') {
                 return await models.User_Transcript.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default', education_type: 'Phd_' + type, name: 'Phd_' + type, });
+            }
+            if (type == 'competency') {
+                return await models.competency_letter.create({ user_id: user_id, file_name: imageLocationToCallClient, upload_step: 'default', education_type: education_type + '_competency', name: education_type + '_' + faculty + '_Competency', faculty: faculty, pattern: pattern, collegeId: collegeid });
             }
         } catch {
         }
@@ -584,6 +587,13 @@ module.exports = {
                 return await models.User_Transcript.findAll({
                     where: {
                         user_id: user_id, app_id: app_id, education_type: { [Op.like]: `%${type}%` }
+                    }
+                });
+            }
+            if (type == 'competency') {
+                return await models.competency_letter.findAll({
+                    where: {
+                        user_id: user_id, app_id: app_id, name: { [Op.like]: `%${type}%` }
                     }
                 });
             }
