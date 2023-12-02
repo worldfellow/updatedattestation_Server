@@ -318,8 +318,8 @@ router.get('/getActivityTrackerList', async (req, res) => {
     if (student_id == '' || student_id == null || student_id == undefined) {
         var trackerList = await functions.getActivityTrackerList(offset, limit, globalSearch);
         var trackerCount = await functions.getActivityTrackerCount(globalSearch);
-        console.log('trackerCount',trackerCount);
-        console.log('trackerList',trackerList);
+        console.log('trackerCount', trackerCount);
+        console.log('trackerList', trackerList);
         if (trackerList.length > 0) {
             return res.json({
                 status: 200,
@@ -364,7 +364,7 @@ router.get('/getStudentList', async (req, res) => {
     const data = await functions.getStudentDetails(user_id, limit, offset, name, email, user_type, globalSearch);
     const count = await functions.getStudentCount(name, email, user_type, globalSearch);
 
-    console.log('dataaaa', JSON.stringify(data));
+    // console.log('dataaaa', JSON.stringify(data));
     console.log('counttt', count);
 
     if (data.length > 0) {
@@ -604,16 +604,12 @@ router.get('/getDocumentsData', async (req, res) => {
     var extension;
 
     var applied_for_details = await functions.getAppliedForDetails(student_id, student_app_id);
-    console.log('............', JSON.stringify(applied_for_details));
-    console.log('applied_for_details=======', applied_for_details.educationalDetails);
 
     //marksheets
     var getApplied = await functions.getAppliedDetails(student_id, student_app_id);
-    console.log('getApplied', JSON.stringify(getApplied));
 
-    getApplied.forEach(async function (marksheets) {
-        extension = marksheets.file_name.split('.').pop();
-        console.log('get------------------', JSON.stringify(marksheets.collegeId));
+    for (const marksheets of getApplied) {
+        extension = await marksheets.file_name.split('.').pop();
 
         var collegeDetails = await functions.getCollegeDetails(marksheets.collegeId);
 
@@ -622,16 +618,20 @@ router.get('/getDocumentsData', async (req, res) => {
             name: marksheets.name,
             filePath: constant.BASE_URL + "/api/upload/marklist/" + student_id + "/" + marksheets.file_name,
             extension: extension,
-            collegeName: collegeDetails.name,
+            collegeName: collegeDetails?.name,
             fileName: marksheets.file_name,
+            app_id: marksheets?.app_id,
+            user_id: marksheets.user_id,
+            lock_transcript: marksheets.lock_transcript,
+            verify_doc: marksheets.verify_doc,
         })
-    })
+    }
 
     //transcript
     if (applied_for_details.educationalDetails == true) {
         var getTranscripts = await functions.getUserTrascripts(student_id, student_app_id);
 
-        getTranscripts.forEach(async function (transcripts) {
+        for (const transcripts of getTranscripts) {
             extension = transcripts.file_name.split('.').pop();
 
             var collegeDetails = await functions.getCollegeDetails(transcripts.collegeId);
@@ -641,20 +641,22 @@ router.get('/getDocumentsData', async (req, res) => {
                 name: transcripts.name,
                 filePath: constant.BASE_URL + "/api/upload/transcript/" + student_id + "/" + transcripts.file_name,
                 extension: extension,
-                collegeName: collegeDetails.name,
+                collegeName: collegeDetails?.name,
                 fileName: transcripts.file_name,
+                app_id: transcripts?.app_id,
+                user_id: transcripts.user_id,
+                lock_transcript: transcripts.lock_transcript,
+                verify_doc: transcripts.verify_doc,
             })
-        })
+        }
     }
 
     //instructional
     if (applied_for_details.instructionalField == true) {
-        console.log('inideeeeeeeeeeeeeeeeee');
-        var getInstructional = await functions.getUserInstructionalAndAffiliation(student_id, student_app_id, 'instructional');
-        console.log('::::::::::::::::', getInstructional);
-        console.log('::::::::::::::::', getInstructional.length);
 
-        getInstructional.forEach(function (instructional) {
+        var getInstructional = await functions.getUserInstructionalAndAffiliation(student_id, student_app_id, 'instructional');
+
+        for (const instructional of getInstructional) {
 
             instructionalData.push({
                 id: instructional.id,
@@ -666,15 +668,19 @@ router.get('/getDocumentsData', async (req, res) => {
                 division: instructional.division,
                 yearofpassing: instructional.yearofpassing,
                 education_type: instructional.education_type,
+                app_id: instructional?.app_id,
+                user_id: instructional.user_id,
+                verify_doc: instructional.verify_doc
             })
-        })
+        }
     }
 
     //curriculum
     if (applied_for_details.curriculum == true) {
         var getCurriculum = await functions.getUserCurriculum(student_id, student_app_id);
 
-        getCurriculum.forEach(async function (curriculum) {
+
+        for (const curriculum of getCurriculum) {
             extension = curriculum.file_name.split('.').pop();
 
             var collegeDetails = await functions.getCollegeDetails(curriculum.collegeId);
@@ -686,15 +692,19 @@ router.get('/getDocumentsData', async (req, res) => {
                 extension: extension,
                 collegeName: collegeDetails.name,
                 fileName: curriculum.file_name,
+                app_id: curriculum?.app_id,
+                user_id: curriculum.user_id,
+                lock_transcript: curriculum.lock_transcript,
+                verify_doc: curriculum.verify_doc,
             })
-        })
+        }
     }
 
     //gradetoper
     if (applied_for_details.gradToPer == true) {
         var getGradtoper = await functions.getUserGradtoper(student_id, student_app_id);
 
-        getGradtoper.forEach(async function (gradtoper) {
+        for (const gradtoper of getGradtoper) {
             extension = gradtoper.file_name.split('.').pop();
 
             var collegeDetails = await functions.getCollegeDetails(gradtoper.collegeId);
@@ -706,15 +716,20 @@ router.get('/getDocumentsData', async (req, res) => {
                 extension: extension,
                 collegeName: collegeDetails.name,
                 fileName: gradtoper.file_name,
+                app_id: gradtoper?.app_id,
+                user_id: gradtoper.user_id,
+                lock_transcript: gradtoper.lock_transcript,
+                verify_doc: gradtoper.verify_doc,
             })
-        })
+        }
     }
 
     //affiliation
     if (applied_for_details.affiliation == true) {
-        var getAffiliation = await functions.getUserInstructionalAndAffiliation(student_id, student_app_id,'affiliation');
+        var getAffiliation = await functions.getUserInstructionalAndAffiliation(student_id, student_app_id, 'affiliation');
 
-        getAffiliation.forEach(function (affiliation) {
+
+        for (const affiliation of getAffiliation) {
 
             affiliationData.push({
                 id: affiliation.id,
@@ -726,15 +741,19 @@ router.get('/getDocumentsData', async (req, res) => {
                 division: affiliation.division,
                 yearofpassing: affiliation.yearofpassing,
                 education_type: affiliation.education_type,
+                app_id: affiliation?.app_id,
+                user_id: affiliation.user_id,
+                verify_doc: affiliation.verify_doc
             })
-        })
+        }
     }
 
     //competency
     if (applied_for_details.CompetencyLetter == true) {
         var getCompetency = await functions.getUserCompetency(student_id, student_app_id);
 
-        getCompetency.forEach(async function (competency) {
+
+        for (const competency of getCompetency) {
             extension = competency.file_name.split('.').pop();
 
             var collegeDetails = await functions.getCollegeDetails(competency.collegeId);
@@ -746,15 +765,20 @@ router.get('/getDocumentsData', async (req, res) => {
                 extension: extension,
                 collegeName: collegeDetails.name,
                 fileName: competency.file_name,
+                app_id: competency?.app_id,
+                user_id: competency.user_id,
+                lock_transcript: competency.lock_transcript,
+                verify_doc: competency.verify_doc,
             })
-        })
+        }
     }
 
     //letter for name change
     if (applied_for_details.LetterforNameChange == true) {
         var getLetterfornamechange = await functions.getUserLetterfornamechange(student_id, student_app_id);
 
-        getLetterfornamechange.forEach(async function (letterfornamechange) {
+
+        for (const letterfornamechange of getLetterfornamechange) {
             extension = letterfornamechange.file_name.split('.').pop();
 
             var collegeDetails = await functions.getCollegeDetails(letterfornamechange.collegeId);
@@ -764,7 +788,7 @@ router.get('/getDocumentsData', async (req, res) => {
                 name: letterfornamechange.name,
                 filePath: constant.BASE_URL + "/api/upload/NameChangeLetter/" + student_id + "/" + letterfornamechange.file_name,
                 extension: extension,
-                collegeName: collegeDetails.name,
+                collegeName: collegeDetails?.name,
                 firstnameaspermarksheet: letterfornamechange.firstnameaspermarksheet,
                 fathersnameaspermarksheet: letterfornamechange.fathersnameaspermarksheet,
                 mothersnameaspermarksheet: letterfornamechange.mothersnameaspermarksheet,
@@ -773,14 +797,19 @@ router.get('/getDocumentsData', async (req, res) => {
                 fathersnameasperpassport: letterfornamechange.fathersnameasperpassport,
                 lastnameasperpassport: letterfornamechange.lastnameasperpassport,
                 fileName: letterfornamechange.file_name,
+                app_id: letterfornamechange?.app_id,
+                user_id: letterfornamechange.user_id,
+                lock_transcript: letterfornamechange.lock_transcript,
+                verify_doc: letterfornamechange.verify_doc,
             })
-        })
+        }
     }
 
     //name change proof
     var getNameChangeProof = await functions.getUserNameChangeProof(student_id, 'extra_document');
 
-    getNameChangeProof.forEach(async function (namechangeproof) {
+
+    for (const namechangeproof of getNameChangeProof) {
         extension = namechangeproof.file_name.split('.').pop();
 
         namechangeproofData.push({
@@ -788,10 +817,15 @@ router.get('/getDocumentsData', async (req, res) => {
             name: namechangeproof.name,
             filePath: constant.BASE_URL + "/api/upload/NameChangeProof/" + student_id + "/" + namechangeproof.file_name,
             extension: extension,
+            app_id: namechangeproof?.app_id,
+            user_id: namechangeproof.user_id,
+            lock_transcript: namechangeproof.lock_transcript,
+            verify_doc: namechangeproof.verify_doc,
         })
-    })
+    }
 
     //all data
+    // console.log('hfhudkshfuesd', marksheetsData)
     documentsData.push({
         marksheetsData: marksheetsData,
         transcriptsData: transcriptsData,
@@ -805,12 +839,12 @@ router.get('/getDocumentsData', async (req, res) => {
     })
 
     if (documentsData.length > 0) {
-        res.json({
+        return res.json({
             status: 200,
             data: documentsData,
         });
     } else {
-        res.json({
+        return res.json({
             status: 400,
         });
     }
@@ -1539,7 +1573,7 @@ router.post('/updateNotes', async (req, res) => {
         var data = "Note of application " + app_id + " is updated by " + admin_email;
         var activity = "Note Updated";
 
-        functions.getCreateActivityTracker(user_id, app_id, activity, data);
+        // functions.getCreateActivityTracker(user_id, app_id, activity, data);
 
         res.json({
             status: 200,
@@ -2205,29 +2239,29 @@ router.get('/verifyApplication', async (req, res) => {
  * @param {String} name - Wes Firstname of student uploaded
  * @param {String} lastName - Wes Lastname of student uploaded
  */
-router.post('/getWes_details',function(req,res){
+router.post('/getWes_details', function (req, res) {
     console.log("/getWes_details");
-	var wesno = req.body.wesno;
-	var email = req.body.email;
-	var firstName = req.body.name;
-	var lastName = req.body.lastname;
-	fn.getWesDetails(wesno,lastName,firstName,email,function(err,data){
-		if(err  == 'Wes Number not found' || err.includes('is not Correct')){
-			return res.json({
-				status : 400,
-				message : err 
-			})
-		}else{
-			return res.json({
-				status : 200,
-				data : data 
-			})
-		}
-		
-		});
+    var wesno = req.body.wesno;
+    var email = req.body.email;
+    var firstName = req.body.name;
+    var lastName = req.body.lastname;
+    fn.getWesDetails(wesno, lastName, firstName, email, function (err, data) {
+        if (err == 'Wes Number not found' || err.includes('is not Correct')) {
+            return res.json({
+                status: 400,
+                message: err
+            })
+        } else {
+            return res.json({
+                status: 200,
+                data: data
+            })
+        }
+
+    });
 })
 
-router.post('/updatePaymentNotes', middlewares.getUserInfo, async (req, res) =>{
+router.post('/updatePaymentNotes', middlewares.getUserInfo, async (req, res) => {
     console.log('/updatePaymentNotes');
 
     var user_id = req.body.user_id;
@@ -2238,31 +2272,31 @@ router.post('/updatePaymentNotes', middlewares.getUserInfo, async (req, res) =>{
     var user_name = req.User.name + ' ' + req.User.surname;
 
     var paymentIssueDetails = await functions.getPaymentIssueDetails(issue_id);
-    console.log('JJJJJJJJJJJJJJJJJJ',notes_data);
+    console.log('JJJJJJJJJJJJJJJJJJ', notes_data);
 
-    if(paymentIssueDetails){
+    if (paymentIssueDetails) {
         var updateNotes = await functions.getUpdatePaymentNotes(notes_data, tracker, issue_id);
-        console.log('PPPPPPPPPPPPPPPPPPP',updateNotes);
+        console.log('PPPPPPPPPPPPPPPPPPP', updateNotes);
 
-        if(updateNotes == true){
+        if (updateNotes == true) {
             let data = user_name + "'s note updated by " + user_email + ".";
             let activity = "Note updated";
             functions.activitylog(user_id, '', activity, data, req);
 
             return res.json({
-				status : 200,
-				message : 'Note updated successfully', 
-			})
-        }else{
+                status: 200,
+                message: 'Note updated successfully',
+            })
+        } else {
             return res.json({
-				status : 400,
-				message : 'Failed to update note!', 
-			})
+                status: 400,
+                message: 'Failed to update note!',
+            })
         }
-    }else{
+    } else {
         return res.json({
-            status : 400,
-            message : 'Something went wrong!', 
+            status: 400,
+            message: 'Something went wrong!',
         })
     }
 })
@@ -2293,11 +2327,11 @@ router.get('/getEmailActivityTracker', async (req, res) => {
                 data: EmailActivity,
                 count: EmailActivityCount
             })
-        }else{
+        } else {
             return res.json({
-                status: 400, 
-                message:"No Data Available" ,
-            })   
+                status: 400,
+                message: "No Data Available",
+            })
         }
     } catch (error) {
         console.error("Error in /getEmailActivityTracker", error);
@@ -2305,6 +2339,69 @@ router.get('/getEmailActivityTracker', async (req, res) => {
             message: "Internal Server Error",
         });
     }
+})
+
+router.post('/errataDocument', async (req, res) => {
+    try {
+        console.log('req.body', req.body);
+        const user_id = req.body.user_id;
+        const doc_id = req.body.id;
+        const app_id = req.body.app_id;
+        const type = req.body.type;
+
+        const errataDocument = await functions.lockDocument(doc_id, user_id, type);
+
+        if (errataDocument === 0) return res.json({ message: 'Error updating Marklist', status: 400 });
+
+        const updateApplication = await functions.updateApplication(app_id, user_id);
+
+        if (updateApplication) {
+            return res.json({ message: `Errata on ${type} Done Successfully!`, status: 200 });
+        } else {
+            return res.json({ message: `Errata on ${type} Not Completed!`, status: 400 });
+        }
+
+    } catch (error) {
+        console.error("Error in /getEmailActivityTracker", error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+        });
+    }
+})
+
+router.post('/completeIncompleteDoc', async (req, res) => {
+    try {
+        console.log('req.body', req.body);
+        const user_id = req.body.user_id;
+        const app_id = req.body.app_id;
+        const type = req.body.type;
+        const value = req.body.value;
+
+        if (value === 'complete') {
+            console.log('complete');
+            const verifyDoc = await functions.verifyDocument(user_id, app_id, type);
+            if (verifyDoc) {
+                return res.json({ message: ' Done Successfully!', status: 200 });
+            } else {
+                return res.json({ message: 'Error!', status: 400 });
+            }
+        } else {
+            console.log('incomplete');
+            const incompleteDoc = await functions.updateInComplete(user_id, app_id, type);
+            if (incompleteDoc) {
+                return res.json({ message: ' Done Successfully!', status: 200 });
+            } else {
+                return res.json({ message: 'Error!', status: 400 });
+            }
+        }
+
+    } catch (error) {
+        console.error("Error in /getEmailActivityTracker", error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+        });
+    }
+
 })
 
 module.exports = router;

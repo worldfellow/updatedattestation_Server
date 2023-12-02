@@ -7,15 +7,15 @@ const morgan = require('morgan');
 const bodyParser = require('body-parser');
 const auth = require('./auth/auth.js')();
 const checkjwt = require('express-jwt');
-const app = express(); 
+const app = express();
 var cfg = require('./auth/config.js');
 var models = require("./models");
 var cons = require('consolidate');
-var constant = require(root_path+'/config/constant');
+var constant = require(root_path + '/config/constant');
 const logger = require('./logger')(__filename);
 var student = require('./routes/student');
 var admin = require('./routes/admin');
-var functions = require('./routes/functions'); 
+var functions = require('./routes/functions');
 
 
 app.use(cors());
@@ -38,7 +38,7 @@ models.sequelize.sync().then(function (test) {
 });
 
 
-app.use((err, req, res, next) => { 
+app.use((err, req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Origin, X-HTTP-Method-Override,X-Requested-With,Content-Type,Accept,content-type,application/json,Authorization');
   res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, HEAD, OPTIONS');
@@ -55,14 +55,14 @@ app.use((err, req, res, next) => {
 
 
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/api/signedpdf',express.static(__dirname + "/public/signedpdf/"));
-app.use('/api/images',express.static(__dirname + "/public/images/"));
+app.use('/api/signedpdf', express.static(__dirname + "/public/signedpdf/"));
+app.use('/api/images', express.static(__dirname + "/public/images/"));
 // app.use('/api/register',express.static(__dirname + "/public/register/"));
-app.use('/api/upload',express.static(__dirname + "/public/upload/"));
+app.use('/api/upload', express.static(__dirname + "/public/upload/"));
 
 //var io = require('socket.io').listen(2);
 //app.io = io;
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   //req.io = io;
   next();
 });
@@ -89,8 +89,8 @@ app.use(function(req, res, next) {
 //     //   io.emit("SignClient", data);
 //     // },500)
 //     // })  
-  
-   
+
+
 // });
 //   socket.on("tracker", track => {
 //     var root_path = path.dirname(require.main.filename);
@@ -115,7 +115,7 @@ app.use(function(req, res, next) {
 //       socket.emit("trackdropdown",track_status);
 //     })
 //   });
-  
+
 // });
 
 app.use(bodyParser.json());
@@ -176,10 +176,10 @@ var unprotected = [
   '/api/payment/getQuickInvoice',
   '/api/payment/autoSplit',
   '/api/testApp',
-  '/api/signpdf/checkWESINfo', 
+  '/api/signpdf/checkWESINfo',
   '/api/attestation/getname',
   '/api/onHoldReminderManually',
-  '/api/payment/split_excel_sheets', 
+  '/api/payment/split_excel_sheets',
   '/api/attestation/Upload_PaymentIssueUrl',
   '/api/attestation/post_applicationdata',
   '/api/attestation/Pre_applicationdata',
@@ -195,7 +195,7 @@ var unprotected = [
   '/api/student/getCountry',
   '/api/student/captcha',
   '/api/student/savePaymentIssueData',
-  '/api/student/getPaymentIssueData',  
+  '/api/student/getPaymentIssueData',
   '/api/student/getProfileValue',
   '/api/student/updateProfile',
   '/api/student/getDownloadPaymentReceipt',
@@ -221,7 +221,7 @@ var unprotected = [
   '/api/student/updateAllHrd',
   '/api/student/getHrdData',
   '/api/student/preViewApplication',
-  '/api/student/getuploadedCurriculum', 
+  '/api/student/getuploadedCurriculum',
   '/api/student/getExtraDocuments',
   '/api/student/getCollegeList',
   '/api/student/getFacultyLists',
@@ -237,7 +237,7 @@ var unprotected = [
   '/api/student/saveLetterNameChangeData',
   '/api/student/saveInstructionalData',
   '/api/student/saveAffiliationData',
-  '/api/student/getletterDetails', 
+  '/api/student/getletterDetails',
   '/api/student/getInstructionalForms',
   '/api/student/getAppliedUserDetail',
   '/api/student/getEducationalDetails',
@@ -273,7 +273,7 @@ var unprotected = [
   '/api/admin/updateNotes',
   '/api/admin/getDownloadExcel',
   '/api/admin/getDownloadBySaveAs',
-  '/api/admin/getApplicationData', 
+  '/api/admin/getApplicationData',
   '/api/admin/verifiedApplication',
   '/api/admin/getWesApplication',
   '/api/admin/getEmailedApplication',
@@ -286,15 +286,17 @@ var unprotected = [
   '/api/admin/verifyApplication',
   '/api/admin/getWes_details',
   '/api/admin/updatePaymentNotes',
+  'api/admin/errataDocument',
+  'api/admin/completeIncompleteDoc'
 ];
 app.use(checkjwt({
   secret: cfg.jwtSecret
 }).unless({
   path: unprotected
 }));
- 
+
 app.use('/api/student', student);
-app.use('/api/admin', admin); 
+app.use('/api/admin', admin);
 
 
 var server = app.listen(constant.PORT, function () {

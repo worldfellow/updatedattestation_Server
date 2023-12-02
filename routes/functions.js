@@ -1169,4 +1169,75 @@ module.exports = {
         })
         return data;
     },
+
+    lockDocument: async (doc_id, user_id, type) => {
+        const tableName = type === 'marksheet' ? 'UserMarklist_Upload' : type === 'transcript' ? 'User_Transcript' : type === 'curriculum' ? 'User_Curriculum' : type === 'gradtoper' ? 'GradeToPercentageLetter' : type === 'competency' ? 'competency_letter' : type === 'letterfornamechange' ? 'Letterfor_NameChange' : type === 'namechangeproof' ? 'User_Transcript' : '';
+        const table = await models[tableName];
+        const errata = await table.update({
+            lock_transcript: true,
+            upload_step: "requested"
+        }, {
+            where: {
+                id: doc_id,
+                user_id: user_id
+            }
+        });
+        return errata;
+    },
+
+    updateApplication: async (app_id, user_id) => {
+        const application = await models.Application.update({
+            tracker: "apply",
+            status: "requested"
+        }, {
+            where: {
+                id: app_id,
+                user_id: user_id
+            }
+        });
+        return application;
+    },
+
+    updateInComplete: async (user_id, app_id, type) => {
+        const application = await models.Application.update({
+            status: "requested",
+            inComplete: models.sequelize.fn('JSON_ARRAY_APPEND',
+                models.sequelize.fn('COALESCE', models.sequelize.col('Application.inComplete'), '[]'),
+                '$',
+                models.sequelize.literal(`'{"${type}"}'`)
+            )
+        },
+            {
+                where: {
+                    id: app_id,
+                    user_id: user_id
+                }
+            });
+        return application;
+    },
+
+    verifyDocument: async (user_id, app_id, type) => {
+        const tableName = type === 'marksheet' ? 'UserMarklist_Upload' : type === 'transcript' ? 'User_Transcript' : type === 'curriculum' ? 'User_Curriculum' : type === 'gradtoper' ? 'GradeToPercentageLetter' : type === 'competency' ? 'competency_letter' : type === 'letterfornamechange' ? 'Letterfor_NameChange' : type === 'namechangeproof' ? 'User_Transcript' : type === 'instructional' || 'affiliation' ? 'letter_details' : '';
+        const user = {};
+        if (type === 'instructional') {
+            user.app_id = app_id;
+            user.user_id = user_id;
+            user.type = 'instructional';
+        } else if (type === 'affiliation') {
+            user.app_id = app_id;
+            user.user_id = user_id;
+            user.type = 'affiliation';
+        } else {
+            user.app_id = app_id;
+            user.user_id = user_id;
+        }
+        const table = await models[tableName];
+        const verifyDoc = await table.update({
+            verify_doc: true,
+        },
+            {
+                where: user
+            });
+        return verifyDoc;
+    },
 };

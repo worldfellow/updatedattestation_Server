@@ -18,6 +18,11 @@ module.exports = function (sequelize, DataTypes) {
     faculty: DataTypes.TEXT,
     pattern: DataTypes.TEXT,
     app_id: DataTypes.INTEGER(20),
+    verify_doc: {
+      type: DataTypes.BOOLEAN(),
+      allowNull: false,
+      defaultValue: 0
+    },
   });
 
   //   UserTranscript.updateEmailStatus = function(id,status){
