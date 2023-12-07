@@ -24,10 +24,13 @@ var self_PDF = require('./self_letter');
 const { Captcha } = require('captcha-canvas');
 const axios = require('axios');
 const { json } = require('body-parser');
+const FormData = require('form-data');
 const config = {
 	lang: "eng",
 	oem: 1,
 	psm: 3
+
+	
 }
 /* Editor : Prathmesh Pawar
 Route : educationalDetails - check email and password and return token and access to proceed ahead to student.
@@ -4587,5 +4590,18 @@ router.get('/checkStudentPaid', middlewares.getUserInfo, async (req, res) => {
 		});
 	}
 })
+
+
+router.get('/Ocr_testing', async (req, res) => {
+	console.log('/Ocr_testing');
+	const inputDirectory = constant.FILE_LOCATION + 'public/upload/ldIrnJJZeJ.jpg';
+	const fileUrl = inputDirectory ;
+	const form = new FormData();
+	form.append('file', fs.createReadStream(fileUrl));
+	const response = await axios.post(constant.OCR_BASE_URL + 'Ocr_testing', form, {
+		headers: form.getHeaders()
+	});
+})
+
 
 module.exports = router;
