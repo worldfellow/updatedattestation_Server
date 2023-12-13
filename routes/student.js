@@ -29,8 +29,6 @@ const config = {
 	lang: "eng",
 	oem: 1,
 	psm: 3
-
-	
 }
 /* Editor : Prathmesh Pawar
 Route : educationalDetails - check email and password and return token and access to proceed ahead to student.
@@ -3501,7 +3499,7 @@ router.get('/getUploadeddocument_student', middlewares.getUserInfo, async functi
 /**
  * checkstepper route for students. Throws to the tab where the student has to filled its required details
  */
-router.get('/checkstepper', middlewares.getUserInfo, async function (req, res) {
+router.get('/checkStepper', middlewares.getUserInfo, async function (req, res) {
 	var user_id = req.User.id;
 	var app_id = req.query.app_id;
 	if (app_id == 'null') { app_id = null };
@@ -3529,31 +3527,6 @@ router.get('/checkstepper', middlewares.getUserInfo, async function (req, res) {
 		gradToPer = await functions.getDocuments_checkstepper(user_id, app_id, 'GradeToPercentageLetter', '', '');
 		affiliation = await functions.getDocuments_checkstepper(user_id, app_id, 'affiliation', '', '');
 
-		// getDistinctData = await functions.getDistinctData(user_id);
-		// const uniqueValues = getDistinctData.map((item) => item.dataValues.uniqueValues);
-		// for (var i = 0; i < uniqueValues.length; i++) {
-		// 	degree = uniqueValues[i].split('_')[0];
-		// 	faculty = uniqueValues[i].split('_')[1];
-		// 	if (appliedFor.educationalDetails == true) {
-		// 		transcript = await functions.getDocuments_checkstepper(user_id, app_id, 'transcript', degree, faculty);
-		// 	}
-		// 	if (appliedFor.instructionalField == true) {
-		// 		instructional = await functions.getDocuments_checkstepper(user_id, app_id, 'instructional', degree, faculty);
-		// 	}
-		// 	if (appliedFor.curriculum == true) {
-		// 		curriculum = await functions.getDocuments_checkstepper(user_id, app_id, 'curriculum', degree, faculty);
-		// 	}
-		// 	if (appliedFor.gradToPer == true) {
-		// 		gradToPer = await functions.getDocuments_checkstepper(user_id, app_id, 'GradeToPercentageLetter', degree, faculty);
-		// 	}
-		// 	if (appliedFor.affiliation == true) {
-		// 		affiliation = await functions.getDocuments_checkstepper(user_id, app_id, 'affiliation', degree, faculty);
-		// 	}
-		// 	if (appliedFor.CompetencyLetter == true) {
-		// 	}
-		// 	if (appliedFor.LetterforNameChange == true) {
-		// 	}
-		// }
 
 		require('async').series([
 			function (callback) {
@@ -3654,7 +3627,7 @@ router.get('/checkstepper', middlewares.getUserInfo, async function (req, res) {
 /**
  * checkstepper route for students. Throws to the tab where the student has to filled its required details, for 2nd step
  */
-router.get('/checkstepper_inner', middlewares.getUserInfo, async function (req, res) {
+router.get('/checkStepperInner', middlewares.getUserInfo, async function (req, res) {
 	var user_id = req.User.id;
 	var app_id = req.query.app_id;
 	if (app_id == 'null') { app_id = null }
@@ -3673,12 +3646,12 @@ router.get('/checkstepper_inner', middlewares.getUserInfo, async function (req, 
 	var educationalDetails = true;
 	let firstFalseTab = null;
 	obj_inner['tab1'] = false, //marksheet
-		obj_inner['tab2'] = false, // transcript
-		obj_inner['tab3'] = false, // instruction
-		obj_inner['tab4'] = false, // affiliation
-		obj_inner['tab5'] = false, // Curriculum
-		obj_inner['tab6'] = false,//GradeToPercentageLetter
-		obj_inner['tab7'] = false // competency
+	obj_inner['tab2'] = false, // transcript
+	obj_inner['tab3'] = false, // instruction
+	obj_inner['tab4'] = false, // affiliation
+	obj_inner['tab5'] = false, // Curriculum
+	obj_inner['tab6'] = false,//GradeToPercentageLetter
+	obj_inner['tab7'] = false // competency
 	obj_inner['tab8'] = false //Letter For Mother Name on Marksheet Details
 	// obj_inner['tab9'] = false
 
@@ -3877,7 +3850,7 @@ router.get('/checkstepper_inner', middlewares.getUserInfo, async function (req, 
 			});
 	}
 	else {
-		res.json({
+				res.json({
 			status: 400,
 			message: 'Sending Tab Status',
 			data: firstFalseTab,
